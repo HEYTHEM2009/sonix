@@ -14,12 +14,12 @@ export const getEcho = async () => {
     broadcaster: "pusher",
     client: Pusher,
     key: "sonix-reverb-key",
-    wsHost: "192.168.1.10",
-    wsPort: 8080,
-    wssPort: 8080,
-    forceTLS: false,
+    wsHost: "sonix-production.up.railway.app",
+    wsPort: 443,
+    wssPort: 443,
+    forceTLS: true,
     disableStats: true,
-    enabledTransports: ["ws"],
+    enabledTransports: ["ws", "wss"],
     authEndpoint: `${IMAGE_BASE}/api/broadcasting/auth`,
     auth: {
       headers: {
