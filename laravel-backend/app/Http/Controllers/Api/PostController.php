@@ -7,7 +7,6 @@ use App\Models\Post;
 use App\Models\Follow;
 use App\Models\User;
 use App\Models\BlockedUser;
-use App\Services\ImageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -138,21 +137,7 @@ class PostController extends Controller
         } elseif ($hasImage) {
             $path = $request->file('image')->store('uploads', 'public');
             $data['image'] = "/storage/$path";
-
-            try {
-                $imageService = new ImageService();
-                $compressed = $imageService->compress($request->file('image'));
-                $thumb = $imageService->generateThumbnail($request->file('image'));
-
-                $thumbPath = 'uploads/thumb_' . basename($path);
-                Storage::disk('public')->put($thumbPath, file_get_contents($thumb));
-                $data['thumbnail'] = "/storage/$thumbPath";
-
-                @unlink($compressed);
-                @unlink($thumb);
-            } catch (\Exception $e) {
-                $data['thumbnail'] = $data['image'];
-            }
+            $data['thumbnail'] = "/storage/$path";
         }
 
         $post = Post::create($data);
