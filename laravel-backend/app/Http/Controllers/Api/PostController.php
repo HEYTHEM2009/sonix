@@ -136,19 +136,23 @@ class PostController extends Controller
             $path = $request->file('video')->store('uploads', 'public');
             $data['video'] = "/storage/$path";
         } elseif ($hasImage) {
-            $imageService = new ImageService();
-            $compressed = $imageService->compress($request->file('image'));
-            $thumb = $imageService->generateThumbnail($request->file('image'));
-
             $path = $request->file('image')->store('uploads', 'public');
-            $thumbPath = 'uploads/thumb_' . basename($path);
-            Storage::disk('public')->put($thumbPath, file_get_contents($thumb));
-
             $data['image'] = "/storage/$path";
-            $data['thumbnail'] = "/storage/$thumbPath";
 
-            @unlink($compressed);
-            @unlink($thumb);
+            try {
+                $imageService = new ImageService();
+                $compressed = $imageService->compress($request->file('image'));
+                $thumb = $imageService->generateThumbnail($request->file('image'));
+
+                $thumbPath = 'uploads/thumb_' . basename($path);
+                Storage::disk('public')->put($thumbPath, file_get_contents($thumb));
+                $data['thumbnail'] = "/storage/$thumbPath";
+
+                @unlink($compressed);
+                @unlink($thumb);
+            } catch (\Exception $e) {
+                $data['thumbnail'] = $data['image'];
+            }
         }
 
         $post = Post::create($data);
