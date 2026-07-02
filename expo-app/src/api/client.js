@@ -3,7 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const API = "https://sonix-production.up.railway.app/api";
 
-const client = axios.create({ baseURL: API, timeout: 15000 });
+const client = axios.create({ baseURL: API, timeout: 60000 });
 
 client.interceptors.request.use(async (config) => {
   const token = await AsyncStorage.getItem("token");
@@ -14,9 +14,6 @@ client.interceptors.request.use(async (config) => {
 client.interceptors.response.use(
   (res) => res,
   async (err) => {
-    if (err.response?.status === 401) {
-      await AsyncStorage.multiRemove(["token", "user"]);
-    }
     return Promise.reject(err);
   }
 );
