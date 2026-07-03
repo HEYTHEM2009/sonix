@@ -222,9 +222,11 @@ class MessageController extends Controller
     {
         $user = $request->user();
         try {
-            Redis::setex("user:online:{$user->id}", 120, true);
-            Redis::setex("user:last_seen:{$user->id}", 86400, now()->toISOString());
-        } catch (\Exception $e) {
+            if (config('database.redis.client')) {
+                Redis::setex("user:online:{$user->id}", 120, true);
+                Redis::setex("user:last_seen:{$user->id}", 86400, now()->toISOString());
+            }
+        } catch (\Throwable $e) {
             // Redis unavailable, skip silently
         }
 
