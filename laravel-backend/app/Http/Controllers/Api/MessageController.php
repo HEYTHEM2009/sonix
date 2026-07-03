@@ -221,8 +221,12 @@ class MessageController extends Controller
     public function updateOnline(Request $request)
     {
         $user = $request->user();
-        Redis::setex("user:online:{$user->id}", 120, true);
-        Redis::setex("user:last_seen:{$user->id}", 86400, now()->toISOString());
+        try {
+            Redis::setex("user:online:{$user->id}", 120, true);
+            Redis::setex("user:last_seen:{$user->id}", 86400, now()->toISOString());
+        } catch (\Exception $e) {
+            // Redis unavailable, skip silently
+        }
 
         return response()->json(['message' => 'Online status updated']);
     }

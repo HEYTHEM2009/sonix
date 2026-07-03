@@ -107,8 +107,13 @@ class UserController extends Controller
 
     public function status($id)
     {
-        $isOnline = Redis::get("user:online:{$id}");
-        $lastSeen = Redis::get("user:last_seen:{$id}");
+        try {
+            $isOnline = Redis::get("user:online:{$id}");
+            $lastSeen = Redis::get("user:last_seen:{$id}");
+        } catch (\Exception $e) {
+            $isOnline = false;
+            $lastSeen = null;
+        }
 
         return response()->json([
             'user_id' => $id,
@@ -119,8 +124,12 @@ class UserController extends Controller
 
     public function setOnline($id)
     {
-        Redis::setex("user:online:{$id}", 120, true);
-        Redis::setex("user:last_seen:{$id}", 86400, now()->toISOString());
+        try {
+            Redis::setex("user:online:{$id}", 120, true);
+            Redis::setex("user:last_seen:{$id}", 86400, now()->toISOString());
+        } catch (\Exception $e) {
+            // Redis unavailable, skip silently
+        }
         return response()->json(['message' => 'Online status updated']);
     }
 }
