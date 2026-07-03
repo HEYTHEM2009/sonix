@@ -23,8 +23,8 @@ COPY laravel-backend/ .
 RUN composer dump-autoload --optimize
 
 # Create necessary directories
-RUN mkdir -p storage/app/public/uploads storage/framework/{cache,sessions,views} storage/logs bootstrap/cache
+RUN mkdir -p public/uploads storage/framework/{cache,sessions,views} storage/logs bootstrap/cache && chmod -R 775 public/uploads
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "php artisan key:generate --force && php artisan storage:link --force && php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=8000"]
+CMD ["sh", "-c", "mkdir -p public/uploads && php artisan key:generate --force && php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=8000"]

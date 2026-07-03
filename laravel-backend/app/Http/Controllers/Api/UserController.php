@@ -79,8 +79,9 @@ class UserController extends Controller
         }
 
         if ($request->hasFile('avatar')) {
-            $path = $request->file('avatar')->store('uploads', 'public');
-            $user->avatar = "/storage/$path";
+            $filename = 'uploads/' . uniqid('avatar_') . '.jpg';
+            $request->file('avatar')->move(public_path('uploads'), basename($filename));
+            $user->avatar = "/$filename";
         }
 
         $user->save();

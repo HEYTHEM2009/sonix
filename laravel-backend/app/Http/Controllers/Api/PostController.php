@@ -132,12 +132,14 @@ class PostController extends Controller
         ];
 
         if ($hasVideo) {
-            $path = $request->file('video')->store('uploads', 'public');
-            $data['video'] = "/storage/$path";
+            $filename = 'uploads/' . uniqid('vid_') . '.mp4';
+            $request->file('video')->move(public_path('uploads'), basename($filename));
+            $data['video'] = "/$filename";
         } elseif ($hasImage) {
-            $path = $request->file('image')->store('uploads', 'public');
-            $data['image'] = "/storage/$path";
-            $data['thumbnail'] = "/storage/$path";
+            $filename = 'uploads/' . uniqid('img_') . '.jpg';
+            $request->file('image')->move(public_path('uploads'), basename($filename));
+            $data['image'] = "/$filename";
+            $data['thumbnail'] = "/$filename";
         }
 
         $post = Post::create($data);

@@ -92,14 +92,13 @@ class StoryController extends Controller
         ];
 
         if ($request->hasFile('video')) {
-            $path = $request->file('video')->store('uploads', 'public');
-            $data['video'] = "/storage/$path";
+            $filename = uniqid('vid_') . '.mp4';
+            $request->file('video')->move(public_path('uploads'), $filename);
+            $data['video'] = "/uploads/$filename";
         } elseif ($request->hasFile('image')) {
-            $imageService = new ImageService();
-            $compressed = $imageService->compress($request->file('image'));
-            $path = $request->file('image')->store('uploads', 'public');
-            $data['image'] = "/storage/$path";
-            @unlink($compressed);
+            $filename = uniqid('img_') . '.jpg';
+            $request->file('image')->move(public_path('uploads'), $filename);
+            $data['image'] = "/uploads/$filename";
         }
 
         $story = Story::create($data);
@@ -309,8 +308,9 @@ class StoryController extends Controller
         ];
 
         if ($request->hasFile('cover_image')) {
-            $path = $request->file('cover_image')->store('uploads', 'public');
-            $data['cover_image'] = "/storage/$path";
+            $filename = uniqid('cover_') . '.jpg';
+            $request->file('cover_image')->move(public_path('uploads'), $filename);
+            $data['cover_image'] = "/uploads/$filename";
         }
 
         $highlight = StoryHighlight::create($data);
