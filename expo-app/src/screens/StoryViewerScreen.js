@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { View, Text, Image, TouchableOpacity, StyleSheet, Dimensions, StatusBar, FlatList, Modal, TextInput, ActivityIndicator, Animated, Alert } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useNavigation } from "@react-navigation/native";
 import { WebView } from "react-native-webview";
 import client, { IMAGE_BASE } from "../api/client";
 import { COLORS, SIZES, FONTS } from "../components/Theme";
@@ -9,7 +10,7 @@ import { useLanguage } from "../context/LanguageContext";
 
 const { width, height } = Dimensions.get("window");
 
-function StoryMedia({ story, onEnd }) {
+function StoryMedia({ story, onEnd, webViewRef }) {
   const [videoError, setVideoError] = useState(null);
 
   if (story.type === "video") {
@@ -39,6 +40,7 @@ function StoryMedia({ story, onEnd }) {
     return (
       <View style={{ width, height: "100%", backgroundColor: "#000" }}>
         <WebView
+          ref={webViewRef}
           source={{ html }}
           style={{ width, height: "100%", backgroundColor: "#000" }}
           allowsInlineMediaPlayback
@@ -314,6 +316,7 @@ export default function StoryViewerScreen({ route, navigation }) {
   const timerRef = useRef(null);
   const pausedRef = useRef(false);
   const viewReported = useRef(new Set());
+  const webViewRef = useRef(null);
   const insets = useSafeAreaInsets();
   const swipeX = useRef(new Animated.Value(0)).current;
   const swipeOpacity = useRef(new Animated.Value(1)).current;
@@ -387,6 +390,15 @@ export default function StoryViewerScreen({ route, navigation }) {
       setMyReactions((p) => ({ ...p, [currentStory.id]: currentStory.my_reaction }));
     }
   }, [currentStory]);
+
+  useEffect(() => {
+    const nav = navigation.getParent() || navigation;
+    const unsub = nav.addListener("blur", () => {
+      try { webViewRef.current?.injectJavaScript("try{document.getElementById('v').pause();}catch(e){}"); } catch (_) {}
+      clearInterval(timerRef.current);
+    });
+    return unsub;
+  }, [navigation]);
 
   const panResponder = useRef(
     require("react-native").PanResponder.create({
@@ -481,7 +493,7 @@ export default function StoryViewerScreen({ route, navigation }) {
           onPressOut={() => { pausedRef.current = false; }}
           style={StyleSheet.absoluteFill}
         >
-          <StoryMedia key={currentStory.id} story={currentStory} onEnd={advance} />
+          <StoryMedia key={currentStory.id} story={currentStory} onEnd={advance} webViewRef={webViewRef} />
           <DrawingOverlay drawingData={currentStory.drawing_data} />
           <StickerOverlay stickers={currentStory.stickers} />
         </TouchableOpacity>
