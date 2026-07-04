@@ -45,10 +45,3 @@ export const disconnectEcho = () => {
     echoInstance = null;
   }
 };
-
-export const disconnectEcho = () => {
-  if (echoInstance) {
-    echoInstance.disconnect();
-    echoInstance = null;
-  }
-};
