@@ -160,7 +160,7 @@ export default function CreateStoryScreen({ navigation }) {
 
       setTimeout(() => {
         setUploading(false);
-        navigation.navigate("Home", { screen: "Feed", params: { refresh: Date.now() } });
+        navigation.popToTop();
       }, 600);
     } catch (e) {
       setUploading(false);

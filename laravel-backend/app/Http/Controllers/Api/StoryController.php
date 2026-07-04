@@ -31,9 +31,12 @@ class StoryController extends Controller
     {
         $userId = $request->user()->id;
 
-        $cached = $this->cache->getFeed($userId);
-        if ($cached !== null) {
-            return response()->json($cached);
+        $skipCache = $request->has('_t');
+        if (!$skipCache) {
+            $cached = $this->cache->getFeed($userId);
+            if ($cached !== null) {
+                return response()->json($cached);
+            }
         }
 
         $followingIds = Follow::where('follower_id', $userId)

@@ -223,9 +223,10 @@ export default function FeedScreen({ navigation, route }) {
     setLoading(false);
   }, []);
 
-  const loadStories = useCallback(async () => {
+  const loadStories = useCallback(async (force = false) => {
     try {
-      const res = await client.get("/stories");
+      const url = force ? `/stories?_t=${Date.now()}` : "/stories";
+      const res = await client.get(url);
       setStories(res.data || []);
     } catch (e) {
       const status = e?.response?.status;
@@ -241,16 +242,24 @@ export default function FeedScreen({ navigation, route }) {
   useEffect(() => {
     const unsubscribe = navigation.addListener("focus", () => {
       load(1);
-      loadStories();
+      loadStories(true);
       loadHighlights();
     });
     return unsubscribe;
   }, [navigation, load, loadStories, loadHighlights]);
 
+  useEffect(() => {
+    if (route.params?.refresh) {
+      load(1);
+      loadStories(true);
+      loadHighlights();
+    }
+  }, [route.params?.refresh]);
+
   const onRefresh = async () => {
     setRefreshing(true);
     setHasMore(true);
-    await Promise.all([load(1), loadStories(), loadHighlights()]);
+    await Promise.all([load(1), loadStories(true), loadHighlights()]);
     setRefreshing(false);
   };
 
