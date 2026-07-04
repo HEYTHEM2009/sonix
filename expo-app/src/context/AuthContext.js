@@ -21,8 +21,18 @@ export function AuthProvider({ children }) {
   const loadAuth = async () => {
     try {
       const [t, u] = await AsyncStorage.multiGet(["token", "user"]);
-      if (t[1]) setToken(t[1]);
-      if (u[1]) setUser(JSON.parse(u[1]));
+      if (t[1]) {
+        try {
+          const res = await client.get("/users/me");
+          if (res.status === 200) {
+            setToken(t[1]);
+            setUser(res.data);
+            await AsyncStorage.setItem("user", JSON.stringify(res.data));
+          }
+        } catch (_) {
+          await AsyncStorage.multiRemove(["token", "user"]);
+        }
+      }
     } catch (e) { console.warn("Auth load error", e); } finally { setLoading(false); }
   };
 
