@@ -16,6 +16,11 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
+        if (User::count() > 1) {
+            echo "⏭️ Already seeded, skipping\n";
+            return;
+        }
+
         // ── Users ──
         $users = [
             ['username' => 'sonix', 'email' => 'admin@sonix.app', 'bio' => 'Welcome to Sonix! 🎵', 'password' => Hash::make('password123')],
