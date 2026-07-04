@@ -1,8 +1,8 @@
 import { useState, useRef } from "react";
 import { View, Image, StyleSheet, Dimensions, TouchableOpacity, Text, Animated, Alert, ActivityIndicator } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import * as MediaLibrary from "expo-media-library";
 import * as FileSystem from "expo-file-system";
+import * as Sharing from "expo-sharing";
 import client, { IMAGE_BASE } from "../api/client";
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
@@ -35,12 +35,6 @@ export default function ImageViewerScreen({ route, navigation }) {
 
   const downloadImage = async () => {
     try {
-      const { status } = await MediaLibrary.requestPermissionsAsync();
-      if (status !== "granted") {
-        Alert.alert("Permission needed", "Allow access to gallery to save images");
-        return;
-      }
-
       setDownloading(true);
 
       const filename = imageUrl.split("/").pop() || `photo_${Date.now()}.jpg`;
@@ -49,8 +43,12 @@ export default function ImageViewerScreen({ route, navigation }) {
       const downloadResult = await FileSystem.downloadAsync(fullUrl, fileUri);
 
       if (downloadResult.status === 200) {
-        await MediaLibrary.saveToLibraryAsync(downloadResult.uri);
-        Alert.alert("Saved", "Image saved to gallery");
+        const canShare = await Sharing.isAvailableAsync();
+        if (canShare) {
+          await Sharing.shareAsync(downloadResult.uri, { mimeType: "image/jpeg", dialogTitle: "Save image" });
+        } else {
+          Alert.alert("Saved", "Image downloaded to cache");
+        }
       } else {
         Alert.alert("Error", "Failed to download image");
       }
