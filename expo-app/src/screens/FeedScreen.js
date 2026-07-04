@@ -340,7 +340,7 @@ export default function FeedScreen({ navigation, route }) {
                 <View style={[s.storyRing, !item.has_unseen && { borderColor: COLORS.border }]}>
                   <View style={s.storyAvatar}>
                     {item.user?.avatar ? (
-                      <Image source={{ uri: `${IMAGE_BASE}${item.user.avatar}` }} style={{ width: "100%", height: "100%", borderRadius: 29 }} />
+                      <Image source={{ uri: `${IMAGE_BASE}${item.user.avatar}?t=${Date.now()}` }} style={{ width: "100%", height: "100%", borderRadius: 29 }} />
                     ) : (
                       <Text style={s.storyInitial}>{item.user?.username?.[0]?.toUpperCase() || "?"}</Text>
                     )}

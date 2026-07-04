@@ -10,11 +10,13 @@ use App\Models\StoryReaction;
 use App\Models\StoryHighlight;
 use App\Models\StoryHighlightItem;
 use App\Models\Follow;
+use App\Models\User;
 use App\Models\Notification;
 use App\Events\StoryCreated;
 use App\Services\ImageService;
 use App\Services\StoryCacheService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class StoryController extends Controller
 {
@@ -41,11 +43,36 @@ class StoryController extends Controller
 
         $followingIds[] = $userId;
 
-        $stories = Story::with(['user:id,username,avatar', 'reactions' => function ($q) {
-            $q->selectRaw('story_id, emoji, COUNT(*) as count')->groupBy('story_id', 'emoji');
-        }])
-            ->whereIn('user_id', $followingIds)
+        $storyIds = Story::whereIn('user_id', $followingIds)
             ->where('created_at', '>=', now()->subHours(12))
+            ->pluck('id');
+
+        if ($storyIds->isEmpty()) {
+            $this->cache->setFeed($userId, []);
+            return response()->json([]);
+        }
+
+        $viewCounts = StoryView::whereIn('story_id', $storyIds)
+            ->selectRaw('story_id, COUNT(*) as cnt')
+            ->groupBy('story_id')
+            ->pluck('cnt', 'story_id');
+
+        $reactionCounts = StoryReaction::whereIn('story_id', $storyIds)
+            ->selectRaw('story_id, COUNT(*) as cnt')
+            ->groupBy('story_id')
+            ->pluck('cnt', 'story_id');
+
+        $myReactions = StoryReaction::whereIn('story_id', $storyIds)
+            ->where('user_id', $userId)
+            ->pluck('emoji', 'story_id');
+
+        $seenStoryIds = StoryView::whereIn('story_id', $storyIds)
+            ->where('user_id', $userId)
+            ->pluck('story_id')
+            ->toArray();
+
+        $stories = Story::with(['user:id,username,avatar'])
+            ->whereIn('id', $storyIds)
             ->latest()
             ->get()
             ->groupBy('user_id');
@@ -53,15 +80,12 @@ class StoryController extends Controller
         $result = [];
         foreach ($stories as $uid => $userStories) {
             $first = $userStories->first();
-            $hasUnseen = $userStories->contains(function ($story) use ($userId) {
-                return !StoryView::where('story_id', $story->id)
-                    ->where('user_id', $userId)->exists();
-            });
+            $hasUnseen = $userStories->contains(fn($s) => !in_array($s->id, $seenStoryIds));
 
-            $storiesData = $userStories->map(function ($story) use ($userId) {
-                $story->view_count = $story->views()->count();
-                $story->reaction_count = $story->reactions()->count();
-                $story->my_reaction = $story->reactions()->where('user_id', $userId)->value('emoji');
+            $storiesData = $userStories->map(function ($story) use ($viewCounts, $reactionCounts, $myReactions) {
+                $story->view_count = $viewCounts->get($story->id, 0);
+                $story->reaction_count = $reactionCounts->get($story->id, 0);
+                $story->my_reaction = $myReactions->get($story->id);
                 return $story;
             });
 
@@ -88,8 +112,8 @@ class StoryController extends Controller
             $rules['image'] = 'nullable|image|max:5120';
         }
         $rules['text_overlay'] = 'nullable|string|max:200';
-        $rules['text_color'] = 'nullable|string|max:20';
-        $rules['bg_color'] = 'nullable|string|max:20';
+        $rules['text_color'] = 'nullable|string|max:20|regex:/^#[0-9A-Fa-f]{6,8}$/';
+        $rules['bg_color'] = 'nullable|string|max:20|regex:/^#[0-9A-Fa-f]{6,8}$/';
         $rules['duration'] = 'nullable|integer|min:3|max:60';
         $rules['stickers'] = 'nullable|json';
         $rules['drawing_data'] = 'nullable|json';
@@ -108,7 +132,8 @@ class StoryController extends Controller
         ];
 
         if ($request->hasFile('video')) {
-            $filename = uniqid('vid_') . '.mp4';
+            $ext = $request->file('video')->getClientOriginalExtension() ?: 'mp4';
+            $filename = uniqid('vid_') . '.' . $ext;
             $request->file('video')->move(public_path('uploads'), $filename);
             $data['video'] = "/uploads/$filename";
         } elseif ($request->hasFile('image')) {
@@ -227,6 +252,9 @@ class StoryController extends Controller
     {
         $story = Story::find($id);
         if (!$story) return response()->json(['message' => 'Not found'], 404);
+        if ($story->created_at->lt(now()->subHours(12))) {
+            return response()->json(['message' => 'Story expired'], 410);
+        }
 
         $reactions = StoryReaction::with('user:id,username,avatar')
             ->where('story_id', $id)
@@ -282,11 +310,13 @@ class StoryController extends Controller
         if (!$story) return response()->json(['message' => 'Not found'], 404);
 
         $senderId = $request->user()->id;
+        $validUserIds = User::whereIn('id', $request->input('user_ids'))
+            ->where('id', '!=', $senderId)
+            ->pluck('id')
+            ->toArray();
+
         $forwarded = 0;
-
-        foreach ($request->input('user_ids') as $userId) {
-            if ($userId == $senderId) continue;
-
+        foreach ($validUserIds as $userId) {
             Notification::create([
                 'type' => 'story_forward',
                 'message' => $request->user()->username . ' shared a story with you',
@@ -336,7 +366,7 @@ class StoryController extends Controller
 
         $data = [
             'user_id' => $request->user()->id,
-            'title' => $request->input('title'),
+            'title' => Sanitize::text($request->input('title')),
         ];
 
         if ($request->hasFile('cover_image')) {
@@ -394,13 +424,14 @@ class StoryController extends Controller
         if (!$story) return response()->json(['message' => 'Not found'], 404);
         if ($story->user_id !== $request->user()->id) return response()->json(['message' => 'Unauthorized'], 403);
 
+        $storyOwnerId = $story->user_id;
         $cdnUrls = [];
         if ($story->image) $cdnUrls[] = config('app.url') . $story->image;
         if ($story->video) $cdnUrls[] = config('app.url') . $story->video;
 
         $story->delete();
 
-        $this->cache->onStoryDeleted($story->user_id);
+        $this->cache->onStoryDeleted($storyOwnerId);
 
         if (!empty($cdnUrls)) {
             $cdn = new \App\Services\CdnService();
@@ -421,7 +452,7 @@ class StoryController extends Controller
         ]);
 
         if ($request->has('title')) {
-            $highlight->update(['title' => $request->input('title')]);
+            $highlight->update(['title' => Sanitize::text($request->input('title'))]);
         }
 
         $highlight->load('stories');

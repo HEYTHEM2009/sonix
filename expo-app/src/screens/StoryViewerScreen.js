@@ -10,6 +10,8 @@ import { useLanguage } from "../context/LanguageContext";
 const { width, height } = Dimensions.get("window");
 
 function StoryMedia({ story, onEnd }) {
+  const [videoError, setVideoError] = useState(null);
+
   if (story.type === "video") {
     const videoUrl = `${IMAGE_BASE}${story.video}`;
     const html = `<!DOCTYPE html>
@@ -35,19 +37,30 @@ function StoryMedia({ story, onEnd }) {
 </body>
 </html>`;
     return (
-      <WebView
-        source={{ html }}
-        style={{ width, height: "100%", backgroundColor: "#000" }}
-        allowsInlineMediaPlayback
-        mediaPlaybackRequiresUserAction={false}
-        javaScriptEnabled
-        scrollEnabled={false}
-        allowsFullscreenVideo={false}
-        mixedContentMode="always"
-        onMessage={(e) => {
-          if (e.nativeEvent.data === "ended") onEnd?.();
-        }}
-      />
+      <View style={{ width, height: "100%", backgroundColor: "#000" }}>
+        <WebView
+          source={{ html }}
+          style={{ width, height: "100%", backgroundColor: "#000" }}
+          allowsInlineMediaPlayback
+          mediaPlaybackRequiresUserAction={false}
+          javaScriptEnabled
+          scrollEnabled={false}
+          allowsFullscreenVideo={false}
+          mixedContentMode="always"
+          onMessage={(e) => {
+            if (e.nativeEvent.data === "ended") onEnd?.();
+            else if (e.nativeEvent.data?.startsWith("error:")) {
+              setVideoError(e.nativeEvent.data.replace("error:", ""));
+            }
+          }}
+        />
+        {videoError && (
+          <View style={{ position: "absolute", bottom: 80, left: 20, right: 20, backgroundColor: "rgba(248,113,113,0.9)", borderRadius: 12, padding: 12, alignItems: "center" }}>
+            <Text style={{ color: "#fff", fontSize: 13, fontWeight: "600" }}>⚠️ Video failed to load</Text>
+            <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 11, marginTop: 4 }}>{videoError}</Text>
+          </View>
+        )}
+      </View>
     );
   }
   if (story.type === "text" && !story.image) {
