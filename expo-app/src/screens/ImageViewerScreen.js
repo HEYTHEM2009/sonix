@@ -1,6 +1,8 @@
 import { useState, useRef } from "react";
-import { View, Image, StyleSheet, Dimensions, TouchableOpacity, Text, Animated } from "react-native";
+import { View, Image, StyleSheet, Dimensions, TouchableOpacity, Text, Animated, Alert, ActivityIndicator } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import * as MediaLibrary from "expo-media-library";
+import * as FileSystem from "expo-file-system";
 import client, { IMAGE_BASE } from "../api/client";
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
@@ -10,6 +12,7 @@ export default function ImageViewerScreen({ route, navigation }) {
   const insets = useSafeAreaInsets();
   const scale = useRef(new Animated.Value(1)).current;
   const [currentScale, setCurrentScale] = useState(1);
+  const [downloading, setDownloading] = useState(false);
 
   const fullUrl = imageUrl.startsWith("http") ? imageUrl : `${IMAGE_BASE}${imageUrl}`;
 
@@ -30,6 +33,34 @@ export default function ImageViewerScreen({ route, navigation }) {
     setCurrentScale(1);
   };
 
+  const downloadImage = async () => {
+    try {
+      const { status } = await MediaLibrary.requestPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert("Permission needed", "Allow access to gallery to save images");
+        return;
+      }
+
+      setDownloading(true);
+
+      const filename = imageUrl.split("/").pop() || `photo_${Date.now()}.jpg`;
+      const fileUri = FileSystem.cacheDirectory + filename;
+
+      const downloadResult = await FileSystem.downloadAsync(fullUrl, fileUri);
+
+      if (downloadResult.status === 200) {
+        await MediaLibrary.saveToLibraryAsync(downloadResult.uri);
+        Alert.alert("Saved", "Image saved to gallery");
+      } else {
+        Alert.alert("Error", "Failed to download image");
+      }
+    } catch (e) {
+      Alert.alert("Error", "Failed to save image: " + (e.message || "unknown"));
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   return (
     <View style={s.wrap}>
       <View style={[s.topBar, { paddingTop: insets.top + 6 }]}>
@@ -37,7 +68,14 @@ export default function ImageViewerScreen({ route, navigation }) {
           <Text style={s.closeText}>✕</Text>
         </TouchableOpacity>
         {username && <Text style={s.username}>{username}</Text>}
-        <View style={s.zoomBtns}>
+        <View style={s.topActions}>
+          <TouchableOpacity onPress={downloadImage} style={s.zoomBtn} disabled={downloading}>
+            {downloading ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={s.zoomBtnText}>⬇</Text>
+            )}
+          </TouchableOpacity>
           <TouchableOpacity onPress={zoomIn} style={s.zoomBtn}><Text style={s.zoomBtnText}>+</Text></TouchableOpacity>
           <TouchableOpacity onPress={zoomOut} style={s.zoomBtn}><Text style={s.zoomBtnText}>−</Text></TouchableOpacity>
           {currentScale !== 1 && <TouchableOpacity onPress={resetZoom} style={s.zoomBtn}><Text style={s.zoomBtnText}>⟲</Text></TouchableOpacity>}
@@ -57,7 +95,7 @@ const s = StyleSheet.create({
   closeBtn: { width: 36, height: 36, alignItems: "center", justifyContent: "center" },
   closeText: { fontSize: 22, color: "#fff", fontWeight: "600" },
   username: { fontSize: 15, fontWeight: "600", color: "#fff" },
-  zoomBtns: { flexDirection: "row", gap: 6 },
+  topActions: { flexDirection: "row", gap: 6 },
   zoomBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center" },
   zoomBtnText: { fontSize: 18, color: "#fff", fontWeight: "600" },
   imgWrap: { width: SCREEN_W, height: SCREEN_H },
