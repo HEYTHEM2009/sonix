@@ -45,7 +45,8 @@
         {
           "photosPermission": "Allow Sonix to access your photos for stories and posts."
         }
-      ]
+      ],
+      "expo-video"
     ],
     "extra": {
       "eas": {

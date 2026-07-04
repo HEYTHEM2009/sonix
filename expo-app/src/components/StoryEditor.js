@@ -2,6 +2,7 @@ import { useState, useRef, useCallback } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, ScrollView, Dimensions, PanResponder, Modal, FlatList, Keyboard } from "react-native";
 import { COLORS, SIZES, FONTS } from "./Theme";
 import { useLanguage } from "../context/LanguageContext";
+import { useVideoPlayer, VideoView } from "expo-video";
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
 const COLORS_PALETTE = ["#ffffff", "#000000", "#E17055", "#00CEC9", "#6C5CE7", "#FDCB6E", "#FF7675", "#74B9FF", "#55EFC4", "#FD79A8"];
@@ -87,6 +88,17 @@ const stickerDragStyles = StyleSheet.create({
   removeBtn: { position: "absolute", top: -8, right: -8, width: 20, height: 20, borderRadius: 10, backgroundColor: "rgba(0,0,0,0.6)", alignItems: "center", justifyContent: "center" },
   removeText: { color: "#fff", fontSize: 10, fontWeight: "bold" },
 });
+
+function VideoPreview({ uri }) {
+  const player = useVideoPlayer(uri, (p) => {
+    p.loop = true;
+    p.muted = true;
+    p.play();
+  });
+  return (
+    <VideoView style={[s.previewImage, { backgroundColor: "#000" }]} player={player} contentFit="contain" />
+  );
+}
 
 function StickerPicker({ visible, onSelect, onClose }) {
   const { t } = useLanguage();
@@ -327,10 +339,7 @@ export default function StoryEditor({ imageUri, videoUri, mediaType, onPost }) {
     <ScrollView style={s.container} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
       <View style={[s.preview, !imageUri && !videoUri && { backgroundColor: bgColor || "#1a1a2e" }]}>
         {videoUri ? (
-          <View style={[s.previewImage, { backgroundColor: "#000", alignItems: "center", justifyContent: "center" }]}>
-            <Text style={{ fontSize: 48, marginBottom: 8 }}>🎬</Text>
-            <Text style={{ color: "#fff", fontSize: 14, opacity: 0.7 }}>{t("videoSelected")}</Text>
-          </View>
+          <VideoPreview uri={videoUri} />
         ) : imageUri ? (
           <Image source={{ uri: imageUri }} style={s.previewImage} />
         ) : null}
