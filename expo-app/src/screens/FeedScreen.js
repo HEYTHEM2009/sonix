@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo, memo } from "react";
 import { View, Text, FlatList, TouchableOpacity, Image, RefreshControl, StyleSheet, Dimensions, Pressable, Alert, Animated } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useFocusEffect } from "@react-navigation/native";
 
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
@@ -239,22 +240,19 @@ export default function FeedScreen({ navigation, route }) {
     try { const res = await client.get("/stories/highlights/all"); setHighlights(res.data || []); } catch (e) { /* silent */ }
   }, []);
 
-  useEffect(() => {
-    const unsubscribe = navigation.addListener("focus", () => {
-      load(1);
-      loadStories(true);
-      loadHighlights();
-    });
-    return unsubscribe;
-  }, [navigation, load, loadStories, loadHighlights]);
+  const refreshAll = useCallback(() => {
+    load(1);
+    loadStories(true);
+    loadHighlights();
+  }, [load, loadStories, loadHighlights]);
 
-  useEffect(() => {
-    if (route.params?.refresh) {
-      load(1);
-      loadStories(true);
-      loadHighlights();
-    }
-  }, [route.params?.refresh]);
+  useFocusEffect(
+    useCallback(() => {
+      loadingRef.current = false;
+      refreshAll();
+      return () => { loadingRef.current = false; };
+    }, [refreshAll])
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -323,6 +321,22 @@ export default function FeedScreen({ navigation, route }) {
         </View>
       </View>
 
+      {!loading && stories.length === 0 && (
+        <TouchableOpacity
+          style={{ padding: 12, backgroundColor: 'rgba(248,113,113,0.1)', marginBottom: 4, borderRadius: 8, marginHorizontal: 12 }}
+          onPress={async () => {
+            try {
+              const res = await client.get("/stories/debug");
+              Alert.alert("Debug", JSON.stringify(res.data, null, 2).slice(0, 2000));
+            } catch (e) {
+              Alert.alert("Error", e?.message || "unknown");
+            }
+          }}
+        >
+          <Text style={{ color: '#f87171', fontSize: 12, textAlign: 'center' }}>⚠ Stories: 0 — اضغط للتشخيص</Text>
+        </TouchableOpacity>
+      )}
+
       <View style={s.storiesWrap}>
         <FlatList
           horizontal
@@ -390,7 +404,7 @@ export default function FeedScreen({ navigation, route }) {
         </View>
       )}
     </View>
-  ), [insets, storiesData, user, highlights]);
+  ), [insets, storiesData, user, highlights, loading, stories]);
 
   if (loading && posts.length === 0) {
     return (

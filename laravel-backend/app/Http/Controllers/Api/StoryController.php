@@ -31,14 +31,6 @@ class StoryController extends Controller
     {
         $userId = $request->user()->id;
 
-        $skipCache = $request->has('_t');
-        if (!$skipCache) {
-            $cached = $this->cache->getFeed($userId);
-            if ($cached !== null) {
-                return response()->json($cached);
-            }
-        }
-
         $followingIds = Follow::where('follower_id', $userId)
             ->where('status', 'accepted')
             ->pluck('following_id')
@@ -101,9 +93,38 @@ class StoryController extends Controller
 
         usort($result, fn($a, $b) => $b['stories'][0]['created_at'] <=> $a['stories'][0]['created_at']);
 
-        $this->cache->setFeed($userId, $result);
-
         return response()->json($result);
+    }
+
+    public function debug(Request $request)
+    {
+        $userId = $request->user()->id;
+
+        $followingIds = Follow::where('follower_id', $userId)
+            ->where('status', 'accepted')
+            ->pluck('following_id')
+            ->toArray();
+
+        $followingIds[] = $userId;
+
+        $stories = Story::with(['user:id,username,avatar'])
+            ->whereIn('user_id', $followingIds)
+            ->where('created_at', '>=', now()->subHours(12))
+            ->latest()
+            ->get();
+
+        $myStories = Story::where('user_id', $userId)->latest()->limit(5)->get();
+
+        return response()->json([
+            'user_id' => $userId,
+            'following_ids' => $followingIds,
+            'total_following' => count($followingIds) - 1,
+            'stories_found' => $stories->count(),
+            'stories' => $stories,
+            'my_stories' => $myStories,
+            'now' => now()->toIso8601String(),
+            'twelve_hours_ago' => now()->subHours(12)->toIso8601String(),
+        ]);
     }
 
     public function store(Request $request)
@@ -148,7 +169,26 @@ class StoryController extends Controller
         $story = Story::create($data);
         $story->load('user:id,username,avatar');
 
-        $this->cache->onStoryCreated($request->user()->id);
+        // Queue fan-out instead of blocking the request
+        $this->cache->queueFanOut($story->id, $request->user()->id);
+
+        // Also invalidate immediately for the creator
+        $this->cache->invalidateUser($request->user()->id);
+
+        // Dispatch video transcoding if needed
+        if ($story->type === 'video' && $story->video && config('media.transcoding_enabled')) {
+            $inputPath = public_path(ltrim($story->video, '/'));
+            \App\Jobs\TranscodeVideo::dispatch($inputPath, $story->id, 'story');
+        }
+
+        // Apply watermark if enabled
+        if (config('media.watermark_enabled') && $story->image) {
+            $watermarkService = new \App\Services\WatermarkService();
+            $watermarkedPath = $watermarkService->addWatermark(public_path(ltrim($story->image, '/')));
+            if ($watermarkedPath) {
+                $story->update(['image' => $watermarkedPath]);
+            }
+        }
 
         try {
             broadcast(new StoryCreated($story));

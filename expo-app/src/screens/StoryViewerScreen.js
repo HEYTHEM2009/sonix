@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { View, Text, Image, TouchableOpacity, StyleSheet, Dimensions, StatusBar, FlatList, Modal, TextInput, ActivityIndicator, Animated, Alert } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useIsFocused } from "@react-navigation/native";
@@ -7,11 +7,13 @@ import client, { IMAGE_BASE } from "../api/client";
 import { COLORS, SIZES, FONTS } from "../components/Theme";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
+import { prefetchNextStories, clearPrefetchCache } from "../api/media";
 
 const { width, height } = Dimensions.get("window");
 
 function StoryMedia({ story, onEnd, isScreenFocused }) {
   const [videoError, setVideoError] = useState(null);
+  const [muted, setMuted] = useState(true);
 
   if (story.type === "video") {
     const videoUrl = `${IMAGE_BASE}${story.video}`;
@@ -23,14 +25,33 @@ function StoryMedia({ story, onEnd, isScreenFocused }) {
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { background: #000; display: flex; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
     video { width: 100%; height: 100%; object-fit: contain; background: #000; }
+    #soundBtn {
+      position: fixed; top: 60px; right: 16px; width: 44px; height: 44px;
+      border-radius: 22px; background: rgba(0,0,0,0.5);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; z-index: 100; cursor: pointer;
+      -webkit-user-select: none; user-select: none;
+    }
   </style>
 </head>
 <body>
-  <video id="v" playsinline webkit-playsinline autoplay controls
+  <video id="v" playsinline webkit-playsinline autoplay muted
     src="${videoUrl}" type="video/mp4"
     style="width:100%;height:100%;object-fit:contain"></video>
+  <div id="soundBtn">🔇</div>
   <script>
     var v = document.getElementById('v');
+    var muted = true;
+    var sb = document.getElementById('soundBtn');
+    function toggleSound() {
+      muted = !muted;
+      v.muted = muted;
+      sb.textContent = muted ? '🔇' : '🔊';
+      if (!muted) { try { v.play(); } catch(e) {} }
+      window.ReactNativeWebView.postMessage('toggleSound:' + (muted ? 'off' : 'on'));
+    }
+    sb.onclick = toggleSound;
+    v.onclick = toggleSound;
     v.addEventListener('ended', function() { window.ReactNativeWebView.postMessage('ended'); });
     v.addEventListener('error', function(e) { window.ReactNativeWebView.postMessage('error:' + (e.target.error?.message || 'unknown')); });
     v.load();
@@ -53,12 +74,16 @@ function StoryMedia({ story, onEnd, isScreenFocused }) {
             if (e.nativeEvent.data === "ended") onEnd?.();
             else if (e.nativeEvent.data?.startsWith("error:")) {
               setVideoError(e.nativeEvent.data.replace("error:", ""));
+            } else if (e.nativeEvent.data === "toggleSound:on") {
+              setMuted(false);
+            } else if (e.nativeEvent.data === "toggleSound:off") {
+              setMuted(true);
             }
           }}
         />
         {videoError && (
           <View style={{ position: "absolute", bottom: 80, left: 20, right: 20, backgroundColor: "rgba(248,113,113,0.9)", borderRadius: 12, padding: 12, alignItems: "center" }}>
-            <Text style={{ color: "#fff", fontSize: 13, fontWeight: "600" }}>⚠️ Video failed to load</Text>
+            <Text style={{ color: "#fff", fontSize: 13, fontWeight: "600" }}>Video failed to load</Text>
             <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 11, marginTop: 4 }}>{videoError}</Text>
           </View>
         )}
@@ -398,6 +423,18 @@ export default function StoryViewerScreen({ route, navigation }) {
       pausedRef.current = false;
     }
   }, [isScreenFocused]);
+
+  useEffect(() => {
+    return () => {
+      clearPrefetchCache();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (stories && index < stories.length - 1) {
+      prefetchNextStories(stories, index);
+    }
+  }, [index, stories]);
 
   const panResponder = useRef(
     require("react-native").PanResponder.create({

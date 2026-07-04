@@ -76,6 +76,7 @@ Route::post('/messages/pin/{userId}', [MessageController::class, 'togglePin'])->
 Route::delete('/messages/conversation/{userId}', [MessageController::class, 'deleteConversation'])->middleware('auth:sanctum');
 
 Route::get('/stories', [StoryController::class, 'index'])->middleware('auth:sanctum');
+Route::get('/stories/debug', [StoryController::class, 'debug'])->middleware('auth:sanctum');
 Route::post('/stories', [StoryController::class, 'store'])->middleware(['auth:sanctum', 'throttle:10,1']);
 Route::get('/stories/{id}/viewers', [StoryController::class, 'viewers'])->middleware('auth:sanctum');
 Route::post('/stories/{id}/view', [StoryController::class, 'view'])->middleware('auth:sanctum');
@@ -103,3 +104,8 @@ Route::get('/block/{userId}/status', [BlockController::class, 'status'])->middle
 Route::get('/block/list', [BlockController::class, 'blockedList'])->middleware('auth:sanctum');
 
 Route::post('/reports', [ReportController::class, 'store'])->middleware(['auth:sanctum', 'throttle:10,1']);
+
+// Media routes with signed URLs
+Route::get('/media/{path}', [App\Http\Controllers\Api\MediaController::class, 'serve'])->where('path', '.*');
+Route::post('/media/sign', [App\Http\Controllers\Api\MediaController::class, 'sign'])->middleware('auth:sanctum');
+Route::post('/media/sign-batch', [App\Http\Controllers\Api\MediaController::class, 'signBatch'])->middleware('auth:sanctum');

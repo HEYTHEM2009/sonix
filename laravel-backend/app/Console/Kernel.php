@@ -10,6 +10,8 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule): void
     {
         $schedule->command('app:delete-expired-stories')->hourly();
+        $schedule->command('app:process-fan-out')->everyMinute();
+        $schedule->command('app:cleanup-old-media')->daily();
     }
 
     protected function commands(): void
