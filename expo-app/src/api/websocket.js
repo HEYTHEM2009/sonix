@@ -1,5 +1,3 @@
-import Echo from "laravel-echo";
-import Pusher from "pusher-js/react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { IMAGE_BASE } from "./client";
 
@@ -11,6 +9,9 @@ export const getEcho = async () => {
   try {
     const token = await AsyncStorage.getItem("token");
     if (!token) return null;
+
+    const Echo = (await import("laravel-echo")).default;
+    const Pusher = (await import("pusher-js/react-native")).default;
 
     echoInstance = new Echo({
       broadcaster: "pusher",
@@ -33,8 +34,15 @@ export const getEcho = async () => {
 
     return echoInstance;
   } catch (e) {
-    console.warn("Echo init failed:", e?.message);
+    echoInstance = null;
     return null;
+  }
+};
+
+export const disconnectEcho = () => {
+  if (echoInstance) {
+    echoInstance.disconnect();
+    echoInstance = null;
   }
 };
 

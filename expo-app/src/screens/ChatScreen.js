@@ -255,7 +255,6 @@ export default function ChatScreen({ route, navigation }) {
 
         client.post("/messages/online").catch(() => {});
       } catch (e) {
-        console.warn("WebSocket setup failed:", e?.message);
       }
     };
 
