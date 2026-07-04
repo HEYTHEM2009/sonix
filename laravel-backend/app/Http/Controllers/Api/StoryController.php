@@ -121,10 +121,17 @@ class StoryController extends Controller
             return response()->json(['message' => 'Story expired'], 410);
         }
 
-        $view = StoryView::firstOrCreate([
-            'story_id' => $id,
-            'user_id' => $request->user()->id,
-        ]);
+        try {
+            $view = StoryView::firstOrCreate([
+                'story_id' => $id,
+                'user_id' => $request->user()->id,
+            ]);
+        } catch (\Illuminate\Database\QueryException $e) {
+            if ($e->errorInfo[1] == 23505) {
+                return response()->json(['message' => 'Already viewed']);
+            }
+            throw $e;
+        }
 
         if ($view->wasRecentlyCreated && $story->user_id !== $request->user()->id) {
             Notification::create([
@@ -165,10 +172,17 @@ class StoryController extends Controller
             return response()->json(['message' => 'Story expired'], 410);
         }
 
-        $reaction = StoryReaction::updateOrCreate(
-            ['story_id' => $id, 'user_id' => $request->user()->id],
-            ['emoji' => $request->input('emoji')]
-        );
+        try {
+            $reaction = StoryReaction::updateOrCreate(
+                ['story_id' => $id, 'user_id' => $request->user()->id],
+                ['emoji' => $request->input('emoji')]
+            );
+        } catch (\Illuminate\Database\QueryException $e) {
+            if ($e->errorInfo[1] == 23505) {
+                return response()->json(['message' => 'Reaction already exists', 'emoji' => $request->input('emoji')]);
+            }
+            throw $e;
+        }
 
         if ($story->user_id !== $request->user()->id) {
             Notification::create([
@@ -361,7 +375,18 @@ class StoryController extends Controller
         $story = Story::find($id);
         if (!$story) return response()->json(['message' => 'Not found'], 404);
         if ($story->user_id !== $request->user()->id) return response()->json(['message' => 'Unauthorized'], 403);
+
+        $cdnUrls = [];
+        if ($story->image) $cdnUrls[] = config('app.url') . $story->image;
+        if ($story->video) $cdnUrls[] = config('app.url') . $story->video;
+
         $story->delete();
+
+        if (!empty($cdnUrls)) {
+            $cdn = new \App\Services\CdnService();
+            $cdn->purgeFiles($cdnUrls);
+        }
+
         return response()->json(['message' => 'Story deleted']);
     }
 
