@@ -48,7 +48,7 @@ function Mandala() {
       <Animated.View style={{ position: "absolute", width: s, height: s, borderRadius: s / 2, borderWidth: 0.5, borderColor: COLORS.accent, opacity: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.04, 0.08] }), transform: [{ rotate: r1.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "360deg"] }) }] }} />
       <Animated.View style={{ position: "absolute", width: s * 0.8, height: s * 0.8, borderRadius: s * 0.05, borderWidth: 0.5, borderColor: COLORS.accentLight, opacity: 0.05, transform: [{ rotate: r2.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "-360deg"] }) }] }} />
       <Animated.View style={{ position: "absolute", width: s * 0.55, height: s * 0.55, borderRadius: s * 0.025, borderWidth: 0.5, borderColor: COLORS.accentDark, opacity: 0.06, transform: [{ rotate: r3.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "720deg"] }) }] }} />
-      <Animated.View style={{ position: "absolute", width: s * 0.35, height: s * 0.35, borderRadius: s * 0.35, borderWidth: 1, borderColor: "COLORS.accentLight", opacity: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.03, 0.07] }), transform: [{ rotate: r1.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "-180deg"] }) }] }} />
+      <Animated.View style={{ position: "absolute", width: s * 0.35, height: s * 0.35, borderRadius: s * 0.35, borderWidth: 1, borderColor: COLORS.accentLight, opacity: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.03, 0.07] }), transform: [{ rotate: r1.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "-180deg"] }) }] }} />
       {/* Inner star - crossed diamonds */}
       <Animated.View style={{ position: "absolute", width: s * 0.25, height: s * 0.25, backgroundColor: COLORS.accent, opacity: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.015, 0.04] }), transform: [{ rotate: `${45}deg` }, { scale: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.8, 1.1] }) }] }} />
       <Animated.View style={{ position: "absolute", width: s * 0.18, height: s * 0.18, backgroundColor: COLORS.accentLight, opacity: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.02, 0.05] }), transform: [{ rotate: `${45}deg` }] }} />
@@ -219,7 +219,7 @@ export default function Screen3D({ children, style, noParticles = false, noFadeI
       {/* ── Light Spears from edges ── */}
       <LightSpear width={W * 0.5} color={COLORS.accent} top={H * 0.1} left={-W * 0.05} rotate="-15deg" delay={0} />
       <LightSpear width={W * 0.4} color={COLORS.accentLight} top={H * 0.2} left={W * 0.8} rotate="20deg" delay={2000} />
-      <LightSpear width={W * 0.35} color="COLORS.accent" top={H * 0.5} left={-W * 0.02} rotate="-30deg" delay={4000} />
+      <LightSpear width={W * 0.35} color={COLORS.accent} top={H * 0.5} left={-W * 0.02} rotate="-30deg" delay={4000} />
       <LightSpear width={W * 0.3} color={COLORS.accentDark} top={H * 0.7} left={W * 0.75} rotate="25deg" delay={1000} />
 
       {/* ── Golden Crown at top ── */}
@@ -234,7 +234,7 @@ export default function Screen3D({ children, style, noParticles = false, noFadeI
       {/* ── Sunbursts ── */}
       <Sunburst cx={W * 0.08} cy={H * 0.2} count={10} baseSize={50} color={COLORS.accentDark} speed={0.6} delay={0} />
       <Sunburst cx={W * 0.92} cy={H * 0.35} count={8} baseSize={40} color={COLORS.accentLight} speed={0.8} delay={1500} />
-      <Sunburst cx={W * 0.5} cy={H * 0.75} count={6} baseSize={35} color="COLORS.accentLight" speed={0.5} delay={3000} />
+      <Sunburst cx={W * 0.5} cy={H * 0.75} count={6} baseSize={35} color={COLORS.accentLight} speed={0.5} delay={3000} />
 
       {/* ── Geometric Frame ── */}
       <GeometricFrame />
