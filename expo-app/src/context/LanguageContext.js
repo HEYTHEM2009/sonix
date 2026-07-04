@@ -12,7 +12,7 @@ export function LanguageProvider({ children }) {
     AsyncStorage.getItem("language").then((saved) => {
       if (saved && (saved === "ar" || saved === "en")) setLang(saved);
       setLoading(false);
-    });
+    }).catch(() => setLoading(false));
   }, []);
 
   const changeLanguage = useCallback(async (newLang) => {
