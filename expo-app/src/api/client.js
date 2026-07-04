@@ -11,8 +11,11 @@ export function setAuthExpiredHandler(handler) {
 
 const client = axios.create({ baseURL: API, timeout: 60000 });
 
+let currentToken = null;
+
 client.interceptors.request.use(async (config) => {
   const token = await AsyncStorage.getItem("token");
+  currentToken = token;
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -26,8 +29,10 @@ client.interceptors.response.use(
   async (err) => {
     const status = err.response?.status;
     const url = err.config?.url;
+    const reqToken = err.config?.headers?.Authorization?.replace("Bearer ", "");
 
     if (status === 401 && !url.includes("/auth/")) {
+      if (reqToken && reqToken !== currentToken) return Promise.reject(err);
       const now = Date.now();
       if (now - last401 > 3000) {
         last401 = now;
