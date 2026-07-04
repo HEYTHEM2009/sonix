@@ -12,13 +12,26 @@ use App\Models\Follow;
 use App\Models\Notification;
 use App\Events\StoryCreated;
 use App\Services\ImageService;
+use App\Services\StoryCacheService;
 use Illuminate\Http\Request;
 
 class StoryController extends Controller
 {
+    protected StoryCacheService $cache;
+
+    public function __construct(StoryCacheService $cache)
+    {
+        $this->cache = $cache;
+    }
+
     public function index(Request $request)
     {
         $userId = $request->user()->id;
+
+        $cached = $this->cache->getFeed($userId);
+        if ($cached !== null) {
+            return response()->json($cached);
+        }
 
         $followingIds = Follow::where('follower_id', $userId)
             ->where('status', 'accepted')
@@ -59,6 +72,8 @@ class StoryController extends Controller
         }
 
         usort($result, fn($a, $b) => $b['stories'][0]['created_at'] <=> $a['stories'][0]['created_at']);
+
+        $this->cache->setFeed($userId, $result);
 
         return response()->json($result);
     }
@@ -103,6 +118,8 @@ class StoryController extends Controller
 
         $story = Story::create($data);
         $story->load('user:id,username,avatar');
+
+        $this->cache->onStoryCreated($request->user()->id);
 
         try {
             broadcast(new StoryCreated($story));
@@ -381,6 +398,8 @@ class StoryController extends Controller
         if ($story->video) $cdnUrls[] = config('app.url') . $story->video;
 
         $story->delete();
+
+        $this->cache->onStoryDeleted($story->user_id);
 
         if (!empty($cdnUrls)) {
             $cdn = new \App\Services\CdnService();

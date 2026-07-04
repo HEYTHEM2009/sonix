@@ -8,6 +8,7 @@ use App\Models\StoryView;
 use App\Models\StoryReaction;
 use App\Models\StoryHighlightItem;
 use App\Services\CdnService;
+use App\Services\StoryCacheService;
 use Carbon\Carbon;
 
 class DeleteExpiredStories extends Command
@@ -57,6 +58,11 @@ class DeleteExpiredStories extends Command
                 $cdn->purgeFiles($cdnUrls);
                 $cdnUrls = [];
             }
+        }
+
+        if ($deleted > 0) {
+            $cache = new StoryCacheService();
+            $cache->onStoryExpired();
         }
 
         $this->info("Deleted $deleted expired stories.");
