@@ -92,7 +92,6 @@ const stickerDragStyles = StyleSheet.create({
 function VideoPreview({ uri }) {
   const player = useVideoPlayer(uri, (p) => {
     p.loop = true;
-    p.muted = true;
     p.play();
   });
   return (

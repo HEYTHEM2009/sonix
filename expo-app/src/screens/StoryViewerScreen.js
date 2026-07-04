@@ -23,7 +23,7 @@ function StoryMedia({ story, onEnd }) {
   </style>
 </head>
 <body>
-  <video id="v" playsinline webkit-playsinline autoplay muted controls
+  <video id="v" playsinline webkit-playsinline autoplay controls
     src="${videoUrl}" type="video/mp4"
     style="width:100%;height:100%;object-fit:contain"></video>
   <script>
