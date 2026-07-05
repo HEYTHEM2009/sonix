@@ -70,9 +70,8 @@ export default function CommentsScreen({ route, navigation }) {
           renderItem={({ item: c }) => (
             <TouchableOpacity
               style={s.row}
-              onPress={() => c.user?.id === user?.id && deleteComment(c.id)}
               onLongPress={() => c.user?.id === user?.id && deleteComment(c.id)}
-              activeOpacity={c.user?.id === user?.id ? 0.5 : 1}
+              activeOpacity={0.7}
             >
               <View style={s.avatar}><Text style={s.avatarText}>{c.user?.username?.[0]?.toUpperCase() || "?"}</Text></View>
               <View style={s.content}>

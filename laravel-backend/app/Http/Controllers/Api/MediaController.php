@@ -10,7 +10,17 @@ class MediaController extends Controller
 {
     public function serve(Request $request, $path)
     {
+        $path = str_replace(['../', '..\\', '%2e%2e', '%2f', '%5c'], '', urldecode($path));
+        $path = preg_replace('#/+#', '/', trim($path, '/'));
+
         $fullPath = public_path('uploads/' . $path);
+
+        $realUploads = realpath(public_path('uploads'));
+        $realFile = realpath($fullPath);
+
+        if (!$realFile || !str_starts_with($realFile, $realUploads)) {
+            abort(404);
+        }
 
         if (!file_exists($fullPath) || !is_file($fullPath)) {
             abort(404);
@@ -37,11 +47,13 @@ class MediaController extends Controller
         // Support range requests for video
         if (in_array($ext, ['mp4', 'mov', 'webm'])) {
             $range = $request->header('Range');
-            if ($range) {
+            if ($range && preg_match('/bytes=(\d+)-(\d*)/', $range, $matches)) {
                 $fileSize = filesize($fullPath);
-                preg_match('/bytes=(\d+)-(\d*)/', $range, $matches);
                 $start = (int) $matches[1];
-                $end = isset($matches[2]) && $matches[2] !== '' ? (int) $matches[2] : $fileSize - 1;
+                if ($start >= $fileSize) {
+                    return response('', 416, ['Content-Range' => "bytes */{$fileSize}"]);
+                }
+                $end = isset($matches[2]) && $matches[2] !== '' ? min((int) $matches[2], $fileSize - 1) : $fileSize - 1;
                 $length = $end - $start + 1;
 
                 $handle = fopen($fullPath, 'r');

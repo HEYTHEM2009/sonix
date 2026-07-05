@@ -100,6 +100,10 @@ const translations = {
     publishing: "Publishing...",
     published: "Published!",
     failedToPostStory: "Failed to post story: {message}",
+    failedToCreateStory: "Failed to create story",
+    failedToUploadVideoStory: "Failed to upload video story",
+    cameraPermissionRequired: "Camera permission is required",
+    grantPermission: "Grant Permission",
     videoSelected: "Video selected",
     addTextOverlay: "Add text overlay...",
     textColor: "Text Color",
@@ -291,7 +295,7 @@ const translations = {
     noConversations: "No conversations yet",
 
     // Likes
-    likes: "Likes",
+    likesTitle: "Likes",
     noLikesYet: "No likes yet",
 
     // Language
@@ -403,6 +407,10 @@ const translations = {
     publishing: "جاري النشر...",
     published: "تم النشر!",
     failedToPostStory: "فشل نشر القصة: {message}",
+    failedToCreateStory: "فشل إنشاء القصة",
+    failedToUploadVideoStory: "فشل رفع فيديو القصة",
+    cameraPermissionRequired: "يجب منح صلاحية الكاميرا",
+    grantPermission: "منح الصلاحية",
     videoSelected: "تم اختيار الفيديو",
     addTextOverlay: "أضف نصاً...",
     textColor: "لون النص",
@@ -594,7 +602,7 @@ const translations = {
     noConversations: "لا توجد محادثات بعد",
 
     // Likes
-    likes: "الإعجابات",
+    likesTitle: "الإعجابات",
     noLikesYet: "لا توجد إعجابات بعد",
 
     // Language

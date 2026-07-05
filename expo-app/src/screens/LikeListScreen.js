@@ -27,7 +27,7 @@ export default function LikeListScreen({ route, navigation }) {
     <Screen3D>
       <View style={s.topBar}>
         <TouchableOpacity onPress={() => navigation.goBack()}><Text style={s.backBtn}>←</Text></TouchableOpacity>
-        <Text style={s.title}>{t("likes")}</Text>
+        <Text style={s.title}>{t("likesTitle")}</Text>
         <View style={{ width: 36 }} />
       </View>
       {loading ? (

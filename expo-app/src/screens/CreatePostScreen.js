@@ -34,7 +34,7 @@ export default function CreatePostScreen({ navigation }) {
 
   const takePhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== "granted") { Alert.alert("Permission needed"); return; }
+    if (status !== "granted") { Alert.alert(t("permissionNeeded")); return; }
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ["images"],
       quality: 0.7,

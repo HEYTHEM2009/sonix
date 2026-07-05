@@ -20,6 +20,10 @@ class User extends Authenticatable
         'bio',
         'avatar',
         'is_private',
+        'typing_at',
+        'typing_to_user_id',
+        'push_token',
+        'online_at',
     ];
 
     protected function casts(): array

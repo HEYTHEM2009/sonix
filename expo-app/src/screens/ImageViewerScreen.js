@@ -82,7 +82,7 @@ export default function ImageViewerScreen({ route, navigation }) {
       <Animated.View style={[s.imgWrap, { transform: [{ scale }] }]}>
         <Image source={{ uri: fullUrl }} style={s.img} resizeMode="contain" />
       </Animated.View>
-      <TouchableOpacity style={{ flex: 1, position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} onPress={resetZoom} />
+      <TouchableOpacity style={{ flex: 1, position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 1 }} onPress={resetZoom} />
     </View>
   );
 }

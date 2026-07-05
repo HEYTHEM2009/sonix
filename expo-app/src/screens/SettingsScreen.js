@@ -79,6 +79,12 @@ export default function SettingsScreen({ navigation }) {
     Alert.alert(t("success"), t("languageChanged"));
   };
 
+  useEffect(() => {
+    client.get("/users/me").then((res) => {
+      if (res.data?.is_private !== undefined) setIsPrivate(res.data.is_private);
+    }).catch(() => {});
+  }, []);
+
   return (
     <Screen3D style={[s.wrap, { paddingTop: insets.top }]}>
       <View style={s.topBar}>

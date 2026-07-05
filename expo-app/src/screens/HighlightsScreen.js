@@ -161,7 +161,7 @@ export default function HighlightsScreen({ route, navigation }) {
                 </View>
                 <View style={s.highlightInfo}>
                   <Text style={s.highlightTitle} numberOfLines={1}>{h.title}</Text>
-                  <Text style={s.highlightCount}>{h.stories?.length || 0} stories</Text>
+                  <Text style={s.highlightCount}>{t("storyCount").replace("{count}", h.stories?.length || 0)}</Text>
                 </View>
               </TouchableOpacity>
               {isOwner && (
@@ -260,7 +260,7 @@ export default function HighlightsScreen({ route, navigation }) {
         <View style={s.modalOverlay}>
           <View style={s.modalContent}>
             <View style={s.modalHandle} />
-            <Text style={s.modalTitle}>Add to "{showStoryPicker?.title}"</Text>
+            <Text style={s.modalTitle}>{t("addToHighlight").replace("{title}", showStoryPicker?.title || "")}</Text>
 
             {showStoryPicker?.stories?.length > 0 && (
               <>

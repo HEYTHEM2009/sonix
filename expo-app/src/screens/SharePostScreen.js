@@ -25,7 +25,7 @@ export default function SharePostScreen({ route, navigation }) {
   const shareWith = async (userId, username) => {
     setSending(userId);
     try {
-      const postUrl = `${IMAGE_BASE}/posts/${postId}`;
+      const postUrl = `${IMAGE_BASE.replace("/api", "")}/posts/${postId}`;
       await client.post("/messages", { receiver_id: userId, content: `${t("sharedPostWith")} ${postUrl}` });
       Alert.alert(t("sent"), `${t("postSharedWith")} ${username}`);
       navigation.goBack();

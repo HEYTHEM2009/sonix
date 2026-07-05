@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } fr
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../context/AuthContext";
+import { useLanguage } from "../context/LanguageContext";
 import client from "../api/client";
 import { COLORS, FONTS } from "../components/Theme";
 
@@ -17,6 +18,7 @@ export default function CameraScreen({ navigation }) {
   const cameraRef = useRef(null);
   const recordTimer = useRef(null);
   const { user } = useAuth();
+  const { t } = useLanguage();
   const insets = useSafeAreaInsets();
 
   useEffect(() => { if (!permission?.granted) requestPermission(); }, [permission]);
@@ -41,7 +43,7 @@ export default function CameraScreen({ navigation }) {
       await client.post("/stories", form, { headers: { "Content-Type": "multipart/form-data" } });
       navigation.goBack();
     } catch (e) {
-      Alert.alert("Error", "Failed to create story");
+      Alert.alert(t("error"), t("failedToCreateStory"));
     }
     setCapturing(false);
   };
@@ -57,7 +59,7 @@ export default function CameraScreen({ navigation }) {
         await client.post("/stories", form, { headers: { "Content-Type": "multipart/form-data" } });
         navigation.goBack();
       } catch (e) {
-        Alert.alert("Error", "Failed to upload video story");
+        Alert.alert(t("error"), t("failedToUploadVideoStory"));
       }
     } else {
       setRecording(true);
@@ -69,8 +71,8 @@ export default function CameraScreen({ navigation }) {
   if (!permission.granted) {
     return (
       <View style={[s.center, { paddingTop: insets.top }]}>
-        <Text style={{ color: "#fff", fontSize: 15, marginBottom: 16, textAlign: "center" }}>Camera permission is required</Text>
-        <TouchableOpacity style={s.grantBtn} onPress={requestPermission}><Text style={s.grantText}>Grant Permission</Text></TouchableOpacity>
+        <Text style={{ color: "#fff", fontSize: 15, marginBottom: 16, textAlign: "center" }}>{t("cameraPermissionRequired")}</Text>
+        <TouchableOpacity style={s.grantBtn} onPress={requestPermission}><Text style={s.grantText}>{t("grantPermission")}</Text></TouchableOpacity>
       </View>
     );
   }

@@ -58,7 +58,7 @@ export default function UserProfileScreen({ route, navigation }) {
   };
 
   const toggleBlock = () => {
-    Alert.alert(blocked ? t("unblock") : t("block"), `Are you sure you want to ${blocked ? "unblock" : "block"} ${profile?.username}?`, [
+    Alert.alert(blocked ? t("unblock") : t("block"), (blocked ? t("unblockConfirm") : t("blockConfirm")).replace("{username}", profile?.username || ""), [
       { text: t("cancel"), style: "cancel" },
       { text: blocked ? t("unblock") : t("block"), style: "destructive", onPress: async () => {
         try {

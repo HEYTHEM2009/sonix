@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\Post;
 use App\Models\Follow;
 use App\Models\BlockedUser;
+use Illuminate\Http\Request;
 use App\Models\Message;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redis;
@@ -128,12 +129,13 @@ class UserController extends Controller
         ]);
     }
 
-    public function setOnline($id)
+    public function setOnline($id, Request $request)
     {
+        $userId = $request->user()->id;
         try {
             if (config('database.redis.client')) {
-                Redis::setex("user:online:{$id}", 120, true);
-                Redis::setex("user:last_seen:{$id}", 86400, now()->toISOString());
+                Redis::setex("user:online:{$userId}", 120, true);
+                Redis::setex("user:last_seen:{$userId}", 86400, now()->toISOString());
             }
         } catch (\Throwable $e) {
             // Redis unavailable, skip silently
