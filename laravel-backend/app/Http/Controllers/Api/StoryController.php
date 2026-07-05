@@ -161,7 +161,7 @@ class StoryController extends Controller
     {
         $rules = [];
         if ($request->hasFile('video')) {
-            $rules['video'] = 'required|mimes:mp4,mov,avi,webm|max:51200';
+            $rules['video'] = 'required|mimes:mp4,mov,avi,webm';
         } else {
             $rules['image'] = 'nullable|image|max:5120';
         }
@@ -193,13 +193,20 @@ class StoryController extends Controller
             if (!is_dir($dest)) {
                 mkdir($dest, 0775, true);
             }
+            $origSize = 0;
+            try { $origSize = $videoFile->getSize(); } catch (\Throwable $e) {}
             $moved = $videoFile->move($dest, $filename);
             if (!$moved || !file_exists($dest . '/' . $filename)) {
-                \Log::error('Story video move failed', ['filename' => $filename, 'size' => $videoFile->getSize()]);
+                \Log::error('Story video move failed', ['filename' => $filename, 'orig_size' => $origSize]);
                 return response()->json(['message' => 'Video upload failed'], 500);
             }
+            $savedSize = filesize($dest . '/' . $filename);
+            if ($savedSize > 50 * 1024 * 1024) {
+                unlink($dest . '/' . $filename);
+                return response()->json(['message' => 'Video too large (max 50MB)'], 422);
+            }
             $data['video'] = "/uploads/$filename";
-            \Log::info('Story video saved', ['filename' => $filename, 'size' => $videoFile->getSize()]);
+            \Log::info('Story video saved', ['filename' => $filename, 'orig_size' => $origSize, 'saved_size' => $savedSize]);
         } elseif ($request->hasFile('image')) {
             $filename = uniqid('img_') . '.jpg';
             $request->file('image')->move(public_path('uploads'), $filename);

@@ -37,6 +37,7 @@ RUN echo 'server { \
     root /app/laravel-backend/public; \
     index index.php index.html; \
     client_max_body_size 50M; \
+    client_body_temp_path /tmp/nginx-upload; \
     \
     location / { \
         try_files $uri $uri/ /index.php?$query_string; \
