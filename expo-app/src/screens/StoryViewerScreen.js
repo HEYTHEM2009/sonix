@@ -13,6 +13,18 @@ const { width, height } = Dimensions.get("window");
 
 function StoryMedia({ story, onEnd, isScreenFocused, webViewRef }) {
   const [videoError, setVideoError] = useState(null);
+  const localRef = useRef(null);
+
+  const setRef = useCallback((node) => {
+    localRef.current = node;
+    if (webViewRef) webViewRef.current = node;
+  }, [webViewRef]);
+
+  useEffect(() => {
+    if (!isScreenFocused && localRef.current) {
+      localRef.current.postMessage("mute");
+    }
+  }, [isScreenFocused]);
 
   if (story.type === "video") {
     const videoUrl = `${IMAGE_BASE}${story.video}`;
@@ -36,7 +48,8 @@ function StoryMedia({ story, onEnd, isScreenFocused, webViewRef }) {
     function setMuted(m) {
       muted = m;
       v.muted = m;
-      if (!m) { v.play().catch(function(){}); }
+      if (m) { try { v.pause(); } catch(e) {} }
+      else { v.play().catch(function(){}); }
       window.ReactNativeWebView.postMessage('soundState:' + (m ? 'off' : 'on'));
     }
     v.addEventListener('ended', function() { window.ReactNativeWebView.postMessage('ended'); });
@@ -57,11 +70,10 @@ function StoryMedia({ story, onEnd, isScreenFocused, webViewRef }) {
   </script>
 </body>
 </html>`;
-    if (!isScreenFocused) return <View style={{ width, height: "100%", backgroundColor: "#000" }} />;
     return (
       <View style={{ width, height: "100%", backgroundColor: "#000" }}>
         <WebView
-          ref={webViewRef}
+          ref={setRef}
           source={{ html }}
           style={{ width, height: "100%", backgroundColor: "#000" }}
           allowsInlineMediaPlayback
@@ -77,6 +89,7 @@ function StoryMedia({ story, onEnd, isScreenFocused, webViewRef }) {
             }
           }}
         />
+        {!isScreenFocused && <View style={{ position: "absolute", inset: 0, backgroundColor: "#000" }} />}
         {videoError && (
           <View style={{ position: "absolute", bottom: 80, left: 20, right: 20, backgroundColor: "rgba(248,113,113,0.9)", borderRadius: 12, padding: 12, alignItems: "center" }}>
             <Text style={{ color: "#fff", fontSize: 13, fontWeight: "600" }}>Video failed to load</Text>
@@ -346,6 +359,7 @@ export default function StoryViewerScreen({ route, navigation }) {
   const [muted, setMuted] = useState(true);
 
   const goBack = useCallback(() => {
+    webViewRef.current?.postMessage("mute");
     Animated.parallel([
       Animated.timing(swipeOpacity, { toValue: 0, duration: 200, useNativeDriver: true }),
       Animated.spring(scaleAnim, { toValue: 0.9, friction: 8, useNativeDriver: true }),
@@ -422,6 +436,8 @@ export default function StoryViewerScreen({ route, navigation }) {
   useEffect(() => {
     if (!isScreenFocused) {
       pausedRef.current = true;
+      webViewRef.current?.postMessage("mute");
+      setMuted(true);
     } else {
       pausedRef.current = false;
     }

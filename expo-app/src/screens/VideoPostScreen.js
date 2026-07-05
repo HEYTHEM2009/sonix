@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions, StatusBar, ActivityIndicator } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { WebView } from "react-native-webview";
@@ -12,6 +12,7 @@ export default function VideoPostScreen({ route, navigation }) {
   const { videoUrl, username } = route?.params || {};
   const [loading, setLoading] = useState(true);
   const [soundOn, setSoundOn] = useState(false);
+  const webViewRef = useRef(null);
   const insets = useSafeAreaInsets();
   const { t } = useLanguage();
 
@@ -47,7 +48,8 @@ export default function VideoPostScreen({ route, navigation }) {
     muted = !muted;
     v.muted = muted;
     sb.textContent = muted ? '🔇' : '🔊';
-    if (!muted) { try { v.play(); } catch(e) {} }
+    if (muted) { try { v.pause(); } catch(e) {} }
+    else { try { v.play(); } catch(e) {} }
     window.ReactNativeWebView.postMessage('toggleSound:' + (muted ? 'off' : 'on'));
   });
   v.addEventListener('error', function(e) {
@@ -58,6 +60,10 @@ export default function VideoPostScreen({ route, navigation }) {
   });
   v.addEventListener('canplay', function() {
     window.ReactNativeWebView.postMessage('videoReady');
+  });
+  document.addEventListener('message', function(e) {
+    if (e.data === 'mute') { muted = true; v.muted = true; try { v.pause(); } catch(ex) {} sb.textContent = '🔇'; }
+    else if (e.data === 'unmute') { muted = false; v.muted = false; try { v.play(); } catch(ex) {} sb.textContent = '🔊'; }
   });
 </script>
 </body></html>`;
@@ -75,6 +81,7 @@ export default function VideoPostScreen({ route, navigation }) {
     <View style={s.container}>
       <StatusBar barStyle="light-content" backgroundColor="#000" />
       <WebView
+        ref={webViewRef}
         source={{ html }}
         style={s.webview}
         allowsInlineMediaPlayback
@@ -91,7 +98,7 @@ export default function VideoPostScreen({ route, navigation }) {
         </View>
       )}
       <View style={[s.topBar, { top: insets.top + 10 }]}>
-        <TouchableOpacity style={s.closeBtn} onPress={() => navigation.goBack()}>
+        <TouchableOpacity style={s.closeBtn} onPress={() => { webViewRef.current?.postMessage("mute"); navigation.goBack(); }}>
           <Text style={s.closeText}>✕</Text>
         </TouchableOpacity>
         {username && <Text style={s.username}>{username}</Text>}
