@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions, StatusBar, ActivityIndicator } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { WebView } from "react-native-webview";
@@ -11,6 +11,7 @@ const { width, height } = Dimensions.get("window");
 export default function VideoPostScreen({ route, navigation }) {
   const { videoUrl, username } = route?.params || {};
   const [loading, setLoading] = useState(true);
+  const [soundOn, setSoundOn] = useState(false);
   const insets = useSafeAreaInsets();
   const { t } = useLanguage();
 
@@ -21,13 +22,54 @@ export default function VideoPostScreen({ route, navigation }) {
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body { background:#000; display:flex; align-items:center; justify-content:center;
-         height:100vh; overflow:hidden; }
+         height:100vh; overflow:hidden; position:relative; }
   video { width:100%; height:100%; object-fit:contain; }
+  #soundBtn {
+    position:fixed; bottom:30px; right:20px; z-index:999;
+    width:48px; height:48px; border-radius:24px;
+    background:rgba(0,0,0,0.55); display:flex; align-items:center;
+    justify-content:center; font-size:22px; cursor:pointer;
+    -webkit-tap-highlight-color:transparent; user-select:none;
+    border:1px solid rgba(255,255,255,0.2);
+  }
+  #soundBtn:active { opacity:0.7; }
 </style>
 </head><body>
-<video id="v" playsinline webkit-playsinline controls autoplay
-       src="${IMAGE_BASE}${videoUrl}"></video>
+<video id="v" playsinline webkit-playsinline controls autoplay muted
+       src="${IMAGE_BASE}${videoUrl}" type="video/mp4"
+       style="width:100%;height:100%;object-fit:contain"></video>
+<div id="soundBtn">🔇</div>
+<script>
+  var v = document.getElementById('v');
+  var muted = true;
+  var sb = document.getElementById('soundBtn');
+  sb.addEventListener('click', function() {
+    muted = !muted;
+    v.muted = muted;
+    sb.textContent = muted ? '🔇' : '🔊';
+    if (!muted) { try { v.play(); } catch(e) {} }
+    window.ReactNativeWebView.postMessage('toggleSound:' + (muted ? 'off' : 'on'));
+  });
+  v.addEventListener('error', function(e) {
+    window.ReactNativeWebView.postMessage('videoError:' + (v.error ? v.error.message : 'unknown'));
+  });
+  v.addEventListener('waiting', function() {
+    window.ReactNativeWebView.postMessage('videoBuffering');
+  });
+  v.addEventListener('canplay', function() {
+    window.ReactNativeWebView.postMessage('videoReady');
+  });
+</script>
 </body></html>`;
+
+  const onMessage = useCallback((event) => {
+    const data = event.nativeEvent?.data || "";
+    if (data.startsWith("toggleSound:")) {
+      setSoundOn(data.endsWith("on"));
+    } else if (data.startsWith("videoError:")) {
+      console.warn("Video error:", data.replace("videoError:", ""));
+    }
+  }, []);
 
   return (
     <View style={s.container}>
@@ -40,6 +82,7 @@ export default function VideoPostScreen({ route, navigation }) {
         javaScriptEnabled
         scrollEnabled={false}
         onLoadEnd={() => setLoading(false)}
+        onMessage={onMessage}
       />
       {loading && (
         <View style={s.loadingOverlay}>
@@ -59,7 +102,7 @@ export default function VideoPostScreen({ route, navigation }) {
 
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#000" },
-  webview: { width, height: height * 0.7 },
+  webview: { width, height },
   loadingOverlay: { position: "absolute", inset: 0, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(0,0,0,0.6)" },
   loadingText: { color: "#fff", marginTop: 12, fontSize: 14 },
   topBar: { position: "absolute", left: 0, right: 0, flexDirection: "row", alignItems: "center", paddingHorizontal: 16, gap: 12, zIndex: 10 },
