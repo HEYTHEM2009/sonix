@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, Modal, Animated, Keyboard, KeyboardAvoidingView, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
+import { compress } from "expo-image-and-video-compressor";
 import client from "../api/client";
 import { COLORS, SIZES, FONTS } from "../components/Theme";
 import { useLanguage } from "../context/LanguageContext";
@@ -125,10 +126,26 @@ export default function CreateStoryScreen({ navigation }) {
     if (drawing_data) formData.append("drawing_data", JSON.stringify(drawing_data));
 
     if (hasVideo && videoUri) {
-      const filename = `story_${Date.now()}.mp4`;
-      const mimeType = "video/mp4";
-      formData.append("video", { uri: videoUri, name: filename, type: mimeType });
-      setUploadPhase(t("uploadingVideo"));
+      setUploadPhase(t("compressingVideo") || "ضغط الفيديو...");
+      animateProgress(0.1);
+      setUploadProgress(10);
+      try {
+        const compressed = await compress(videoUri, {
+          maxSize: 720,
+          bitrate: 1_500_000,
+          codec: "h264",
+          speed: "fast",
+        });
+        const finalUri = compressed?.uri || compressed || videoUri;
+        const filename = `story_${Date.now()}.mp4`;
+        formData.append("video", { uri: finalUri, name: filename, type: "video/mp4" });
+        setUploadPhase(t("uploadingVideo"));
+      } catch (compressErr) {
+        console.warn("Compression failed, using original:", compressErr);
+        const filename = `story_${Date.now()}.mp4`;
+        formData.append("video", { uri: videoUri, name: filename, type: "video/mp4" });
+        setUploadPhase(t("uploadingVideo"));
+      }
     } else if (hasImage && imageUri) {
       const filename = `story_${Date.now()}.jpg`;
       const mimeType = "image/jpeg";
