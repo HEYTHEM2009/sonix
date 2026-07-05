@@ -17,6 +17,7 @@ use App\Services\ImageService;
 use App\Services\StoryCacheService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class StoryController extends Controller
 {
@@ -100,30 +101,49 @@ class StoryController extends Controller
     {
         $userId = $request->user()->id;
 
+        // Raw count - bypasses model
+        $rawCount = DB::select("SELECT COUNT(*) as cnt FROM stories WHERE user_id = ?", [$userId]);
+        
+        // Table structure
+        $hasTable = Schema::hasTable('stories');
+        $columns = $hasTable ? Schema::getColumns('stories') : [];
+        $columnNames = array_column($columns, 'name');
+
+        // Try raw insert test
+        $testInsert = null;
+        try {
+            DB::table('stories')->insert([
+                'user_id' => $userId,
+                'type' => 'text',
+                'text_overlay' => 'debug_test_' . time(),
+                'text_color' => '#ffffff',
+                'duration' => 5,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            $testInsert = 'success';
+            // Clean up test row
+            DB::table('stories')->where('text_overlay', 'LIKE', 'debug_test_%')->where('user_id', $userId)->delete();
+        } catch (\Throwable $e) {
+            $testInsert = $e->getMessage();
+        }
+
         $followingIds = Follow::where('follower_id', $userId)
             ->where('status', 'accepted')
             ->pluck('following_id')
             ->toArray();
-
         $followingIds[] = $userId;
-
-        $stories = Story::with(['user:id,username,avatar'])
-            ->whereIn('user_id', $followingIds)
-            ->where('created_at', '>=', now()->subHours(12))
-            ->latest()
-            ->get();
 
         $myStories = Story::where('user_id', $userId)->latest()->limit(5)->get();
 
         return response()->json([
             'user_id' => $userId,
-            'following_ids' => $followingIds,
-            'total_following' => count($followingIds) - 1,
-            'stories_found' => $stories->count(),
-            'stories' => $stories,
+            'raw_count' => $rawCount[0]->cnt ?? 'error',
+            'table_exists' => $hasTable,
+            'columns' => $columnNames,
+            'test_insert' => $testInsert,
             'my_stories' => $myStories,
             'now' => now()->toIso8601String(),
-            'twelve_hours_ago' => now()->subHours(12)->toIso8601String(),
         ]);
     }
 

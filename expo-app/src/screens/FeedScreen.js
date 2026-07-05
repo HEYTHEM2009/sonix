@@ -327,7 +327,15 @@ export default function FeedScreen({ navigation, route }) {
           onPress={async () => {
             try {
               const res = await client.get("/stories/debug");
-              Alert.alert("Debug", JSON.stringify(res.data, null, 2).slice(0, 2000));
+              const d = res.data;
+              Alert.alert("Debug", [
+                `user_id: ${d.user_id}`,
+                `table_exists: ${d.table_exists}`,
+                `raw_count: ${d.raw_count}`,
+                `columns: ${d.columns?.length || 0}`,
+                `test_insert: ${d.test_insert}`,
+                `my_stories: ${d.my_stories?.length || 0}`,
+              ].join("\n"));
             } catch (e) {
               Alert.alert("Error", e?.message || "unknown");
             }
