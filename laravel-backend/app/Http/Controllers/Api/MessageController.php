@@ -322,20 +322,24 @@ class MessageController extends Controller
 
     public function toggleMute(Request $request, $userId)
     {
-        $setting = ConversationSetting::updateOrCreate(
+        $setting = ConversationSetting::firstOrCreate(
             ['user_id' => $request->user()->id, 'partner_id' => $userId],
-            ['is_muted' => !ConversationSetting::where('user_id', $request->user()->id)->where('partner_id', $userId)->value('is_muted')]
+            ['is_muted' => false]
         );
+        $setting->update(['is_muted' => \Illuminate\Support\Facades\DB::raw('NOT is_muted')]);
+        $setting->refresh();
 
         return response()->json(['is_muted' => $setting->is_muted]);
     }
 
     public function togglePin(Request $request, $userId)
     {
-        $setting = ConversationSetting::updateOrCreate(
+        $setting = ConversationSetting::firstOrCreate(
             ['user_id' => $request->user()->id, 'partner_id' => $userId],
-            ['is_pinned' => !ConversationSetting::where('user_id', $request->user()->id)->where('partner_id', $userId)->value('is_pinned')]
+            ['is_pinned' => false]
         );
+        $setting->update(['is_pinned' => \Illuminate\Support\Facades\DB::raw('NOT is_pinned')]);
+        $setting->refresh();
 
         return response()->json(['is_pinned' => $setting->is_pinned]);
     }

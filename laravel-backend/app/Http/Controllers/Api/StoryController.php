@@ -99,6 +99,10 @@ class StoryController extends Controller
 
     public function debug(Request $request)
     {
+        if (!config('app.debug')) {
+            return response()->json(['message' => 'Not available'], 404);
+        }
+
         $userId = $request->user()->id;
 
         $rawCount = DB::select("SELECT COUNT(*) as cnt FROM stories WHERE user_id = ?", [$userId]);

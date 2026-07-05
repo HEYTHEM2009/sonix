@@ -260,14 +260,21 @@ class StoryCacheService
     public function onStoryExpired(): void
     {
         try {
-            $feedKeys = Redis::keys("{$this->feedPrefix}*");
-            $timelineKeys = Redis::keys("{$this->timelinePrefix}*");
-            $metaKeys = Redis::keys("{$this->metadataPrefix}*");
-            $statsKeys = Redis::keys("{$this->statsPrefix}*");
+            $patterns = [
+                "{$this->feedPrefix}*",
+                "{$this->timelinePrefix}*",
+                "{$this->metadataPrefix}*",
+                "{$this->statsPrefix}*",
+            ];
 
-            $allKeys = array_merge($feedKeys, $timelineKeys, $metaKeys, $statsKeys);
-            if (!empty($allKeys)) {
-                Redis::del($allKeys);
+            foreach ($patterns as $pattern) {
+                $cursor = null;
+                do {
+                    [$cursor, $keys] = Redis::scan($cursor ?? 0, ['match' => $pattern, 'count' => 100]);
+                    if (!empty($keys)) {
+                        Redis::del($keys);
+                    }
+                } while ($cursor > 0);
             }
         } catch (\Throwable $e) {
             Log::warning('[StoryCache] Bulk invalidation failed', ['error' => $e->getMessage()]);
@@ -308,8 +315,20 @@ class StoryCacheService
     public function getStats(): array
     {
         try {
-            $feedCount = count(Redis::keys("{$this->feedPrefix}*"));
-            $timelineCount = count(Redis::keys("{$this->timelinePrefix}*"));
+            $feedCount = 0;
+            $cursor = 0;
+            do {
+                [$cursor, $keys] = Redis::scan($cursor, ['match' => "{$this->feedPrefix}*", 'count' => 100]);
+                $feedCount += count($keys);
+            } while ($cursor > 0);
+
+            $timelineCount = 0;
+            $cursor = 0;
+            do {
+                [$cursor, $keys] = Redis::scan($cursor, ['match' => "{$this->timelinePrefix}*", 'count' => 100]);
+                $timelineCount += count($keys);
+            } while ($cursor > 0);
+
             $pendingCount = Redis::llen("{$this->pendingPrefix}queue") ?? 0;
 
             return [

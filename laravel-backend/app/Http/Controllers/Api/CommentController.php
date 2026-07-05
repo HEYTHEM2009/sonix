@@ -64,7 +64,10 @@ class CommentController extends Controller
         $comment = Comment::find($id);
         if (!$comment) return response()->json(['message' => 'Not found'], 404);
         if ($comment->user_id !== $request->user()->id) return response()->json(['message' => 'Unauthorized'], 403);
+
+        Comment::where('parent_id', $id)->update(['parent_id' => null]);
         $comment->delete();
+
         return response()->json(['message' => 'Comment deleted']);
     }
 }

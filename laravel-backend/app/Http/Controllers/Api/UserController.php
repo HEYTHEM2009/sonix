@@ -81,9 +81,10 @@ class UserController extends Controller
         }
 
         if ($request->hasFile('avatar')) {
-            $filename = 'uploads/' . uniqid('avatar_') . '.jpg';
-            $request->file('avatar')->move(public_path('uploads'), basename($filename));
-            $user->avatar = "/$filename";
+            $ext = strtolower($request->file('avatar')->getClientOriginalExtension()) ?: 'jpg';
+            $filename = uniqid('avatar_') . '.' . $ext;
+            $request->file('avatar')->move(public_path('uploads'), $filename);
+            $user->avatar = "/uploads/$filename";
         }
 
         $user->save();
