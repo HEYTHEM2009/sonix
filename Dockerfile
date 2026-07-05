@@ -1,63 +1,66 @@
 FROM php:8.4-fpm
 
-# Install system dependencies
 RUN apt-get update && apt-get install -y \
     git curl zip unzip libpng-dev libonig-dev libxml2-dev \
     libpq-dev libzip-dev nginx supervisor \
     && docker-php-ext-install pdo_pgsql mbstring exif pcntl bcmath gd zip \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 WORKDIR /app/laravel-backend
 
-# Copy composer files first (for caching)
 COPY laravel-backend/composer.json laravel-backend/composer.lock ./
 RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist
 
-# Copy the rest
 COPY laravel-backend/ .
 
 RUN composer dump-autoload --optimize
 
-# Create necessary directories
-RUN mkdir -p public/uploads storage/framework/{cache,sessions,views} storage/logs bootstrap/cache \
+RUN mkdir -p public/uploads storage/framework/{cache,sessions,views} storage/logs bootstrap/cache /tmp/nginx-upload \
+    && chmod -R 777 /tmp/nginx-upload \
     && chmod -R 775 public/uploads storage bootstrap/cache
 
-# PHP-FPM config: increase upload limits
 RUN echo "upload_max_filesize = 50M" >> /usr/local/etc/php/conf.d/uploads.ini \
     && echo "post_max_size = 55M" >> /usr/local/etc/php/conf.d/uploads.ini \
     && echo "max_execution_time = 300" >> /usr/local/etc/php/conf.d/uploads.ini \
     && echo "max_input_time = 300" >> /usr/local/etc/php/conf.d/uploads.ini \
     && echo "memory_limit = 256M" >> /usr/local/etc/php/conf.d/uploads.ini \
-    && echo "default_socket_timeout = 300" >> /usr/local/etc/php/conf.d/uploads.ini
+    && echo "file_uploads = On" >> /usr/local/etc/php/conf.d/uploads.ini \
+    && echo "upload_tmp_dir = /tmp/nginx-upload" >> /usr/local/etc/php/conf.d/uploads.ini \
+    && echo "session.auto_start = Off" >> /usr/local/etc/php/conf.d/uploads.ini \
+    && echo "cgi.fix_pathinfo = 0" >> /usr/local/etc/php/conf.d/uploads.ini
 
-# Nginx config
 RUN echo 'server { \
     listen 8000; \
     server_name _; \
     root /app/laravel-backend/public; \
     index index.php index.html; \
     client_max_body_size 50M; \
+    \
     location / { \
         try_files $uri $uri/ /index.php?$query_string; \
     } \
+    \
     location ~ \.php$ { \
         fastcgi_pass 127.0.0.1:9000; \
         fastcgi_index index.php; \
         fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name; \
         include fastcgi_params; \
         fastcgi_read_timeout 300; \
+        fastcgi_send_timeout 300; \
+        fastcgi_connect_timeout 300; \
+        fastcgi_buffering off; \
     } \
+    \
     location ~ /\.ht { deny all; } \
+    \
     location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|mp4|webm)$ { \
         expires 30d; \
         add_header Cache-Control "public, immutable"; \
     } \
 }' > /etc/nginx/sites-available/default
 
-# Supervisor config: run nginx + php-fpm + queue worker + scheduler
 RUN echo '[supervisord] \
 nodaemon=true \
 logfile=/var/log/supervisord.log \

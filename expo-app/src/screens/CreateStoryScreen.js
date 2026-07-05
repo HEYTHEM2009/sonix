@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, Modal, Animated, Keyboard, KeyboardAvoidingView, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
-import * as FileSystem from "expo-file-system";
+import { getInfoAsync } from "expo-file-system/legacy";
 import client from "../api/client";
 import { COLORS, SIZES, FONTS } from "../components/Theme";
 import { useLanguage } from "../context/LanguageContext";
@@ -128,7 +128,7 @@ export default function CreateStoryScreen({ navigation }) {
     if (hasVideo && videoUri) {
       setUploadPhase(t("uploadingVideo"));
       try {
-        const fileInfo = await FileSystem.getInfoAsync(videoUri);
+        const fileInfo = await getInfoAsync(videoUri);
         if (fileInfo.exists && fileInfo.size > 50 * 1024 * 1024) {
           setUploading(false);
           Alert.alert(t("error"), "Video too large (max 50MB)");

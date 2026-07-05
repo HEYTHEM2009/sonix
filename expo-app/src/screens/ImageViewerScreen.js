@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { View, Image, StyleSheet, Dimensions, TouchableOpacity, Text, Animated, Alert, ActivityIndicator } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import * as FileSystem from "expo-file-system";
+import { downloadAsync, cacheDirectory } from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import client, { IMAGE_BASE } from "../api/client";
 
@@ -38,9 +38,9 @@ export default function ImageViewerScreen({ route, navigation }) {
       setDownloading(true);
 
       const filename = imageUrl.split("/").pop() || `photo_${Date.now()}.jpg`;
-      const fileUri = FileSystem.cacheDirectory + filename;
+      const fileUri = cacheDirectory + filename;
 
-      const downloadResult = await FileSystem.downloadAsync(fullUrl, fileUri);
+      const downloadResult = await downloadAsync(fullUrl, fileUri);
 
       if (downloadResult.status === 200) {
         const canShare = await Sharing.isAvailableAsync();
