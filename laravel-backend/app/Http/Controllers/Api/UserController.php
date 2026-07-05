@@ -10,7 +10,6 @@ use App\Models\Follow;
 use App\Models\BlockedUser;
 use Illuminate\Http\Request;
 use App\Models\Message;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redis;
 
 class UserController extends Controller
