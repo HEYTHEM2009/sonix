@@ -402,6 +402,11 @@ export default function FeedScreen({ navigation, route }) {
                       <Text style={s.storyInitial}>{item.user?.username?.[0]?.toUpperCase() || "?"}</Text>
                     )}
                   </View>
+                  {item.stories?.some((s) => s.type === "video") && (
+                    <View style={s.videoBadge}>
+                      <Text style={s.videoBadgeIcon}>🔊</Text>
+                    </View>
+                  )}
                 </View>
                 <Text style={s.storyLabel} numberOfLines={1}>{item.user?.username}</Text>
               </TouchableOpacity>
@@ -539,6 +544,8 @@ const s = StyleSheet.create({
   storyAvatar: { width: "100%", height: "100%", borderRadius: 29, backgroundColor: COLORS.card, alignItems: "center", justifyContent: "center" },
   storyInitial: { color: COLORS.text, fontSize: 20, fontWeight: "700" },
   storyLabel: { fontSize: 11, color: COLORS.textSecondary, textAlign: "center" },
+  videoBadge: { position: "absolute", bottom: -2, right: -2, width: 22, height: 22, borderRadius: 11, backgroundColor: "#000", alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: COLORS.bg },
+  videoBadgeIcon: { fontSize: 11 },
 
   highlightsWrap: { paddingBottom: 12, borderBottomWidth: 0.5, borderBottomColor: COLORS.border },
   highlightsHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, marginBottom: 10 },
