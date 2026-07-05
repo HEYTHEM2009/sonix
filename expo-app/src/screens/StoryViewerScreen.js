@@ -11,9 +11,8 @@ import { prefetchNextStories, clearPrefetchCache } from "../api/media";
 
 const { width, height } = Dimensions.get("window");
 
-function StoryMedia({ story, onEnd, isScreenFocused }) {
+function StoryMedia({ story, onEnd, isScreenFocused, webViewRef }) {
   const [videoError, setVideoError] = useState(null);
-  const [muted, setMuted] = useState(true);
 
   if (story.type === "video") {
     const videoUrl = `${IMAGE_BASE}${story.video}`;
@@ -25,35 +24,35 @@ function StoryMedia({ story, onEnd, isScreenFocused }) {
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { background: #000; display: flex; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
     video { width: 100%; height: 100%; object-fit: contain; background: #000; }
-    #soundBtn {
-      position: fixed; top: 60px; right: 16px; width: 44px; height: 44px;
-      border-radius: 22px; background: rgba(0,0,0,0.5);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 22px; z-index: 100; cursor: pointer;
-      -webkit-user-select: none; user-select: none;
-    }
   </style>
 </head>
 <body>
   <video id="v" playsinline webkit-playsinline autoplay muted
     src="${videoUrl}" type="video/mp4"
     style="width:100%;height:100%;object-fit:contain"></video>
-  <div id="soundBtn">🔇</div>
   <script>
     var v = document.getElementById('v');
     var muted = true;
-    var sb = document.getElementById('soundBtn');
-    function toggleSound() {
-      muted = !muted;
-      v.muted = muted;
-      sb.textContent = muted ? '🔇' : '🔊';
-      if (!muted) { try { v.play(); } catch(e) {} }
-      window.ReactNativeWebView.postMessage('toggleSound:' + (muted ? 'off' : 'on'));
+    function setMuted(m) {
+      muted = m;
+      v.muted = m;
+      if (!m) { v.play().catch(function(){}); }
+      window.ReactNativeWebView.postMessage('soundState:' + (m ? 'off' : 'on'));
     }
-    sb.onclick = toggleSound;
-    v.onclick = toggleSound;
     v.addEventListener('ended', function() { window.ReactNativeWebView.postMessage('ended'); });
     v.addEventListener('error', function(e) { window.ReactNativeWebView.postMessage('error:' + (e.target.error?.message || 'unknown')); });
+    window.addEventListener('message', function(e) {
+      var d = e.data;
+      if (d === 'toggleSound') setMuted(!muted);
+      else if (d === 'unmute') setMuted(false);
+      else if (d === 'mute') setMuted(true);
+    });
+    document.addEventListener('message', function(e) {
+      var d = e.data;
+      if (d === 'toggleSound') setMuted(!muted);
+      else if (d === 'unmute') setMuted(false);
+      else if (d === 'mute') setMuted(true);
+    });
     v.load();
   </script>
 </body>
@@ -62,6 +61,7 @@ function StoryMedia({ story, onEnd, isScreenFocused }) {
     return (
       <View style={{ width, height: "100%", backgroundColor: "#000" }}>
         <WebView
+          ref={webViewRef}
           source={{ html }}
           style={{ width, height: "100%", backgroundColor: "#000" }}
           allowsInlineMediaPlayback
@@ -74,10 +74,6 @@ function StoryMedia({ story, onEnd, isScreenFocused }) {
             if (e.nativeEvent.data === "ended") onEnd?.();
             else if (e.nativeEvent.data?.startsWith("error:")) {
               setVideoError(e.nativeEvent.data.replace("error:", ""));
-            } else if (e.nativeEvent.data === "toggleSound:on") {
-              setMuted(false);
-            } else if (e.nativeEvent.data === "toggleSound:off") {
-              setMuted(true);
             }
           }}
         />
@@ -346,6 +342,8 @@ export default function StoryViewerScreen({ route, navigation }) {
   const swipeX = useRef(new Animated.Value(0)).current;
   const swipeOpacity = useRef(new Animated.Value(1)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
+  const webViewRef = useRef(null);
+  const [muted, setMuted] = useState(true);
 
   const goBack = useCallback(() => {
     Animated.parallel([
@@ -402,6 +400,11 @@ export default function StoryViewerScreen({ route, navigation }) {
     }, interval);
     return () => clearInterval(timerRef.current);
   }, [index, advance, dur]);
+
+  useEffect(() => {
+    setMuted(true);
+    webViewRef.current?.postMessage("mute");
+  }, [index]);
 
   useEffect(() => {
     if (currentStory && !viewReported.current.has(currentStory.id)) {
@@ -529,7 +532,7 @@ export default function StoryViewerScreen({ route, navigation }) {
           onPressOut={() => { pausedRef.current = false; }}
           style={StyleSheet.absoluteFill}
         >
-          <StoryMedia key={currentStory.id} story={currentStory} onEnd={advance} isScreenFocused={isScreenFocused} />
+          <StoryMedia key={currentStory.id} story={currentStory} onEnd={advance} isScreenFocused={isScreenFocused} webViewRef={webViewRef} />
           <DrawingOverlay drawingData={currentStory.drawing_data} />
           <StickerOverlay stickers={currentStory.stickers} />
         </TouchableOpacity>
@@ -563,6 +566,18 @@ export default function StoryViewerScreen({ route, navigation }) {
           <Text style={s.time}>
             {new Date(currentStory.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
           </Text>
+          {currentStory?.type === "video" && (
+            <TouchableOpacity
+              style={s.insightBtn}
+              onPress={() => {
+                const newMuted = !muted;
+                setMuted(newMuted);
+                webViewRef.current?.postMessage(newMuted ? "mute" : "unmute");
+              }}
+            >
+              <Text style={s.insightText}>{muted ? "🔇" : "🔊"}</Text>
+            </TouchableOpacity>
+          )}
           {isOwner && (
             <>
               <TouchableOpacity style={s.insightBtn} onPress={() => setShowAnalytics(true)}>
