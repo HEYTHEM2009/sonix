@@ -1,5 +1,42 @@
 #!/bin/sh
 
+# Determine the port - Railway uses PORT env var, default to 80
+PORT=${PORT:-80}
+
+# Write nginx config with correct port
+cat > /etc/nginx/sites-available/default <<NGINX
+server {
+    listen ${PORT};
+    server_name _;
+    root /app/laravel-backend/public;
+    index index.php index.html;
+    client_max_body_size 50M;
+    client_body_temp_path /tmp/nginx-upload;
+
+    location / {
+        try_files \$uri \$uri/ /index.php?\$query_string;
+    }
+
+    location ~ \.php$ {
+        fastcgi_pass 127.0.0.1:9000;
+        fastcgi_index index.php;
+        fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
+        include fastcgi_params;
+        fastcgi_read_timeout 300;
+        fastcgi_send_timeout 300;
+        fastcgi_connect_timeout 300;
+        fastcgi_buffering off;
+    }
+
+    location ~ /\.ht { deny all; }
+
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|mp4|webm)$ {
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+    }
+}
+NGINX
+
 # Generate .env from Railway environment variables
 cat > /app/laravel-backend/.env <<EOF
 APP_NAME=${APP_NAME:-Sonix}
@@ -28,7 +65,7 @@ BROADCAST_CONNECTION=reverb
 FILESYSTEM_DISK=local
 QUEUE_CONNECTION=database
 
-CACHE_STORE=redis
+CACHE_STORE=file
 
 REDIS_CLIENT=phpredis
 REDIS_HOST=${REDIS_HOST:-127.0.0.1}
@@ -62,6 +99,9 @@ CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY:-}
 CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET:-}
 EOF
 
+echo "Nginx listening on port ${PORT}"
+echo "Generated .env file"
+
 # Generate app key if not set
 if echo "$APP_KEY" | grep -q "base64:"; then
     echo "APP_KEY already set"
@@ -74,6 +114,12 @@ php artisan migrate --force
 
 # Seed database (safe - checks if already seeded)
 php artisan db:seed --force
+
+# Clear and rebuild cache
+php artisan config:cache
+php artisan route:cache
+
+echo "Starting services..."
 
 # Start supervisor
 exec supervisord -c /etc/supervisor/conf.d/supervisord.conf
