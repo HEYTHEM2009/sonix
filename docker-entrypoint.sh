@@ -102,6 +102,10 @@ EOF
 echo "Nginx listening on port ${PORT}"
 echo "Generated .env file"
 
+# Fix permissions
+chmod -R 777 /app/laravel-backend/storage 2>/dev/null
+chmod -R 777 /app/laravel-backend/bootstrap/cache 2>/dev/null
+
 # Generate app key if not set
 if echo "$APP_KEY" | grep -q "base64:"; then
     echo "APP_KEY already set"
