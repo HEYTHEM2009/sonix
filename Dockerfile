@@ -31,40 +31,11 @@ RUN echo "upload_max_filesize = 50M" >> /usr/local/etc/php/conf.d/uploads.ini \
     && echo "session.auto_start = Off" >> /usr/local/etc/php/conf.d/uploads.ini \
     && echo "cgi.fix_pathinfo = 0" >> /usr/local/etc/php/conf.d/uploads.ini
 
-RUN echo 'server { \
-    listen 8000; \
-    server_name _; \
-    root /app/laravel-backend/public; \
-    index index.php index.html; \
-    client_max_body_size 50M; \
-    client_body_temp_path /tmp/nginx-upload; \
-    \
-    location / { \
-        try_files $uri $uri/ /index.php?$query_string; \
-    } \
-    \
-    location ~ \.php$ { \
-        fastcgi_pass 127.0.0.1:9000; \
-        fastcgi_index index.php; \
-        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name; \
-        include fastcgi_params; \
-        fastcgi_read_timeout 300; \
-        fastcgi_send_timeout 300; \
-        fastcgi_connect_timeout 300; \
-        fastcgi_buffering off; \
-    } \
-    \
-    location ~ /\.ht { deny all; } \
-    \
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|mp4|webm)$ { \
-        expires 30d; \
-        add_header Cache-Control "public, immutable"; \
-    } \
-}' > /etc/nginx/sites-available/default
+COPY nginx-site.conf /etc/nginx/sites-available/default
 
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
-EXPOSE 8000
+EXPOSE 80
 
 COPY docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
