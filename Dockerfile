@@ -62,32 +62,7 @@ RUN echo 'server { \
     } \
 }' > /etc/nginx/sites-available/default
 
-RUN echo '[supervisord] \
-nodaemon=true \
-logfile=/var/log/supervisord.log \
-\
-[program:php-fpm] \
-command=php-fpm -F \
-autostart=true \
-autorestart=true \
-\
-[program:nginx] \
-command=nginx -g "daemon off;" \
-autostart=true \
-autorestart=true \
-\
-[program:queue] \
-command=php /app/laravel-backend/artisan queue:work --sleep=3 --tries=3 --max-time=3600 \
-autostart=true \
-autorestart=true \
-redirect_stderr=true \
-\
-[program:scheduler] \
-command=/bin/sh -c "while true; do php /app/laravel-backend/artisan schedule:run --verbose --no-interaction & sleep 60; done" \
-autostart=true \
-autorestart=true \
-redirect_stderr=true \
-' > /etc/supervisor/conf.d/supervisord.conf
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 EXPOSE 8000
 
