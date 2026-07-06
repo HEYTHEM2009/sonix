@@ -1,0 +1,6 @@
+laravel-backend/
+.git/
+*.md
+railway.json
+Dockerfile
+.gitignore

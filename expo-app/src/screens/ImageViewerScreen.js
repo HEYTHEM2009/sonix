@@ -3,7 +3,7 @@ import { View, Image, StyleSheet, Dimensions, TouchableOpacity, Text, Animated, 
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { downloadAsync, cacheDirectory } from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
-import client, { IMAGE_BASE } from "../api/client";
+import client, { resolveUrl } from "../api/client";
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
 
@@ -14,7 +14,7 @@ export default function ImageViewerScreen({ route, navigation }) {
   const [currentScale, setCurrentScale] = useState(1);
   const [downloading, setDownloading] = useState(false);
 
-  const fullUrl = imageUrl.startsWith("http") ? imageUrl : `${IMAGE_BASE}${imageUrl}`;
+  const fullUrl = resolveUrl(imageUrl);
 
   const zoomIn = () => {
     const newScale = Math.min(currentScale + 0.5, 3);

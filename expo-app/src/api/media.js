@@ -1,4 +1,4 @@
-import client from "./client";
+import client, { resolveUrl } from "./client";
 
 /**
  * Media Security Service for the client side.
@@ -14,7 +14,7 @@ export async function getSignedUrl(path) {
     return res.data.url;
   } catch (e) {
     // Fallback to direct URL
-    return `${IMAGE_BASE}${path}`;
+    return resolveUrl(path);
   }
 }
 
@@ -27,9 +27,8 @@ export async function getSignedUrls(paths) {
     return res.data.urls;
   } catch (e) {
     // Fallback to direct URLs
-    const { IMAGE_BASE } = require("./client");
     const urls = {};
-    paths.forEach((p) => (urls[p] = `${IMAGE_BASE}${p}`));
+    paths.forEach((p) => (urls[p] = resolveUrl(p)));
     return urls;
   }
 }
@@ -66,7 +65,6 @@ export function clearPrefetchCache() {
  * Prefetch next story media (images/videos).
  */
 export async function prefetchNextStories(stories, currentIndex) {
-  const { IMAGE_BASE } = require("./client");
   const nextIndex = currentIndex + 1;
   if (nextIndex >= stories.length) return;
 
@@ -80,7 +78,7 @@ export async function prefetchNextStories(stories, currentIndex) {
   // Only prefetch images (videos are too large)
   if (nextStory.type !== "video") {
     try {
-      const url = `${IMAGE_BASE}${mediaPath}`;
+      const url = resolveUrl(mediaPath);
       await Image.prefetch(url);
     } catch (e) {
       // Prefetch failed, not critical
@@ -125,4 +123,3 @@ export function formatFileSize(bytes) {
 }
 
 import { Image } from "react-native";
-import { IMAGE_BASE } from "./client";

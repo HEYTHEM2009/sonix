@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Helpers\Sanitize;
+use App\Helpers\StorageHelper;
 use App\Models\Message;
 use App\Models\MessageReaction;
 use App\Models\ConversationSetting;
@@ -43,14 +44,12 @@ class MessageController extends Controller
         ];
 
         if ($request->hasFile('image')) {
-            $filename = uniqid('msg_') . '.jpg';
-            $request->file('image')->move(public_path('uploads'), $filename);
-            $data['image'] = "/uploads/$filename";
+            $path = StorageHelper::upload($request->file('image'), 'uploads');
+            $data['image'] = StorageHelper::getUrl($path);
             $data['type'] = 'image';
         } elseif ($request->hasFile('voice')) {
-            $filename = uniqid('voice_') . '.webm';
-            $request->file('voice')->move(public_path('uploads'), $filename);
-            $data['voice'] = "/uploads/$filename";
+            $path = StorageHelper::upload($request->file('voice'), 'uploads');
+            $data['voice'] = StorageHelper::getUrl($path);
             $data['type'] = 'voice';
         } elseif ($request->has('reaction')) {
             $data['type'] = 'reaction';

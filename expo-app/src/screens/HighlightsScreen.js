@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image, Modal, TextInput, Alert, ActivityIndicator, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import client, { IMAGE_BASE } from "../api/client";
+import client, { resolveUrl } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import { COLORS, SIZES, FONTS } from "../components/Theme";
@@ -159,9 +159,9 @@ export default function HighlightsScreen({ route, navigation }) {
               >
                 <View style={s.highlightCover}>
                   {h.stories?.[0]?.image ? (
-                    <Image source={{ uri: `${IMAGE_BASE}${h.stories[0].image}` }} style={s.coverImg} />
+                    <Image source={{ uri: resolveUrl(h.stories[0].image) }} style={s.coverImg} />
                   ) : h.cover_image ? (
-                    <Image source={{ uri: `${IMAGE_BASE}${h.cover_image}` }} style={s.coverImg} />
+                    <Image source={{ uri: resolveUrl(h.cover_image) }} style={s.coverImg} />
                   ) : (
                     <Text style={s.coverPlaceholder}>✨</Text>
                   )}
@@ -216,7 +216,7 @@ export default function HighlightsScreen({ route, navigation }) {
                     onPress={() => toggleStorySelection(story.id)}
                   >
                     {story.image ? (
-                      <Image source={{ uri: `${IMAGE_BASE}${story.image}` }} style={s.storyThumb} />
+                      <Image source={{ uri: resolveUrl(story.image) }} style={s.storyThumb} />
                     ) : (
                       <View style={[s.storyThumb, { backgroundColor: story.bg_color || COLORS.card, alignItems: "center", justifyContent: "center" }]}>
                         <Text style={{ fontSize: 16 }}>📝</Text>
@@ -276,7 +276,7 @@ export default function HighlightsScreen({ route, navigation }) {
                   {showStoryPicker.stories.map((story) => (
                     <View key={story.id} style={s.storySelectRow}>
                       {story.image ? (
-                        <Image source={{ uri: `${IMAGE_BASE}${story.image}` }} style={s.storyThumb} />
+                        <Image source={{ uri: resolveUrl(story.image) }} style={s.storyThumb} />
                       ) : (
                         <View style={[s.storyThumb, { backgroundColor: COLORS.card, alignItems: "center", justifyContent: "center" }]}>
                           <Text style={{ fontSize: 16 }}>📝</Text>
@@ -306,7 +306,7 @@ export default function HighlightsScreen({ route, navigation }) {
                     onPress={() => addStoryToHighlight(showStoryPicker.id, story.id)}
                   >
                     {story.image ? (
-                      <Image source={{ uri: `${IMAGE_BASE}${story.image}` }} style={s.storyThumb} />
+                      <Image source={{ uri: resolveUrl(story.image) }} style={s.storyThumb} />
                     ) : (
                       <View style={[s.storyThumb, { backgroundColor: COLORS.card, alignItems: "center", justifyContent: "center" }]}>
                         <Text style={{ fontSize: 16 }}>📝</Text>

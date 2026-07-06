@@ -3,7 +3,7 @@ import { View, Text, Image, TouchableOpacity, StyleSheet, Dimensions, StatusBar,
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useIsFocused } from "@react-navigation/native";
 import { WebView } from "react-native-webview";
-import client, { IMAGE_BASE } from "../api/client";
+import client, { resolveUrl } from "../api/client";
 import { COLORS, SIZES, FONTS } from "../components/Theme";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
@@ -27,7 +27,7 @@ function StoryMedia({ story, onEnd, isScreenFocused, webViewRef }) {
   }, [isScreenFocused]);
 
   if (story.type === "video") {
-    const videoUrl = `${IMAGE_BASE}${story.video}`;
+    const videoUrl = resolveUrl(story.video);
     const html = `<!DOCTYPE html>
 <html>
 <head>
@@ -102,7 +102,7 @@ function StoryMedia({ story, onEnd, isScreenFocused, webViewRef }) {
   if (story.type === "text" && !story.image) {
     return <View style={[s.textStoryBg, { backgroundColor: story.bg_color || COLORS.bg }]} />;
   }
-  return <Image source={{ uri: `${IMAGE_BASE}${story.image}` }} style={s.image} resizeMode="contain" />;
+  return <Image source={{ uri: resolveUrl(story.image) }} style={s.image} resizeMode="contain" />;
 }
 
 function DrawingOverlay({ drawingData }) {

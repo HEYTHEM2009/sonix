@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, RefreshControl, ActivityIndicator } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import client, { IMAGE_BASE } from "../api/client";
+import client, { resolveUrl } from "../api/client";
 import { COLORS, SIZES } from "../components/Theme";
 import { useLanguage } from "../context/LanguageContext";
 import Screen3D from "../components/3D/Screen3D";
@@ -61,7 +61,7 @@ export default function SavedPostsScreen({ navigation }) {
             <View style={s.row}>
               {row.map((post) => (
                 <TouchableOpacity key={post.id} style={s.cell}>
-                  {post.image ? <Image source={{ uri: `${IMAGE_BASE}${post.image}` }} style={s.cellImg} resizeMode="cover" />
+                  {post.image ? <Image source={{ uri: resolveUrl(post.image) }} style={s.cellImg} resizeMode="cover" />
                   : <View style={s.cellText}><Text style={s.cellTextContent} numberOfLines={3}>{post.content}</Text></View>}
                 </TouchableOpacity>
               ))}

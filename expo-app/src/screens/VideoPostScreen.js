@@ -2,7 +2,7 @@ import { useState, useCallback, useRef } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions, StatusBar, ActivityIndicator } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { WebView } from "react-native-webview";
-import { IMAGE_BASE } from "../api/client";
+import { resolveUrl } from "../api/client";
 import { useLanguage } from "../context/LanguageContext";
 import { COLORS } from "../components/Theme";
 
@@ -37,7 +37,7 @@ export default function VideoPostScreen({ route, navigation }) {
 </style>
 </head><body>
 <video id="v" playsinline webkit-playsinline controls autoplay muted
-       src="${IMAGE_BASE}${videoUrl}" type="video/mp4"
+       src="${resolveUrl(videoUrl)}" type="video/mp4"
        style="width:100%;height:100%;object-fit:contain"></video>
 <div id="soundBtn">🔇</div>
 <script>

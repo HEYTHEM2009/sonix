@@ -47,4 +47,10 @@ client.interceptors.response.use(
 
 export const IMAGE_BASE = API.replace("/api", "");
 
+export const resolveUrl = (path) => {
+  if (!path) return "";
+  if (path.startsWith("http://") || path.startsWith("https://")) return path;
+  return `${IMAGE_BASE}${path}`;
+};
+
 export default client;

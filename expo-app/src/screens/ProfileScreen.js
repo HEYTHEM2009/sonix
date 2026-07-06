@@ -3,7 +3,7 @@ import { View, Text, FlatList, TouchableOpacity, Alert, Image, StyleSheet, Refre
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
-import client, { IMAGE_BASE } from "../api/client";
+import client, { resolveUrl } from "../api/client";
 import { COLORS, SIZES, FONTS } from "../components/Theme";
 import Screen3D from "../components/3D/Screen3D";
 
@@ -77,7 +77,7 @@ export default function ProfileScreen({ navigation }) {
           <View style={s.avatarRing}>
             <View style={s.avatarInner}>
               {user?.avatar ? (
-                <Image source={{ uri: `${IMAGE_BASE}${user.avatar}?t=${Date.now()}` }} style={{ width: 78, height: 78, borderRadius: 39 }} />
+                <Image source={{ uri: `${resolveUrl(user.avatar)}?t=${Date.now()}` }} style={{ width: 78, height: 78, borderRadius: 39 }} />
               ) : (
                 <Text style={s.avatarLetter}>{user?.username?.[0]?.toUpperCase() || "?"}</Text>
               )}
@@ -174,7 +174,7 @@ export default function ProfileScreen({ navigation }) {
         renderItem={({ item: post }) => (
           <TouchableOpacity style={s.cell}>
             {post.image ? (
-              <Image source={{ uri: `${IMAGE_BASE}${post.image}` }} style={s.cellImg} resizeMode="cover" />
+              <Image source={{ uri: resolveUrl(post.image) }} style={s.cellImg} resizeMode="cover" />
             ) : (
               <View style={s.cellText}>
                 <Text style={s.cellTextContent} numberOfLines={4}>{post.content}</Text>

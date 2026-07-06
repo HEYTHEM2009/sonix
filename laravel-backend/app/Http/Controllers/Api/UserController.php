@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Helpers\Sanitize;
+use App\Helpers\StorageHelper;
 use App\Models\User;
 use App\Models\Post;
 use App\Models\Follow;
@@ -80,10 +81,8 @@ class UserController extends Controller
         }
 
         if ($request->hasFile('avatar')) {
-            $ext = strtolower($request->file('avatar')->getClientOriginalExtension()) ?: 'jpg';
-            $filename = uniqid('avatar_') . '.' . $ext;
-            $request->file('avatar')->move(public_path('uploads'), $filename);
-            $user->avatar = "/uploads/$filename";
+            $path = StorageHelper::upload($request->file('avatar'), 'uploads');
+            $user->avatar = StorageHelper::getUrl($path);
         }
 
         $user->save();

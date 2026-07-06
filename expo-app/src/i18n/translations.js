@@ -78,6 +78,11 @@ const translations = {
     // Stories
     addToStory: "Add to Story",
     editStory: "Edit Story",
+    templates: "Templates",
+    music: "Music",
+    collage: "Collage",
+    recent: "Recent",
+    select: "Select",
     takePhoto: "Take a photo",
     chooseFromLibrary: "Choose from library",
     max60Seconds: "Max 60 seconds",
@@ -385,6 +390,11 @@ const translations = {
     // Stories
     addToStory: "إضافة إلى القصة",
     editStory: "تعديل القصة",
+    templates: "القوالب",
+    music: "الموسيقى",
+    collage: "الكولاج",
+    recent: "الأخيرة",
+    select: "اختيار",
     takePhoto: "التقاط صورة",
     chooseFromLibrary: "اختيار من المعرض",
     max60Seconds: "حد أقصى 60 ثانية",

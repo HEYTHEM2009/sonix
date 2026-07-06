@@ -2,6 +2,7 @@
   "expo": {
     "name": "Sonix",
     "slug": "sonix-app",
+    "owner": "heythem.16",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -28,9 +29,14 @@
       "package": "com.sonix.app",
       "softwareKeyboardLayoutMode": "resize",
       "permissions": [
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE"
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.READ_MEDIA_VISUAL_USER_SELECTED",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_VIDEO",
+        "android.permission.READ_MEDIA_AUDIO"
       ]
     },
     "plugins": [
@@ -47,11 +53,18 @@
         }
       ],
       "expo-video",
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Allow Sonix to access your photos for stories and posts.",
+          "savePhotosPermission": "Allow Sonix to save photos to your library."
+        }
+      ]
     ],
     "extra": {
       "eas": {
-        "projectId": "sonix-app"
+        "projectId": "d761153f-6215-4e06-a8b5-9eb78029dd6f"
       }
     }
   }

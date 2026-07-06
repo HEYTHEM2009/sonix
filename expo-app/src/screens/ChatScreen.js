@@ -2,7 +2,7 @@ import { useState, useEffect, useLayoutEffect, useCallback, useRef, memo } from 
 import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Image, Alert, ActivityIndicator, Dimensions, Animated, Keyboard } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
-import client, { IMAGE_BASE } from "../api/client";
+import client, { resolveUrl } from "../api/client";
 import { getEcho } from "../api/websocket";
 import { cacheMessages, getCachedMessages, addToOfflineQueue, getOfflineQueue, removeFromOfflineQueue } from "../api/cache";
 import { useAuth } from "../context/AuthContext";
@@ -44,7 +44,7 @@ const MessageBubble = memo(({ item, isMine, onLongPress }) => {
 
       {item.type === "image" && item.image ? (
         <TouchableOpacity onLongPress={handleLongPress} activeOpacity={0.8}>
-          <Image source={{ uri: `${IMAGE_BASE}${item.image}` }} style={s.messageImage} resizeMode="cover" />
+          <Image source={{ uri: resolveUrl(item.image) }} style={s.messageImage} resizeMode="cover" />
         </TouchableOpacity>
       ) : (
         <TouchableOpacity onLongPress={handleLongPress} activeOpacity={0.8} style={[s.bubble, isMine ? s.mine : s.theirs, item.pending && s.bubblePendingBg]}>

@@ -4,12 +4,12 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Helpers\Sanitize;
+use App\Helpers\StorageHelper;
 use App\Models\Post;
 use App\Models\Follow;
 use App\Models\User;
 use App\Models\BlockedUser;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 
 class PostController extends Controller
 {
@@ -133,16 +133,12 @@ class PostController extends Controller
         ];
 
         if ($hasVideo) {
-            $ext = strtolower($request->file('video')->getClientOriginalExtension()) ?: 'mp4';
-            $filename = uniqid('vid_') . '.' . $ext;
-            $request->file('video')->move(public_path('uploads'), $filename);
-            $data['video'] = "/uploads/$filename";
+            $path = StorageHelper::upload($request->file('video'), 'uploads');
+            $data['video'] = StorageHelper::getUrl($path);
         } elseif ($hasImage) {
-            $ext = strtolower($request->file('image')->getClientOriginalExtension()) ?: 'jpg';
-            $filename = uniqid('img_') . '.' . $ext;
-            $request->file('image')->move(public_path('uploads'), $filename);
-            $data['image'] = "/uploads/$filename";
-            $data['thumbnail'] = "/uploads/$filename";
+            $path = StorageHelper::upload($request->file('image'), 'uploads');
+            $data['image'] = StorageHelper::getUrl($path);
+            $data['thumbnail'] = StorageHelper::getUrl($path);
         }
 
         $post = Post::create($data);

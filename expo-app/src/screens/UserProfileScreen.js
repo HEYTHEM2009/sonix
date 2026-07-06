@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, ActivityIndicator, Alert } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import client, { IMAGE_BASE } from "../api/client";
+import client, { resolveUrl } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import Screen3D from "../components/3D/Screen3D";
@@ -122,7 +122,7 @@ export default function UserProfileScreen({ route, navigation }) {
       ListEmptyComponent={<Text style={s.empty}>{t("noPosts")}</Text>}
       renderItem={({ item: post }) => (
         <TouchableOpacity style={s.cell}>
-          {post.image && <Image source={{ uri: `${IMAGE_BASE}${post.image}` }} style={s.cellImg} resizeMode="cover" />}
+          {post.image && <Image source={{ uri: resolveUrl(post.image) }} style={s.cellImg} resizeMode="cover" />}
           {!post.image && <View style={s.cellText}><Text style={s.cellTextContent} numberOfLines={3}>{post.content}</Text></View>}
         </TouchableOpacity>
       )}

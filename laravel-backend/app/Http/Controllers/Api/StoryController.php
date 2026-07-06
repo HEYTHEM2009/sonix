@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Helpers\Sanitize;
+use App\Helpers\StorageHelper;
 use App\Models\Story;
 use App\Models\StoryView;
 use App\Models\StoryReaction;
@@ -191,30 +192,17 @@ class StoryController extends Controller
 
         if ($request->hasFile('video')) {
             $videoFile = $request->file('video');
-            $ext = $videoFile->getClientOriginalExtension() ?: 'mp4';
-            $filename = uniqid('vid_') . '.' . $ext;
-            $dest = public_path('uploads');
-            if (!is_dir($dest)) {
-                mkdir($dest, 0775, true);
-            }
             $origSize = 0;
             try { $origSize = $videoFile->getSize(); } catch (\Throwable $e) {}
-            $moved = $videoFile->move($dest, $filename);
-            if (!$moved || !file_exists($dest . '/' . $filename)) {
-                \Log::error('Story video move failed', ['filename' => $filename, 'orig_size' => $origSize]);
+            $path = StorageHelper::upload($videoFile, 'uploads');
+            if (!$path) {
                 return response()->json(['message' => 'Video upload failed'], 500);
             }
-            $savedSize = filesize($dest . '/' . $filename);
-            if ($savedSize > 50 * 1024 * 1024) {
-                unlink($dest . '/' . $filename);
-                return response()->json(['message' => 'Video too large (max 50MB)'], 422);
-            }
-            $data['video'] = "/uploads/$filename";
-            \Log::info('Story video saved', ['filename' => $filename, 'orig_size' => $origSize, 'saved_size' => $savedSize]);
+            $data['video'] = StorageHelper::getUrl($path);
+            \Log::info('Story video saved', ['orig_size' => $origSize, 'url' => $data['video']]);
         } elseif ($request->hasFile('image')) {
-            $filename = uniqid('img_') . '.jpg';
-            $request->file('image')->move(public_path('uploads'), $filename);
-            $data['image'] = "/uploads/$filename";
+            $path = StorageHelper::upload($request->file('image'), 'uploads');
+            $data['image'] = StorageHelper::getUrl($path);
         }
 
         $hasIsHighlight = Schema::hasColumn('stories', 'is_highlight');
@@ -494,9 +482,8 @@ class StoryController extends Controller
         ];
 
         if ($request->hasFile('cover_image')) {
-            $filename = uniqid('cover_') . '.jpg';
-            $request->file('cover_image')->move(public_path('uploads'), $filename);
-            $data['cover_image'] = "/uploads/$filename";
+            $path = StorageHelper::upload($request->file('cover_image'), 'uploads');
+            $data['cover_image'] = StorageHelper::getUrl($path);
         }
 
         $highlight = StoryHighlight::create($data);

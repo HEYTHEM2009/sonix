@@ -3,7 +3,7 @@ import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, RefreshContr
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
-import client, { IMAGE_BASE } from "../api/client";
+import client, { resolveUrl } from "../api/client";
 import { COLORS, SIZES } from "../components/Theme";
 import Screen3D from "../components/3D/Screen3D";
 
@@ -40,7 +40,7 @@ const ConversationItem = memo(({ item, onPress, onLongPress, onDelete, onMute, o
         <TouchableOpacity style={s.rowInner} onPress={onPress} onLongPress={onLongPress} activeOpacity={0.7}>
           <View style={s.avatarWrap}>
             {item.user.avatar ? (
-              <Image source={{ uri: `${IMAGE_BASE}${item.user.avatar}${item.user.id === currentUser?.id ? "?t=" + Date.now() : ""}` }} style={s.avatarImg} />
+              <Image source={{ uri: `${resolveUrl(item.user.avatar)}${item.user.id === currentUser?.id ? "?t=" + Date.now() : ""}` }} style={s.avatarImg} />
             ) : (
               <View style={[s.avatar, { backgroundColor: COLORS.primary + "30" }]}>
                 <Text style={[s.avatarText, { color: COLORS.primary }]}>{item.user.username?.[0]?.toUpperCase() || "?"}</Text>
