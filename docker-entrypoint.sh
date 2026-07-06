@@ -115,9 +115,10 @@ php artisan migrate --force
 # Seed database (safe - checks if already seeded)
 php artisan db:seed --force
 
-# Clear and rebuild cache
-php artisan config:cache
-php artisan route:cache
+# Clear cache
+php artisan config:clear 2>/dev/null
+php artisan route:clear 2>/dev/null
+php artisan view:clear 2>/dev/null
 
 echo "Starting services..."
 
