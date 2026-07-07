@@ -1,13 +1,13 @@
 {
   "expo": {
-    "name": "Sonix",
-    "slug": "sonix-app",
-    "owner": "heythem.16",
+    "name": "YourAppName",
+    "slug": "your-app-slug",
+    "owner": "your-expo-username",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
-    "scheme": "sonix-app",
+    "scheme": "your-app-scheme",
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
@@ -15,10 +15,10 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.sonix.app",
+      "bundleIdentifier": "com.yourcompany.app",
       "infoPlist": {
-        "NSCameraUsageDescription": "Allow camera access for Sonix stories and posts",
-        "NSPhotoLibraryUsageDescription": "Allow photo access for Sonix stories and posts"
+        "NSCameraUsageDescription": "Allow camera access for stories and posts",
+        "NSPhotoLibraryUsageDescription": "Allow photo access for stories and posts"
       }
     },
     "android": {
@@ -26,7 +26,7 @@
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#0D0D1A"
       },
-      "package": "com.sonix.app",
+      "package": "com.yourcompany.app",
       "softwareKeyboardLayoutMode": "resize",
       "permissions": [
         "android.permission.CAMERA",
@@ -43,13 +43,13 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Allow Sonix to access your camera for stories and posts."
+          "cameraPermission": "Allow the app to access your camera for stories and posts."
         }
       ],
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow Sonix to access your photos for stories and posts."
+          "photosPermission": "Allow the app to access your photos for stories and posts."
         }
       ],
       "expo-video",
@@ -57,14 +57,14 @@
       [
         "expo-media-library",
         {
-          "photosPermission": "Allow Sonix to access your photos for stories and posts.",
-          "savePhotosPermission": "Allow Sonix to save photos to your library."
+          "photosPermission": "Allow the app to access your photos for stories and posts.",
+          "savePhotosPermission": "Allow the app to save photos to your library."
         }
       ]
     ],
     "extra": {
       "eas": {
-        "projectId": "d761153f-6215-4e06-a8b5-9eb78029dd6f"
+        "projectId": "your-eas-project-id"
       }
     }
   }

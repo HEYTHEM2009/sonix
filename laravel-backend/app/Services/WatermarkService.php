@@ -13,7 +13,7 @@ class WatermarkService
 
     public function __construct()
     {
-        $this->watermarkText = config('media.watermark_text', 'Sonix');
+        $this->watermarkText = config('media.watermark_text', 'YourApp');
         $this->fontSize = config('media.watermark_font_size', 24);
         $this->fontColor = config('media.watermark_color', '#ffffff');
         $this->opacity = config('media.watermark_opacity', 30); // 0-100

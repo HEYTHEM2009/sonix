@@ -39,11 +39,11 @@ NGINX
 
 # Generate .env from Railway environment variables
 cat > /app/laravel-backend/.env <<EOF
-APP_NAME=${APP_NAME:-Sonix}
+APP_NAME=${APP_NAME:-YourAppName}
 APP_ENV=${APP_ENV:-production}
 APP_KEY=${APP_KEY:-}
 APP_DEBUG=${APP_DEBUG:-false}
-APP_URL=${APP_URL:-https://sonix-production.up.railway.app}
+APP_URL=${APP_URL:-http://localhost:5000}
 
 APP_LOCALE=en
 APP_FALLBACK_LOCALE=en
@@ -51,7 +51,7 @@ APP_FALLBACK_LOCALE=en
 DB_CONNECTION=${DB_CONNECTION:-pgsql}
 DB_HOST=${DB_HOST:-127.0.0.1}
 DB_PORT=${DB_PORT:-5432}
-DB_DATABASE=${DB_DATABASE:-sonix}
+DB_DATABASE=${DB_DATABASE:-your_database}
 DB_USERNAME=${DB_USERNAME:-postgres}
 DB_PASSWORD=${DB_PASSWORD:-}
 
@@ -77,9 +77,9 @@ REVERB_SERVER_PORT=8080
 REVERB_HOST=${REVERB_HOST:-192.168.1.10}
 REVERB_PORT=${REVERB_PORT:-443}
 REVERB_SCHEME=${REVERB_SCHEME:-http}
-REVERB_APP_KEY=${REVERB_APP_KEY:-sonix-reverb-key}
-REVERB_APP_SECRET=${REVERB_APP_SECRET:-sonix-reverb-secret}
-REVERB_APP_ID=${REVERB_APP_ID:-12345}
+REVERB_APP_KEY=${REVERB_APP_KEY:-your-reverb-key}
+REVERB_APP_SECRET=${REVERB_APP_SECRET:-your-reverb-secret}
+REVERB_APP_ID=${REVERB_APP_ID:-your-reverb-id}
 REVERB_APP_PING_INTERVAL=60
 
 MAIL_MAILER=log
@@ -88,7 +88,7 @@ MEDIA_SIGNED_URL_TTL=3600
 MEDIA_MAX_UPLOAD_SIZE=50
 MEDIA_IMAGE_QUALITY=85
 MEDIA_WATERMARK_ENABLED=false
-MEDIA_WATERMARK_TEXT=Sonix
+MEDIA_WATERMARK_TEXT=${APP_NAME:-YourApp}
 MEDIA_TRANSCODING_ENABLED=false
 ANTI_SCRAPING_ENABLED=true
 MEDIA_CDN_ENABLED=false
@@ -105,6 +105,8 @@ echo "Generated .env file"
 # Fix permissions
 chmod -R 777 /app/laravel-backend/storage 2>/dev/null
 chmod -R 777 /app/laravel-backend/bootstrap/cache 2>/dev/null
+mkdir -p /app/laravel-backend/public/uploads
+chmod -R 777 /app/laravel-backend/public/uploads 2>/dev/null
 
 # Generate app key if not set
 if echo "$APP_KEY" | grep -q "base64:"; then

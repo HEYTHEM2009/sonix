@@ -34,7 +34,7 @@ class CloudinaryService
 
         try {
             $params = array_merge([
-                'folder' => $options['folder'] ?? 'sonix',
+                'folder' => $options['folder'] ?? config('app.name', 'app'),
                 'resource_type' => 'auto',
             ], $options);
 

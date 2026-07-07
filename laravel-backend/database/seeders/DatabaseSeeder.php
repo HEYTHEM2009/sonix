@@ -23,7 +23,7 @@ class DatabaseSeeder extends Seeder
 
         // ── Users ──
         $users = [
-            ['username' => 'sonix', 'email' => 'admin@sonix.app', 'bio' => 'Welcome to Sonix! 🎵', 'password' => Hash::make('password123')],
+            ['username' => 'admin', 'email' => 'admin@yourapp.com', 'bio' => 'Welcome to the app! 🎵', 'password' => Hash::make('password123')],
             ['username' => 'sara', 'email' => 'sara@test.com', 'bio' => 'Photography lover 📸', 'password' => Hash::make('password123')],
             ['username' => 'omar', 'email' => 'omar@test.com', 'bio' => 'Developer 💻', 'password' => Hash::make('password123')],
             ['username' => 'nora', 'email' => 'nora@test.com', 'bio' => 'Travel ✈️ & Food 🍕', 'password' => Hash::make('password123')],
@@ -47,7 +47,7 @@ class DatabaseSeeder extends Seeder
 
         // ── Posts ──
         $posts = [
-            ['user_id' => $createdUsers[0]->id, 'content' => 'Welcome to Sonix! 🎉 This is our first post. Excited to have you all here!'],
+            ['user_id' => $createdUsers[0]->id, 'content' => 'Welcome to the app! 🎉 This is our first post. Excited to have you all here!'],
             ['user_id' => $createdUsers[1]->id, 'content' => 'Beautiful sunset today 🌅 #nature #photography'],
             ['user_id' => $createdUsers[2]->id, 'content' => 'Just shipped a new feature 💻 #coding #developer'],
             ['user_id' => $createdUsers[3]->id, 'content' => 'Best pasta in town! 🍝 #foodie #italian'],
@@ -86,7 +86,7 @@ class DatabaseSeeder extends Seeder
         // ── Stories (text only, for demo) ──
         Story::create(['user_id' => $createdUsers[1]->id, 'type' => 'text', 'text_overlay' => 'Good morning! ☀️', 'bg_color' => '#6C5CE7', 'duration' => 5]);
         Story::create(['user_id' => $createdUsers[2]->id, 'type' => 'text', 'text_overlay' => 'Coding session 💻', 'bg_color' => '#E17055', 'duration' => 5]);
-        Story::create(['user_id' => $createdUsers[0]->id, 'type' => 'text', 'text_overlay' => 'Sonix is live! 🎉', 'bg_color' => '#00CEC9', 'duration' => 5]);
+        Story::create(['user_id' => $createdUsers[0]->id, 'type' => 'text', 'text_overlay' => 'The app is live! 🎉', 'bg_color' => '#00CEC9', 'duration' => 5]);
 
         // ── Bookmarks ──
         Bookmark::create(['user_id' => $createdUsers[0]->id, 'post_id' => $createdPosts[1]->id]);

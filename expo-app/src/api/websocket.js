@@ -16,8 +16,8 @@ export const getEcho = async () => {
     echoInstance = new Echo({
       broadcaster: "pusher",
       client: Pusher,
-      key: "sonix-reverb-key",
-      wsHost: "sonix-production.up.railway.app",
+      key: process.env.EXPO_PUBLIC_REVERB_KEY || "your-reverb-key",
+      wsHost: process.env.EXPO_PUBLIC_WS_HOST || "localhost",
       wsPort: 443,
       wssPort: 443,
       forceTLS: true,

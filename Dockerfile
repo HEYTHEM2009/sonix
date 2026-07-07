@@ -22,7 +22,7 @@ RUN mkdir -p public/uploads storage/framework/{cache,sessions,views} storage/log
     && chmod -R 777 storage \
     && chmod -R 777 bootstrap/cache \
     && chmod -R 777 /tmp/nginx-upload \
-    && chmod -R 775 public/uploads
+    && chmod -R 777 public/uploads
 
 RUN echo "upload_max_filesize = 50M" >> /usr/local/etc/php/conf.d/uploads.ini \
     && echo "post_max_size = 55M" >> /usr/local/etc/php/conf.d/uploads.ini \

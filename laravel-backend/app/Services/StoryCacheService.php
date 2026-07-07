@@ -11,7 +11,7 @@ use Carbon\Carbon;
 class StoryCacheService
 {
     protected int $ttl = 300; // 5 minutes
-    protected string $prefix = 'sonix:';
+    protected string $prefix = '';
     protected string $feedPrefix = 'stories:feed:';
     protected string $timelinePrefix = 'stories:timeline:';
     protected string $metadataPrefix = 'stories:meta:';

@@ -40,7 +40,7 @@ return [
     */
 
     'watermark_enabled' => env('MEDIA_WATERMARK_ENABLED', false),
-    'watermark_text' => env('MEDIA_WATERMARK_TEXT', 'Sonix'),
+    'watermark_text' => env('MEDIA_WATERMARK_TEXT', 'YourApp'),
     'watermark_font_size' => env('MEDIA_WATERMARK_FONT_SIZE', 24),
     'watermark_color' => env('MEDIA_WATERMARK_COLOR', '#ffffff'),
     'watermark_opacity' => env('MEDIA_WATERMARK_OPACITY', 30),

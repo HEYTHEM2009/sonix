@@ -1,7 +1,7 @@
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const API = "https://sonix-production.up.railway.app/api";
+const API = process.env.EXPO_PUBLIC_API_URL || "http://localhost:5000/api";
 
 let onAuthExpired = null;
 

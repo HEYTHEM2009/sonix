@@ -1,4 +1,4 @@
-# Sonix — Full-Stack Social Media Starter Kit
+# Social Media Starter Kit
 
 **Skip months of development.** Ship an Instagram-like social app in under 30 minutes.
 
@@ -22,7 +22,7 @@ Built with **Laravel 13** + **React Native (Expo SDK 56)**. Fully featured, prod
 - **3D Floating Tab Bar** — Animated, glassmorphism design
 - **Video Backgrounds** — TikTok-style on login/register screens
 - **Smooth Transitions** — 60fps animated screen transitions
-- **Midnight Luxe Theme** — Dark mode with purple/gold accents
+- **Dark Theme** — Modern dark mode with customizable colors
 - **Instagram-style Story Creation** — Gallery grid, templates, music, collage options
 - **Sound Toggle** — Video sound controls without leaving stories
 
@@ -46,7 +46,6 @@ Built with **Laravel 13** + **React Native (Expo SDK 56)**. Fully featured, prod
 | Migrations | 34 |
 | API Endpoints | 63+ |
 | Translation Keys | 300+ |
-| Bug Fixes Applied | 73+ |
 
 ---
 
@@ -68,7 +67,7 @@ php artisan key:generate
 # Configure .env with your database:
 # DB_CONNECTION=pgsql
 # DB_HOST=your-host
-# DB_DATABASE=social_app
+# DB_DATABASE=your_database
 # DB_USERNAME=your-user
 # DB_PASSWORD=your-password
 
@@ -83,8 +82,10 @@ php artisan serve --port=5000
 cd expo-app
 npm install
 
-# Edit src/api/client.js — set your API URL:
-# const API = "http://YOUR_SERVER_IP:5000/api";
+# Create .env file:
+echo "EXPO_PUBLIC_API_URL=http://localhost:5000/api" > .env
+echo "EXPO_PUBLIC_WS_HOST=localhost" >> .env
+echo "EXPO_PUBLIC_REVERB_KEY=your-reverb-key" >> .env
 
 npx expo start
 ```
@@ -125,7 +126,7 @@ Download the APK and install on any Android device.
 ## Project Structure
 
 ```
-sonix/
+social-platform/
 ├── laravel-backend/              # Laravel 13 API
 │   ├── app/Http/Controllers/     # 13 API controllers
 │   ├── app/Models/               # 17 Eloquent models
@@ -145,38 +146,31 @@ sonix/
 │       └── screens/              # 24 screens
 │
 ├── Dockerfile                    # nginx + php-fpm + supervisor (production)
+├── docker-entrypoint.sh          # Auto-generates .env from env vars
 ├── railway.json                  # Railway config
-└── eas.json                      # EAS Build profiles
+├── eas.json                      # EAS Build profiles
+├── INSTALL.md                    # Detailed installation guide
+├── CONFIG.md                     # Environment variables reference
+└── CUSTOMIZATION.md              # How to rebrand the app
 ```
 
 ---
 
 ## Customization Guide
 
-### Change API URL
-Edit `expo-app/src/api/client.js`:
-```javascript
-const API = "https://your-domain.com/api";
-```
+See `CUSTOMIZATION.md` for detailed instructions on:
+- Changing app name, logo, and colors
+- Adding new languages
+- Changing default users
+- Modifying the theme
 
-### Change Theme Colors
-Edit `expo-app/src/components/Theme.js`:
-```javascript
-export const COLORS = {
-  bg: "#0d0d1a",       // Background
-  primary: "#7c6cf7",  // Primary purple
-  accent: "#d4a574",   // Gold accent
-};
-```
+### Quick Changes
 
-### Change Default Language
-Edit `expo-app/src/context/LanguageContext.js`:
-```javascript
-const [lang, setLang] = useState("en"); // "ar" for Arabic
-```
+**Change App Name:** Edit `expo-app/app.json` and `.env` → `APP_NAME`
 
-### Add New Translations
-Edit `expo-app/src/i18n/translations.js` — add keys to `ar` and `en` objects.
+**Change Colors:** Edit `expo-app/src/components/Theme.js`
+
+**Change Logo:** Replace `expo-app/assets/icon.png` and `expo-app/assets/splash.png`
 
 ---
 
@@ -194,9 +188,17 @@ Run `php artisan db:seed` to populate your app with:
 
 | User | Email | Password |
 |------|-------|----------|
-| sonix | admin@sonix.app | password123 |
+| admin | admin@example.com | password123 |
 | sara | sara@test.com | password123 |
 | omar | omar@test.com | password123 |
+
+---
+
+## Documentation
+
+- `INSTALL.md` — Step-by-step installation guide
+- `CONFIG.md` — All environment variables explained
+- `CUSTOMIZATION.md` — How to rebrand and customize
 
 ---
 
@@ -216,7 +218,3 @@ Run `php artisan db:seed` to populate your app with:
 ## License
 
 MIT License — Use freely for personal or commercial projects.
-
----
-
-Built with love for the developer community.

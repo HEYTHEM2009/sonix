@@ -1,4 +1,4 @@
-# Deployment Guide — Sonix
+# Deployment Guide
 
 This guide covers deploying the Laravel backend to the cloud and building a standalone APK.
 
@@ -19,7 +19,7 @@ Railway is the easiest option for Laravel + PostgreSQL.
    git add .
    git commit -m "Initial commit"
    # Create a new repo on GitHub, then:
-   git remote add origin https://github.com/YOUR_USERNAME/sonix.git
+   git remote add origin https://github.com/YOUR_USERNAME/your-app.git
    git push -u origin main
    ```
 
