@@ -78,7 +78,7 @@ export default function RegisterScreen({ navigation }) {
     if (password.length < 6) return Alert.alert(t("error"), t("passwordMin"));
     setLoading(true);
     try { await register(username.trim(), email.trim(), password); }
-    catch (e) { Alert.alert(t("registerFailed"), e.response?.data?.message || t("failedToRegister")); }
+    catch (e) { const msg = e.response?.data?.message || Object.values(e.response?.data?.errors || {}).flat().join(", ") || t("failedToRegister"); Alert.alert(t("registerFailed"), msg); }
     setLoading(false);
   };
 
