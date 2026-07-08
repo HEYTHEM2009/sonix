@@ -121,10 +121,13 @@ php artisan migrate --force
 # Seed database (safe - checks if already seeded)
 php artisan db:seed --force
 
-# Clear cache
+# Clear and rebuild cache
 php artisan config:clear 2>/dev/null
+php artisan config:cache 2>/dev/null
 php artisan route:clear 2>/dev/null
 php artisan view:clear 2>/dev/null
+
+echo "Cloudinary configured: CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME:-EMPTY}"
 
 echo "Starting services..."
 
