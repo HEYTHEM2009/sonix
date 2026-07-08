@@ -27,7 +27,7 @@ class MediaSecurityService
         $payload = $path . '|' . $expires;
         $signature = hash_hmac('sha256', $payload, $this->secret);
 
-        $baseUrl = config('app.url', 'http://localhost:5000');
+        $baseUrl = config('app.url', 'https://sonix-production.up.railway.app');
 
         return "{$baseUrl}/media/{$path}?"
             . http_build_query([

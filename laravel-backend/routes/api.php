@@ -18,13 +18,13 @@ use App\Http\Controllers\Api\ReportController;
 Route::post('/auth/register', [AuthController::class, 'register'])->middleware('throttle:5,1');
 Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
 
-Route::get('/users', [UserController::class, 'index']);
+Route::get('/users', [UserController::class, 'index'])->middleware('auth:sanctum');
 Route::get('/users/search', [UserController::class, 'search'])->middleware('auth:sanctum');
 Route::get('/users/me', [UserController::class, 'me'])->middleware('auth:sanctum');
 Route::post('/users/profile', [UserController::class, 'updateProfile'])->middleware(['auth:sanctum', 'throttle:10,1']);
-Route::get('/users/{id}', [UserController::class, 'show']);
-Route::get('/users/{id}/stats', [UserController::class, 'stats']);
-Route::get('/users/{id}/status', [UserController::class, 'status']);
+Route::get('/users/{id}', [UserController::class, 'show'])->middleware('auth:sanctum');
+Route::get('/users/{id}/stats', [UserController::class, 'stats'])->middleware('auth:sanctum');
+Route::get('/users/{id}/status', [UserController::class, 'status'])->middleware('auth:sanctum');
 Route::post('/users/{id}/online', [UserController::class, 'setOnline'])->middleware('auth:sanctum');
 Route::post('/notifications/register', [NotificationController::class, 'registerToken'])->middleware('auth:sanctum');
 Route::post('/users/toggle-privacy', [UserController::class, 'togglePrivacy'])->middleware('auth:sanctum');
@@ -32,24 +32,24 @@ Route::post('/users/toggle-privacy', [UserController::class, 'togglePrivacy'])->
 Route::post('/auth/change-password', [AuthController::class, 'changePassword'])->middleware(['auth:sanctum', 'throttle:5,1']);
 Route::delete('/auth/account', [AuthController::class, 'deleteAccount'])->middleware(['auth:sanctum', 'throttle:3,1']);
 
-Route::get('/posts', [PostController::class, 'index']);
+Route::get('/posts', [PostController::class, 'index'])->middleware('auth:sanctum');
 Route::post('/posts', [PostController::class, 'store'])->middleware(['auth:sanctum', 'throttle:10,1']);
-Route::get('/posts/{id}', [PostController::class, 'show']);
+Route::get('/posts/{id}', [PostController::class, 'show'])->middleware('auth:sanctum');
 Route::put('/posts/{id}', [PostController::class, 'update'])->middleware('auth:sanctum');
 Route::get('/posts/user/{userId}', [PostController::class, 'userPosts'])->middleware('auth:sanctum');
 Route::delete('/posts/{id}', [PostController::class, 'destroy'])->middleware(['auth:sanctum', 'throttle:20,1']);
 
 Route::post('/likes', [LikeController::class, 'toggle'])->middleware(['auth:sanctum', 'throttle:30,1']);
-Route::get('/likes/{postId}', [LikeController::class, 'count']);
-Route::get('/likes/{postId}/users', [LikeController::class, 'users']);
+Route::get('/likes/{postId}', [LikeController::class, 'count'])->middleware('auth:sanctum');
+Route::get('/likes/{postId}/users', [LikeController::class, 'users'])->middleware('auth:sanctum');
 
-Route::get('/posts/{postId}/comments', [CommentController::class, 'index']);
+Route::get('/posts/{postId}/comments', [CommentController::class, 'index'])->middleware('auth:sanctum');
 Route::post('/posts/{postId}/comments', [CommentController::class, 'store'])->middleware(['auth:sanctum', 'throttle:20,1']);
 Route::delete('/comments/{id}', [CommentController::class, 'destroy'])->middleware(['auth:sanctum', 'throttle:20,1']);
 
 Route::post('/follow', [FollowController::class, 'toggle'])->middleware(['auth:sanctum', 'throttle:15,1']);
-Route::get('/follow/{userId}/followers', [FollowController::class, 'followers']);
-Route::get('/follow/{userId}/following', [FollowController::class, 'following']);
+Route::get('/follow/{userId}/followers', [FollowController::class, 'followers'])->middleware('auth:sanctum');
+Route::get('/follow/{userId}/following', [FollowController::class, 'following'])->middleware('auth:sanctum');
 Route::get('/follow/requests', [FollowController::class, 'requests'])->middleware('auth:sanctum');
 Route::post('/follow/approve/{id}', [FollowController::class, 'approve'])->middleware('auth:sanctum');
 Route::post('/follow/reject/{id}', [FollowController::class, 'reject'])->middleware('auth:sanctum');
@@ -76,7 +76,6 @@ Route::post('/messages/pin/{userId}', [MessageController::class, 'togglePin'])->
 Route::delete('/messages/conversation/{userId}', [MessageController::class, 'deleteConversation'])->middleware('auth:sanctum');
 
 Route::get('/stories', [StoryController::class, 'index'])->middleware('auth:sanctum');
-Route::get('/stories/debug', [StoryController::class, 'debug'])->middleware('auth:sanctum');
 Route::post('/stories', [StoryController::class, 'store'])->middleware(['auth:sanctum', 'throttle:10,1']);
 Route::get('/stories/{id}/viewers', [StoryController::class, 'viewers'])->middleware('auth:sanctum');
 Route::post('/stories/{id}/view', [StoryController::class, 'view'])->middleware('auth:sanctum');

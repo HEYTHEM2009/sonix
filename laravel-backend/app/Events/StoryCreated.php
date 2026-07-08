@@ -4,7 +4,7 @@ namespace App\Events;
 
 use App\Models\Story;
 use App\Models\Follow;
-use Illuminate\Broadcasting\Channel;
+use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
@@ -30,10 +30,10 @@ class StoryCreated implements ShouldBroadcast
             ->toArray();
 
         foreach ($followerIds as $followerId) {
-            $channels[] = new Channel('stories.' . $followerId);
+            $channels[] = new PrivateChannel('stories.' . $followerId);
         }
 
-        $channels[] = new Channel('stories.' . $this->story->user_id);
+        $channels[] = new PrivateChannel('stories.' . $this->story->user_id);
 
         return $channels;
     }
