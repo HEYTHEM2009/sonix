@@ -14,7 +14,7 @@ class AuthController extends Controller
         $data = $request->validate([
             'username' => 'required|string|max:30|unique:users|regex:/^[a-zA-Z0-9_]+$/',
             'email' => 'required|email|max:255|unique:users',
-            'password' => 'required|string|min:6|max:100',
+            'password' => 'required|string|min:8|max:100',
         ]);
 
         $user = User::create([
@@ -66,7 +66,7 @@ class AuthController extends Controller
     {
         $request->validate([
             'current_password' => 'required|string',
-            'new_password' => 'required|string|min:6|max:100',
+            'new_password' => 'required|string|min:8|max:100',
         ]);
 
         $user = $request->user();

@@ -26,7 +26,16 @@ class UserController extends Controller
 
     public function me(Request $request)
     {
-        return response()->json($request->user());
+        $user = $request->user();
+        return response()->json([
+            'id' => $user->id,
+            'username' => $user->username,
+            'email' => $user->email,
+            'bio' => $user->bio,
+            'avatar' => $user->avatar,
+            'is_private' => $user->is_private,
+            'created_at' => $user->created_at,
+        ]);
     }
 
     public function show(Request $request, $id)
@@ -87,7 +96,14 @@ class UserController extends Controller
 
         $user->save();
 
-        return response()->json($user);
+        return response()->json([
+            'id' => $user->id,
+            'username' => $user->username,
+            'email' => $user->email,
+            'bio' => $user->bio,
+            'avatar' => $user->avatar,
+            'is_private' => $user->is_private,
+        ]);
     }
 
     public function search(Request $request)

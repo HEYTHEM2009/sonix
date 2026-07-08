@@ -36,6 +36,9 @@ build/
 *.apk
 *.aab
 
+# Binary assets
+test_avatar.jpg
+
 # Logs
 *.log
 npm-debug.log*
