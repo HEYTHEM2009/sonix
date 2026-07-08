@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class CloudinaryService
@@ -11,19 +10,25 @@ class CloudinaryService
     private string $cloudName;
     private string $apiKey;
     private string $apiSecret;
-    private string $uploadUrl;
 
     public function __construct()
     {
         $this->cloudName = config('cloudinary.cloud_name', '');
         $this->apiKey = config('cloudinary.api_key', '');
         $this->apiSecret = config('cloudinary.api_secret', '');
-        $this->uploadUrl = "https://api.cloudinary.com/v1_1/{$this->cloudName}/auto/upload";
     }
 
     public function isConfigured(): bool
     {
-        return !empty($this->cloudName) && !empty($this->apiKey) && !empty($this->apiSecret);
+        $configured = !empty($this->cloudName) && !empty($this->apiKey) && !empty($this->apiSecret);
+        if (!$configured) {
+            Log::warning('Cloudinary not configured', [
+                'cloud_name' => $this->cloudName ? 'set' : 'empty',
+                'api_key' => $this->apiKey ? 'set' : 'empty',
+                'api_secret' => $this->apiSecret ? 'set' : 'empty',
+            ]);
+        }
+        return $configured;
     }
 
     public function upload(UploadedFile $file, array $options = []): ?string
@@ -33,52 +38,76 @@ class CloudinaryService
         }
 
         try {
-            $params = array_merge([
-                'folder' => $options['folder'] ?? config('app.name', 'app'),
+            $folder = $options['folder'] ?? 'uploads';
+            $timestamp = time();
+            $paramsToSign = [
+                'folder' => $folder,
                 'resource_type' => 'auto',
-            ], $options);
+                'timestamp' => $timestamp,
+            ];
 
             if (isset($options['public_id'])) {
-                $params['public_id'] = $options['public_id'];
+                $paramsToSign['public_id'] = $options['public_id'];
             }
 
-            $params['timestamp'] = now()->timestamp;
-            $params['api_key'] = $this->apiKey;
-
-            ksort($params);
+            ksort($paramsToSign);
             $signStr = '';
-            foreach ($params as $k => $v) {
-                if ($k !== 'file' && $k !== 'api_key' && $v !== null && $v !== '') {
-                    $signStr .= "{$k}={$v}&";
-                }
+            foreach ($paramsToSign as $k => $v) {
+                $signStr .= "{$k}={$v}&";
             }
             $signStr = rtrim($signStr, '&');
-            $params['signature'] = sha1($signStr . $this->apiSecret);
+            $signature = sha1($signStr . $this->apiSecret);
 
-            $response = Http::attach(
-                'file',
-                file_get_contents($file->getRealPath()),
-                $file->getClientOriginalName()
-            )->attach('api_key', $this->apiKey)
-             ->attach('timestamp', (string) $params['timestamp'])
-             ->attach('folder', $params['folder'])
-             ->attach('resource_type', $params['resource_type'])
-             ->attach('signature', $params['signature']);
+            $realPath = $file->getRealPath();
+            $mimeType = mime_content_type($realPath) ?: 'application/octet-stream';
+            $originalName = $file->getClientOriginalName();
 
-            if (isset($params['public_id'])) {
-                $response = $response->attach('public_id', $params['public_id']);
+            $uploadUrl = "https://api.cloudinary.com/v1_1/{$this->cloudName}/auto/upload";
+
+            $postFields = [
+                'file' => new \CURLFile($realPath, $mimeType, $originalName),
+                'api_key' => $this->apiKey,
+                'timestamp' => $timestamp,
+                'folder' => $folder,
+                'resource_type' => 'auto',
+                'signature' => $signature,
+            ];
+
+            if (isset($options['public_id'])) {
+                $postFields['public_id'] = $options['public_id'];
             }
 
-            $result = $response->post($this->uploadUrl);
+            $ch = curl_init();
+            curl_setopt_array($ch, [
+                CURLOPT_URL => $uploadUrl,
+                CURLOPT_POST => true,
+                CURLOPT_POSTFIELDS => $postFields,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT => 60,
+                CURLOPT_SSL_VERIFYPEER => true,
+            ]);
 
-            if ($result->successful()) {
-                return $result->json('secure_url');
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $error = curl_error($ch);
+            curl_close($ch);
+
+            if ($error) {
+                Log::error('Cloudinary cURL error', ['error' => $error]);
+                return null;
             }
 
-            Log::error('Cloudinary upload failed', ['response' => $result->json()]);
+            $result = json_decode($response, true);
+
+            if ($httpCode >= 200 && $httpCode < 300 && isset($result['secure_url'])) {
+                Log::info('Cloudinary upload success', ['url' => $result['secure_url']]);
+                return $result['secure_url'];
+            }
+
+            Log::error('Cloudinary upload failed', ['http_code' => $httpCode, 'response' => $result]);
             return null;
         } catch (\Exception $e) {
-            Log::error('Cloudinary upload error', ['message' => $e->getMessage()]);
+            Log::error('Cloudinary upload exception', ['message' => $e->getMessage()]);
             return null;
         }
     }
