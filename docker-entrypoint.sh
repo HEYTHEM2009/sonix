@@ -97,6 +97,8 @@ MEDIA_CDN_URL=
 CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME:-}
 CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY:-}
 CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET:-}
+LOG_CHANNEL=stderr
+LOG_LEVEL=debug
 EOF
 
 echo "Nginx listening on port ${PORT}"
@@ -121,13 +123,11 @@ php artisan migrate --force
 # Seed database (safe - checks if already seeded)
 php artisan db:seed --force
 
-# Clear and rebuild cache
+# Clear cache
 php artisan config:clear 2>/dev/null
-php artisan config:cache 2>/dev/null
 php artisan route:clear 2>/dev/null
 php artisan view:clear 2>/dev/null
-
-echo "Cloudinary configured: CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME:-EMPTY}"
+php artisan cache:clear 2>/dev/null
 
 echo "Starting services..."
 

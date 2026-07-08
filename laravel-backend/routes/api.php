@@ -109,3 +109,16 @@ Route::post('/reports', [ReportController::class, 'store'])->middleware(['auth:s
 Route::get('/media/{path}', [App\Http\Controllers\Api\MediaController::class, 'serve'])->where('path', '.*');
 Route::post('/media/sign', [App\Http\Controllers\Api\MediaController::class, 'sign'])->middleware('auth:sanctum');
 Route::post('/media/sign-batch', [App\Http\Controllers\Api\MediaController::class, 'signBatch'])->middleware('auth:sanctum');
+
+// Debug: Cloudinary config check
+Route::get('/debug/cloudinary', function () {
+    $service = new \App\Services\CloudinaryService();
+    return response()->json([
+        'is_configured' => $service->isConfigured(),
+        'cloud_name' => config('cloudinary.cloud_name') ? 'set' : 'empty',
+        'api_key' => config('cloudinary.api_key') ? 'set' : 'empty',
+        'api_secret' => config('cloudinary.api_secret') ? 'set' : 'empty',
+        'env_cloud_name' => env('CLOUDINARY_CLOUD_NAME') ? 'set' : 'empty',
+        'getenv_cloud_name' => getenv('CLOUDINARY_CLOUD_NAME') ?: 'empty',
+    ]);
+});
