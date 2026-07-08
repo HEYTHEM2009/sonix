@@ -48,3 +48,6 @@ yarn-error.log*
 # Temporary
 tmp/
 temp/
+
+# Stray files
+bcrypt*

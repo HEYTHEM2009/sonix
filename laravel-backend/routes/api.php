@@ -17,6 +17,8 @@ use App\Http\Controllers\Api\ReportController;
 
 Route::post('/auth/register', [AuthController::class, 'register'])->middleware('throttle:5,1');
 Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
+Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:3,1');
+Route::post('/auth/reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:5,1');
 
 Route::get('/users', [UserController::class, 'index'])->middleware('auth:sanctum');
 Route::get('/users/search', [UserController::class, 'search'])->middleware('auth:sanctum');
