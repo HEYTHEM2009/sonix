@@ -93,7 +93,6 @@ class CloudinaryService
 
             if ($error) {
                 Log::error('Cloudinary cURL error', ['error' => $error]);
-                error_log("[CLOUDINARY] cURL error: {$error}");
                 return null;
             }
 
@@ -101,12 +100,10 @@ class CloudinaryService
 
             if ($httpCode >= 200 && $httpCode < 300 && isset($result['secure_url'])) {
                 Log::info('Cloudinary upload success', ['url' => $result['secure_url']]);
-                error_log("[CLOUDINARY] Upload success: {$result['secure_url']}");
                 return $result['secure_url'];
             }
 
             Log::error('Cloudinary upload failed', ['http_code' => $httpCode, 'response' => $result]);
-            error_log("[CLOUDINARY] Upload failed HTTP {$httpCode}: " . json_encode($result));
             return null;
         } catch (\Exception $e) {
             Log::error('Cloudinary upload exception', ['message' => $e->getMessage()]);
