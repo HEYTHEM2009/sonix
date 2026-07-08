@@ -141,7 +141,7 @@ Route::get('/debug/cloudinary-test', function () {
     file_put_contents($tempFile, $png);
 
     $timestamp = time();
-    $paramsToSign = ['folder' => 'test', 'resource_type' => 'auto', 'timestamp' => $timestamp];
+    $paramsToSign = ['folder' => 'test', 'timestamp' => $timestamp];
     ksort($paramsToSign);
     $signStr = '';
     foreach ($paramsToSign as $k => $v) { $signStr .= "{$k}={$v}&"; }

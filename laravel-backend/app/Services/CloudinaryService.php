@@ -42,7 +42,6 @@ class CloudinaryService
             $timestamp = time();
             $paramsToSign = [
                 'folder' => $folder,
-                'resource_type' => 'auto',
                 'timestamp' => $timestamp,
             ];
 
