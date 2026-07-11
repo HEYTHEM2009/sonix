@@ -11,7 +11,8 @@ class ReelController extends Controller
 {
     public function index(Request $request)
     {
-        $reels = \App\Models\Reel::with(['user', 'likes', 'comments'])
+        $reels = \App\Models\Reel::with('user')
+            ->withCount(['likes', 'comments'])
             ->orderByDesc('created_at')
             ->paginate(20);
 
@@ -42,7 +43,8 @@ class ReelController extends Controller
 
     public function show($id)
     {
-        $reel = \App\Models\Reel::with(['user', 'likes', 'comments.user'])
+        $reel = \App\Models\Reel::with('user')
+            ->withCount(['likes', 'comments'])
             ->findOrFail($id);
 
         return response()->json($reel);

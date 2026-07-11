@@ -79,7 +79,7 @@ class FollowController extends Controller
         $followers = Follow::with('follower:id,username')
             ->where('following_id', $userId)
             ->where('status', 'accepted')
-            ->get();
+            ->paginate(50);
 
         return response()->json($followers);
     }
@@ -89,7 +89,7 @@ class FollowController extends Controller
         $following = Follow::with('following:id,username')
             ->where('follower_id', $userId)
             ->where('status', 'accepted')
-            ->get();
+            ->paginate(50);
 
         return response()->json($following);
     }
@@ -99,7 +99,7 @@ class FollowController extends Controller
         $requests = Follow::with('follower:id,username')
             ->where('following_id', $request->user()->id)
             ->where('status', 'pending')
-            ->get();
+            ->paginate(50);
 
         return response()->json($requests);
     }

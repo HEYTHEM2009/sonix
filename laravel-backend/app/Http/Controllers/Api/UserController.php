@@ -20,7 +20,7 @@ class UserController extends Controller
         $blockedIds = BlockedUser::where('user_id', $request->user()?->id)->pluck('blocked_id')->toArray();
         $users = User::select('id', 'username', 'avatar', 'is_private')
             ->whereNotIn('id', $blockedIds)
-            ->get();
+            ->paginate(50);
         return response()->json($users);
     }
 

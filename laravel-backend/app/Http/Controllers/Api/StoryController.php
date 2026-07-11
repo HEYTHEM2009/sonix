@@ -40,49 +40,27 @@ class StoryController extends Controller
 
         $followingIds[] = $userId;
 
-        $storyIds = Story::whereIn('user_id', $followingIds)
-            ->where('created_at', '>=', now()->subHours(12))
-            ->pluck('id');
-
-        if ($storyIds->isEmpty()) {
-            $this->cache->setFeed($userId, []);
-            return response()->json([]);
-        }
-
-        $viewCounts = StoryView::whereIn('story_id', $storyIds)
-            ->selectRaw('story_id, COUNT(*) as cnt')
-            ->groupBy('story_id')
-            ->pluck('cnt', 'story_id');
-
-        $reactionCounts = StoryReaction::whereIn('story_id', $storyIds)
-            ->selectRaw('story_id, COUNT(*) as cnt')
-            ->groupBy('story_id')
-            ->pluck('cnt', 'story_id');
-
-        $myReactions = StoryReaction::whereIn('story_id', $storyIds)
-            ->where('user_id', $userId)
-            ->pluck('emoji', 'story_id');
-
-        $seenStoryIds = StoryView::whereIn('story_id', $storyIds)
-            ->where('user_id', $userId)
-            ->pluck('story_id')
-            ->toArray();
-
         $stories = Story::with(['user:id,username,avatar'])
-            ->whereIn('id', $storyIds)
+            ->withCount(['views as view_count', 'reactions as reaction_count'])
+            ->withExists(['views as viewed' => fn($q) => $q->where('user_id', $userId)])
+            ->whereIn('user_id', $followingIds)
+            ->where('created_at', '>=', now()->subHours(12))
             ->latest()
             ->get()
             ->groupBy('user_id');
 
+        if ($stories->isEmpty()) {
+            $this->cache->setFeed($userId, []);
+            return response()->json([]);
+        }
+
         $result = [];
         foreach ($stories as $uid => $userStories) {
             $first = $userStories->first();
-            $hasUnseen = $userStories->contains(fn($s) => !in_array($s->id, $seenStoryIds));
+            $hasUnseen = $userStories->contains(fn($s) => !$s->viewed);
 
-            $storiesData = $userStories->map(function ($story) use ($viewCounts, $reactionCounts, $myReactions) {
-                $story->view_count = $viewCounts->get($story->id, 0);
-                $story->reaction_count = $reactionCounts->get($story->id, 0);
-                $story->my_reaction = $myReactions->get($story->id);
+            $storiesData = $userStories->map(function ($story) {
+                $story->my_reaction = null;
                 return $story;
             });
 
@@ -311,8 +289,8 @@ class StoryController extends Controller
         $viewers = StoryView::with('user:id,username,avatar')
             ->where('story_id', $id)
             ->latest()
-            ->get()
-            ->pluck('user');
+            ->paginate(50)
+            ->through(fn($v) => $v->user);
 
         return response()->json($viewers);
     }
@@ -371,13 +349,13 @@ class StoryController extends Controller
         $reactions = StoryReaction::with('user:id,username,avatar')
             ->where('story_id', $id)
             ->latest()
-            ->get();
+            ->paginate(100);
 
         $grouped = $reactions->groupBy('emoji')->map(function ($group) {
             return [
                 'emoji' => $group->first()->emoji,
                 'count' => $group->count(),
-                'users' => $group->pluck('user'),
+                'users' => $group->pluck('user')->take(10),
             ];
         })->values();
 
@@ -586,10 +564,11 @@ class StoryController extends Controller
 
     public function myStories(Request $request)
     {
-        $stories = Story::where('user_id', $request->user()->id)
+        $stories = Story::withCount(['views', 'reactions'])
+            ->where('user_id', $request->user()->id)
             ->where('created_at', '>=', now()->subHours(12))
             ->latest()
-            ->get();
+            ->paginate(20);
 
         return response()->json($stories);
     }

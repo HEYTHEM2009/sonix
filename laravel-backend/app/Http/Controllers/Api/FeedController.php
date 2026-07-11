@@ -22,22 +22,16 @@ class FeedController extends Controller
 
         $followingIds[] = $userId;
 
-        $bookmarkedPostIds = Bookmark::where('user_id', $userId)->pluck('post_id');
-
         $posts = Post::with('user:id,username,avatar')
             ->with(['comments' => function ($q) {
                 $q->with('user:id,username,avatar')->latest()->limit(2);
             }])
             ->withCount(['likes', 'likes as liked' => fn($q) => $q->where('user_id', $userId)])
             ->withCount('comments as comments_count')
+            ->withExists(['bookmarks as bookmarked' => fn($q) => $q->where('user_id', $userId)])
             ->whereIn('user_id', $followingIds)
             ->latest()
             ->paginate($perPage);
-
-        $posts->getCollection()->transform(function ($post) use ($bookmarkedPostIds) {
-            $post->bookmarked = $bookmarkedPostIds->contains($post->id);
-            return $post;
-        });
 
         return response()->json($posts);
     }

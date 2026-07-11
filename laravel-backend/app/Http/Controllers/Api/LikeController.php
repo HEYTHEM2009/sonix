@@ -71,8 +71,8 @@ class LikeController extends Controller
                 $q->whereNotIn('id', $blockedIds);
             })
             ->latest()
-            ->get()
-            ->pluck('user');
+            ->paginate(50)
+            ->through(fn($like) => $like->user);
 
         return response()->json($users);
     }
