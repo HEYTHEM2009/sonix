@@ -5,20 +5,20 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Schema;
 
 class ReelController extends Controller
 {
     public function index(Request $request)
     {
-        try {
-            $reels = \App\Models\Reel::with('user:id,username,avatar')
-                ->withCount(['likes', 'comments'])
-                ->orderByDesc('created_at')
-                ->paginate(20);
-        } catch (\Exception $e) {
-            return response()->json(['data' => [], 'message' => 'Reels not available']);
+        if (!Schema::hasTable('reels')) {
+            return response()->json(['data' => [], 'total' => 0, 'per_page' => 20]);
         }
+
+        $reels = \App\Models\Reel::with('user:id,username,avatar')
+            ->withCount(['likes', 'comments'])
+            ->orderByDesc('created_at')
+            ->paginate(20);
 
         return response()->json($reels);
     }
@@ -36,7 +36,7 @@ class ReelController extends Controller
 
         $reel = \App\Models\Reel::create([
             'user_id' => Auth::id(),
-            'video_url' => Storage::disk('public')->url($videoPath),
+            'video_url' => url('api/media/' . $videoPath),
             'caption' => $request->caption,
             'music_title' => $request->music_title,
             'duration' => $request->duration ?? 30,
@@ -47,7 +47,7 @@ class ReelController extends Controller
 
     public function show($id)
     {
-        $reel = \App\Models\Reel::with('user')
+        $reel = \App\Models\Reel::with('user:id,username,avatar')
             ->withCount(['likes', 'comments'])
             ->findOrFail($id);
 
