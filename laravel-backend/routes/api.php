@@ -14,6 +14,11 @@ use App\Http\Controllers\Api\StoryController;
 use App\Http\Controllers\Api\BookmarkController;
 use App\Http\Controllers\Api\BlockController;
 use App\Http\Controllers\Api\ReportController;
+use App\Http\Controllers\Api\ReelController;
+use App\Http\Controllers\Api\VoiceMessageController;
+use App\Http\Controllers\Api\PostStatsController;
+use App\Http\Controllers\Api\TwoFactorController;
+use App\Http\Controllers\Api\BadWordController;
 
 Route::post('/auth/register', [AuthController::class, 'register'])->middleware('throttle:5,1');
 Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
@@ -111,4 +116,34 @@ Route::get('/media/{path}', [App\Http\Controllers\Api\MediaController::class, 's
 Route::post('/media/sign', [App\Http\Controllers\Api\MediaController::class, 'sign'])->middleware('auth:sanctum');
 Route::post('/media/sign-batch', [App\Http\Controllers\Api\MediaController::class, 'signBatch'])->middleware('auth:sanctum');
 
+// Reels
+Route::get('/reels', [ReelController::class, 'index'])->middleware('auth:sanctum');
+Route::post('/reels', [ReelController::class, 'store'])->middleware(['auth:sanctum', 'throttle:10,1']);
+Route::get('/reels/{id}', [ReelController::class, 'show'])->middleware('auth:sanctum');
+Route::delete('/reels/{id}', [ReelController::class, 'destroy'])->middleware('auth:sanctum');
+Route::post('/reels/{id}/like', [ReelController::class, 'like'])->middleware(['auth:sanctum', 'throttle:30,1']);
+Route::post('/reels/{id}/comment', [ReelController::class, 'comment'])->middleware(['auth:sanctum', 'throttle:20,1']);
+
+// Voice Messages
+Route::post('/voice-messages', [VoiceMessageController::class, 'store'])->middleware(['auth:sanctum', 'throttle:10,1']);
+Route::get('/voice-messages/{id}', [VoiceMessageController::class, 'show'])->middleware('auth:sanctum');
+Route::delete('/voice-messages/{id}', [VoiceMessageController::class, 'destroy'])->middleware('auth:sanctum');
+
+// Post Stats & Pin
+Route::get('/posts/{id}/stats', [PostStatsController::class, 'show'])->middleware('auth:sanctum');
+Route::post('/posts/{id}/view', [PostStatsController::class, 'recordView'])->middleware('auth:sanctum');
+Route::post('/posts/{id}/pin', [PostStatsController::class, 'pin'])->middleware('auth:sanctum');
+Route::post('/posts/{id}/unpin', [PostStatsController::class, 'unpin'])->middleware('auth:sanctum');
+
+// 2FA
+Route::post('/2fa/enable', [TwoFactorController::class, 'enable'])->middleware(['auth:sanctum', 'throttle:5,1']);
+Route::post('/2fa/disable', [TwoFactorController::class, 'disable'])->middleware(['auth:sanctum', 'throttle:5,1']);
+Route::post('/2fa/verify', [TwoFactorController::class, 'verify'])->middleware(['auth:sanctum', 'throttle:10,1']);
+Route::get('/2fa/status', [TwoFactorController::class, 'status'])->middleware('auth:sanctum');
+
+// Bad Words
+Route::post('/bad-words/check', [BadWordController::class, 'check'])->middleware('auth:sanctum');
+Route::get('/bad-words', [BadWordController::class, 'index'])->middleware('auth:sanctum');
+Route::post('/bad-words', [BadWordController::class, 'store'])->middleware('auth:sanctum');
+Route::delete('/bad-words/{id}', [BadWordController::class, 'destroy'])->middleware('auth:sanctum');
 
