@@ -1,7 +1,25 @@
 #!/bin/sh
 
-# Determine the port - Railway uses PORT env var, default to 80
+# Determine the port - Runsite uses PORT env var, default to 80
 PORT=${PORT:-80}
+
+# Parse DATABASE_URL if set (Runsite provides this)
+if [ -n "$DATABASE_URL" ]; then
+    # Parse postgresql://user:password@host:port/dbname
+    DB_URL=$(echo "$DATABASE_URL" | sed 's|^postgresql://||')
+    DB_USER=$(echo "$DB_URL" | cut -d':' -f1)
+    DB_PASS=$(echo "$DB_URL" | cut -d':' -f2 | cut -d'@' -f1)
+    DB_HOST=$(echo "$DB_URL" | sed 's|.*@\([^:]*\):\([0-9]*\)/.*|\1|')
+    DB_PORT=$(echo "$DB_URL" | sed 's|.*@\([^:]*\):\([0-9]*\)/.*|\2|')
+    DB_NAME=$(echo "$DB_URL" | sed 's|.*/||')
+    echo "Parsed DATABASE_URL: host=$DB_HOST port=$DB_PORT db=$DB_NAME user=$DB_USER"
+else
+    DB_HOST=${DB_HOST:-127.0.0.1}
+    DB_PORT=${DB_PORT:-5432}
+    DB_NAME=${DB_DATABASE:-sonix_api}
+    DB_USER=${DB_USERNAME:-postgres}
+    DB_PASS=${DB_PASSWORD:-}
+fi
 
 # Write nginx config with correct port
 cat > /etc/nginx/sites-available/default <<NGINX
@@ -17,7 +35,7 @@ server {
         try_files \$uri \$uri/ /index.php?\$query_string;
     }
 
-    location ~ \.php$ {
+    location ~ \.php\$ {
         fastcgi_pass 127.0.0.1:9000;
         fastcgi_index index.php;
         fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
@@ -37,23 +55,23 @@ server {
 }
 NGINX
 
-# Generate .env from Railway environment variables
+# Generate .env from environment variables
 cat > /app/laravel-backend/.env <<EOF
-APP_NAME=${APP_NAME:-YourAppName}
+APP_NAME=Sonix
 APP_ENV=${APP_ENV:-production}
 APP_KEY=${APP_KEY:-}
 APP_DEBUG=${APP_DEBUG:-false}
-APP_URL=${APP_URL:-https://sonix-production.up.railway.app}
+APP_URL=https://${HOSTNAME:-sonix-api.runsite.app}
 
 APP_LOCALE=en
 APP_FALLBACK_LOCALE=en
 
-DB_CONNECTION=${DB_CONNECTION:-pgsql}
-DB_HOST=${DB_HOST:-127.0.0.1}
-DB_PORT=${DB_PORT:-5432}
-DB_DATABASE=${DB_DATABASE:-your_database}
-DB_USERNAME=${DB_USERNAME:-postgres}
-DB_PASSWORD=${DB_PASSWORD:-}
+DB_CONNECTION=pgsql
+DB_HOST=${DB_HOST}
+DB_PORT=${DB_PORT}
+DB_DATABASE=${DB_NAME}
+DB_USERNAME=${DB_USER}
+DB_PASSWORD=${DB_PASS}
 
 SESSION_DRIVER=database
 SESSION_LIFETIME=120
@@ -74,12 +92,12 @@ REDIS_PORT=${REDIS_PORT:-6379}
 
 REVERB_SERVER_HOST=127.0.0.1
 REVERB_SERVER_PORT=8080
-REVERB_HOST=${REVERB_HOST:-sonix-production.up.railway.app}
+REVERB_HOST=${HOSTNAME:-sonix-api.runsite.app}
 REVERB_PORT=${REVERB_PORT:-443}
-REVERB_SCHEME=${REVERB_SCHEME:-http}
-REVERB_APP_KEY=${REVERB_APP_KEY:-your-reverb-key}
-REVERB_APP_SECRET=${REVERB_APP_SECRET:-your-reverb-secret}
-REVERB_APP_ID=${REVERB_APP_ID:-your-reverb-id}
+REVERB_SCHEME=${REVERB_SCHEME:-https}
+REVERB_APP_KEY=${REVERB_APP_KEY:-}
+REVERB_APP_SECRET=${REVERB_APP_SECRET:-}
+REVERB_APP_ID=${REVERB_APP_ID:-}
 REVERB_APP_PING_INTERVAL=60
 
 MAIL_MAILER=${MAIL_MAILER:-log}
@@ -94,7 +112,7 @@ MEDIA_SIGNED_URL_TTL=3600
 MEDIA_MAX_UPLOAD_SIZE=50
 MEDIA_IMAGE_QUALITY=85
 MEDIA_WATERMARK_ENABLED=false
-MEDIA_WATERMARK_TEXT=${APP_NAME:-YourApp}
+MEDIA_WATERMARK_TEXT=Sonix
 MEDIA_TRANSCODING_ENABLED=false
 ANTI_SCRAPING_ENABLED=true
 MEDIA_CDN_ENABLED=false
@@ -108,7 +126,7 @@ LOG_LEVEL=error
 EOF
 
 echo "Nginx listening on port ${PORT}"
-echo "Generated .env file"
+echo "Generated .env file with DB_HOST=${DB_HOST} DB_NAME=${DB_NAME}"
 
 # Fix permissions
 chmod -R 777 /app/laravel-backend/storage 2>/dev/null
@@ -124,10 +142,10 @@ else
 fi
 
 # Run migrations
-php artisan migrate --force
+php artisan migrate --force || echo "WARNING: Migrations failed, continuing..."
 
 # Seed database (safe - checks if already seeded)
-php artisan db:seed --force
+php artisan db:seed --force || echo "WARNING: Seeding failed, continuing..."
 
 # Clear cache
 php artisan config:clear 2>/dev/null
