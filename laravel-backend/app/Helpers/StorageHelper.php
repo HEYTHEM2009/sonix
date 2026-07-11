@@ -38,13 +38,11 @@ class StorageHelper
         $cleanPath = ltrim($path, '/');
 
         if (str_starts_with($cleanPath, 'storage/uploads/')) {
-            $cleanPath = substr($cleanPath, strlen('storage/'));
+            $cleanPath = substr($cleanPath, strlen('storage/uploads/'));
+        } elseif (str_starts_with($cleanPath, 'uploads/')) {
+            $cleanPath = substr($cleanPath, strlen('uploads/'));
         }
 
-        if (str_starts_with($cleanPath, 'uploads/')) {
-            return url('api/media/' . $cleanPath);
-        }
-
-        return url('api/media/uploads/' . $cleanPath);
+        return url('api/media/' . $cleanPath);
     }
 }
