@@ -9,10 +9,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('messages', function (Blueprint $table) {
-            $table->boolean('is_edited')->default(false)->after('is_deleted');
-            $table->text('original_content')->nullable()->after('is_edited');
-            $table->boolean('is_disappearing')->default(false)->after('original_content');
-            $table->timestamp('disappears_at')->nullable()->after('is_disappearing');
+            $table->boolean('is_edited')->default(false);
+            $table->text('original_content')->nullable();
+            $table->boolean('is_disappearing')->default(false);
+            $table->timestamp('disappears_at')->nullable();
         });
     }
 
