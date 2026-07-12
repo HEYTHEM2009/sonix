@@ -135,21 +135,18 @@ class UserController extends Controller
         $perPage = min((int) $request->input('per_page', 20), 50);
         $type = $request->input('type', 'all');
 
+        $exact = $query;
+        $prefix = $query . '%';
+        $contains = '%' . $query . '%';
+
         $users = User::select('id', 'username', 'bio', 'avatar', 'is_private', 'online_at')
             ->whereNotIn('id', $excludeIds)
-            ->where(function ($q) use ($query) {
-                $q->where('username', 'ilike', $query . '%')
-                  ->orWhere('username', 'ilike', '%' . $query . '%')
-                  ->orWhere('bio', 'ilike', '%' . $query . '%');
+            ->where(function ($q) use ($exact, $prefix, $contains) {
+                $q->where('username', 'ilike', $prefix)
+                  ->orWhere('username', 'ilike', $contains)
+                  ->orWhere('bio', 'ilike', $contains);
             })
-            ->orderByRaw('
-                CASE
-                    WHEN username ILIKE ? THEN 0
-                    WHEN username ILIKE ? THEN 1
-                    WHEN username ILIKE ? THEN 2
-                    ELSE 3
-                END
-            ', [$query, $query . '%', '%' . $query . '%'])
+            ->orderByRaw("CASE WHEN username ILIKE ? THEN 0 WHEN username ILIKE ? THEN 1 WHEN username ILIKE ? THEN 2 ELSE 3 END", [$exact, $prefix, $contains])
             ->orderBy('username')
             ->paginate($perPage);
 
