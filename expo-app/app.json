@@ -60,6 +60,19 @@
           "photosPermission": "Allow the app to access your photos for stories and posts.",
           "savePhotosPermission": "Allow the app to save photos to your library."
         }
+      ],
+      [
+        "expo-av",
+        {
+          "microphonePermission": "Allow Sonix to access your microphone for voice messages."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#0D0D1A"
+        }
       ]
     ],
     "extra": {
