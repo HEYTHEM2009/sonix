@@ -22,6 +22,7 @@ class EnsureFeatureTables extends Command
             '2026_07_11_000008_create_user_badges_table',
             '2026_07_11_000011_create_profile_templates_table',
             '2026_07_12_000001_create_missing_feature_tables',
+            '2026_07_12_000001_add_vanish_and_edit_fields_to_messages',
         ];
 
         foreach ($staleMigrations as $migration) {
@@ -81,6 +82,41 @@ class EnsureFeatureTables extends Command
             $created++;
         } else {
             $this->info('profile_templates table already exists');
+        }
+
+        // Add missing columns to messages table (PostgreSQL-safe, no ->after())
+        $missingMessageColumns = 0;
+        if (!Schema::hasColumn('messages', 'is_edited')) {
+            Schema::table('messages', function (Blueprint $table) {
+                $table->boolean('is_edited')->default(false);
+            });
+            $this->info('Added is_edited column to messages');
+            $missingMessageColumns++;
+        }
+        if (!Schema::hasColumn('messages', 'original_content')) {
+            Schema::table('messages', function (Blueprint $table) {
+                $table->text('original_content')->nullable();
+            });
+            $this->info('Added original_content column to messages');
+            $missingMessageColumns++;
+        }
+        if (!Schema::hasColumn('messages', 'is_disappearing')) {
+            Schema::table('messages', function (Blueprint $table) {
+                $table->boolean('is_disappearing')->default(false);
+            });
+            $this->info('Added is_disappearing column to messages');
+            $missingMessageColumns++;
+        }
+        if (!Schema::hasColumn('messages', 'disappears_at')) {
+            Schema::table('messages', function (Blueprint $table) {
+                $table->timestamp('disappears_at')->nullable();
+            });
+            $this->info('Added disappears_at column to messages');
+            $missingMessageColumns++;
+        }
+
+        if ($missingMessageColumns > 0) {
+            $this->info("Successfully added {$missingMessageColumns} missing column(s) to messages table");
         }
 
         if ($created > 0) {
