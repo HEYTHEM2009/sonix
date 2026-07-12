@@ -15,6 +15,7 @@ use App\Models\ProfileTemplate;
 use Illuminate\Http\Request;
 use App\Models\Message;
 use Illuminate\Support\Facades\Redis;
+use Illuminate\Support\Facades\Schema;
 
 class UserController extends Controller
 {
@@ -47,10 +48,14 @@ class UserController extends Controller
             ->findOrFail($id);
 
         if ($request->user()->id != $id) {
-            ProfileVisitor::updateOrCreate(
-                ['user_id' => $id, 'visitor_id' => $request->user()->id],
-                ['updated_at' => now()]
-            );
+            try {
+                ProfileVisitor::updateOrCreate(
+                    ['user_id' => $id, 'visitor_id' => $request->user()->id],
+                    ['updated_at' => now()]
+                );
+            } catch (\Throwable $e) {
+                // Table may not exist yet
+            }
         }
 
         return response()->json($user);
@@ -170,62 +175,86 @@ class UserController extends Controller
 
     public function visitors($id)
     {
-        $visitors = ProfileVisitor::with('visitor:id,username,avatar')
-            ->where('user_id', $id)
-            ->latest()
-            ->paginate(50);
-        return response()->json($visitors);
+        try {
+            $visitors = ProfileVisitor::with('visitor:id,username,avatar')
+                ->where('user_id', $id)
+                ->latest()
+                ->paginate(50);
+            return response()->json($visitors);
+        } catch (\Throwable $e) {
+            return response()->json(['data' => [], 'message' => 'Table not available yet']);
+        }
     }
 
     public function badges($id)
     {
-        $badges = UserBadge::where('user_id', $id)->latest()->get();
-        return response()->json($badges);
+        try {
+            $badges = UserBadge::where('user_id', $id)->latest()->get();
+            return response()->json($badges);
+        } catch (\Throwable $e) {
+            return response()->json([]);
+        }
     }
 
     public function addBadge(Request $request)
     {
-        $request->validate([
-            'user_id' => 'required|exists:users,id',
-            'badge_type' => 'required|string|max:50',
-            'badge_name' => 'required|string|max:100',
-            'description' => 'nullable|string|max:255',
-            'icon_url' => 'nullable|string|max:255',
-        ]);
+        try {
+            $request->validate([
+                'user_id' => 'required|exists:users,id',
+                'badge_type' => 'required|string|max:50',
+                'badge_name' => 'required|string|max:100',
+                'description' => 'nullable|string|max:255',
+                'icon_url' => 'nullable|string|max:255',
+            ]);
 
-        $badge = UserBadge::create($request->only(['user_id', 'badge_type', 'badge_name', 'description', 'icon_url']));
-        return response()->json($badge, 201);
+            $badge = UserBadge::create($request->only(['user_id', 'badge_type', 'badge_name', 'description', 'icon_url']));
+            return response()->json($badge, 201);
+        } catch (\Throwable $e) {
+            return response()->json(['message' => 'Failed to add badge', 'error' => $e->getMessage()], 500);
+        }
     }
 
     public function removeBadge($id)
     {
-        $badge = UserBadge::findOrFail($id);
-        $badge->delete();
-        return response()->json(['message' => 'Badge removed']);
+        try {
+            $badge = UserBadge::findOrFail($id);
+            $badge->delete();
+            return response()->json(['message' => 'Badge removed']);
+        } catch (\Throwable $e) {
+            return response()->json(['message' => 'Failed to remove badge'], 500);
+        }
     }
 
     public function getTemplate($id)
     {
-        $template = ProfileTemplate::where('user_id', $id)->where('is_active', true)->first();
-        return response()->json($template);
+        try {
+            $template = ProfileTemplate::where('user_id', $id)->where('is_active', true)->first();
+            return response()->json($template);
+        } catch (\Throwable $e) {
+            return response()->json(['message' => 'Template not available']);
+        }
     }
 
     public function setTemplate(Request $request)
     {
-        $request->validate([
-            'template_name' => 'required|string|max:100',
-            'template_data' => 'nullable|array',
-        ]);
+        try {
+            $request->validate([
+                'template_name' => 'required|string|max:100',
+                'template_data' => 'nullable|array',
+            ]);
 
-        ProfileTemplate::where('user_id', $request->user()->id)->update(['is_active' => false]);
+            ProfileTemplate::where('user_id', $request->user()->id)->update(['is_active' => false]);
 
-        $template = ProfileTemplate::create([
-            'user_id' => $request->user()->id,
-            'template_name' => $request->input('template_name'),
-            'template_data' => $request->input('template_data'),
-            'is_active' => true,
-        ]);
+            $template = ProfileTemplate::create([
+                'user_id' => $request->user()->id,
+                'template_name' => $request->input('template_name'),
+                'template_data' => $request->input('template_data'),
+                'is_active' => true,
+            ]);
 
-        return response()->json($template, 201);
+            return response()->json($template, 201);
+        } catch (\Throwable $e) {
+            return response()->json(['message' => 'Failed to set template', 'error' => $e->getMessage()], 500);
+        }
     }
 }
