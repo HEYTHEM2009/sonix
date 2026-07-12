@@ -83,6 +83,8 @@ Route::get('/messages/typing/{userId}', [MessageController::class, 'checkTyping'
 Route::get('/messages/{userId}', [MessageController::class, 'conversation'])->middleware('auth:sanctum');
 Route::post('/messages/{id}/react', [MessageController::class, 'addReaction'])->middleware(['auth:sanctum', 'throttle:30,1']);
 Route::delete('/messages/{id}/react', [MessageController::class, 'removeReaction'])->middleware('auth:sanctum');
+Route::put('/messages/{id}', [MessageController::class, 'update'])->middleware(['auth:sanctum', 'throttle:10,1']);
+Route::post('/messages/{id}/vanish', [MessageController::class, 'setVanish'])->middleware(['auth:sanctum', 'throttle:10,1']);
 Route::delete('/messages/{id}', [MessageController::class, 'destroy'])->middleware(['auth:sanctum', 'throttle:20,1']);
 Route::post('/messages/mute/{userId}', [MessageController::class, 'toggleMute'])->middleware('auth:sanctum');
 Route::post('/messages/pin/{userId}', [MessageController::class, 'togglePin'])->middleware('auth:sanctum');

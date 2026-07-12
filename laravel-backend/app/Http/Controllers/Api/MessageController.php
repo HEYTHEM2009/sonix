@@ -204,7 +204,10 @@ class MessageController extends Controller
                 })->orWhere(function ($sub) use ($currentUserId, $userId) {
                     $sub->where('sender_id', $userId)->where('receiver_id', $currentUserId);
                 });
-            })->where('is_deleted', false);
+            })            ->where('is_deleted', false)
+            ->where(function ($q) {
+                $q->whereNull('disappears_at')->orWhere('disappears_at', '>', now());
+            });
 
         if ($cursor) {
             $query->where('id', '<', $cursor);
@@ -325,6 +328,42 @@ class MessageController extends Controller
             ->delete();
 
         return response()->json(['message' => 'Reaction removed']);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $message = Message::find($id);
+        if (!$message) return response()->json(['message' => 'Not found'], 404);
+        if ($message->sender_id !== $request->user()->id) return response()->json(['message' => 'Unauthorized'], 403);
+
+        $request->validate(['content' => 'required|string|max:5000']);
+
+        if (!$message->is_edited) {
+            $message->original_content = $message->content;
+        }
+        $message->content = Sanitize::text($request->input('content'));
+        $message->is_edited = true;
+        $message->save();
+
+        return response()->json($message);
+    }
+
+    public function setVanish(Request $request, $id)
+    {
+        $message = Message::find($id);
+        if (!$message) return response()->json(['message' => 'Not found'], 404);
+        if ($message->sender_id !== $request->user()->id) return response()->json(['message' => 'Unauthorized'], 403);
+
+        $request->validate(['seconds' => 'required|integer|min:1|max:86400']);
+
+        $message->is_disappearing = true;
+        $message->disappears_at = now()->addSeconds((int) $request->input('seconds'));
+        $message->save();
+
+        return response()->json([
+            'message' => 'Message will vanish',
+            'disappears_at' => $message->disappears_at,
+        ]);
     }
 
     public function destroy(Request $request, $id)

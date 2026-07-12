@@ -9,12 +9,16 @@ class Message extends Model
     protected $fillable = [
         'content', 'sender_id', 'receiver_id', 'is_read',
         'type', 'image', 'voice', 'reply_to', 'is_deleted', 'read_at',
+        'is_edited', 'original_content', 'is_disappearing', 'disappears_at',
     ];
 
     protected $casts = [
         'is_read' => 'boolean',
         'is_deleted' => 'boolean',
+        'is_edited' => 'boolean',
+        'is_disappearing' => 'boolean',
         'read_at' => 'datetime',
+        'disappears_at' => 'datetime',
     ];
 
     public function sender()
