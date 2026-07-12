@@ -27,6 +27,10 @@ Route::post('/auth/reset-password', [AuthController::class, 'resetPassword'])->m
 
 Route::get('/users', [UserController::class, 'index'])->middleware('auth:sanctum');
 Route::get('/users/search', [UserController::class, 'search'])->middleware('auth:sanctum');
+Route::get('/users/search/suggestions', [UserController::class, 'searchSuggestions'])->middleware('auth:sanctum');
+Route::get('/users/search/recent', [UserController::class, 'recentSearches'])->middleware('auth:sanctum');
+Route::post('/users/search/recent', [UserController::class, 'saveRecentSearch'])->middleware('auth:sanctum');
+Route::delete('/users/search/recent', [UserController::class, 'clearRecentSearches'])->middleware('auth:sanctum');
 Route::get('/users/me', [UserController::class, 'me'])->middleware('auth:sanctum');
 Route::post('/users/profile', [UserController::class, 'updateProfile'])->middleware(['auth:sanctum', 'throttle:10,1']);
 Route::get('/users/{id}', [UserController::class, 'show'])->middleware('auth:sanctum');

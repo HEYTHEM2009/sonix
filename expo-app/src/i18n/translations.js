@@ -223,10 +223,20 @@ const translations = {
 
     // Users
     searchPeople: "Search people...",
+    searchUsers: "Search users by name or bio...",
     noUsersFound: "No users found",
     follow: "Follow",
     followingStatus: "Following",
     requested: "Requested",
+    followersCount: "{count} followers",
+    recentSearches: "Recent Searches",
+    clearRecent: "Clear",
+    clearRecentConfirm: "Clear search history?",
+    searchSuggestions: "Suggestions",
+    showAll: "All",
+    showPublic: "Public",
+    showPrivate: "Private",
+    searchError: "Search failed. Pull to retry.",
 
     // User Profile
     unblock: "Unblock",
@@ -552,10 +562,20 @@ const translations = {
 
     // Users
     searchPeople: "البحث عن أشخاص...",
+    searchUsers: "ابحث عن مستخدمين بالاسم أو السيرة...",
     noUsersFound: "لم يتم العثور على مستخدمين",
     follow: "متابعة",
     followingStatus: "يتابع",
     requested: "تم الطلب",
+    followersCount: "{count} متابع",
+    recentSearches: "عمليات البحث الأخيرة",
+    clearRecent: "مسح",
+    clearRecentConfirm: "مسح سجل البحث؟",
+    searchSuggestions: "اقتراحات",
+    showAll: "الكل",
+    showPublic: "عام",
+    showPrivate: "خاص",
+    searchError: "فشل البحث. اسحب للتحديث.",
 
     // User Profile
     unblock: "إلغاء الحظر",
