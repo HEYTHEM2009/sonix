@@ -12,6 +12,7 @@ use App\Models\BlockedUser;
 use App\Models\ProfileVisitor;
 use App\Models\UserBadge;
 use App\Models\ProfileTemplate;
+use App\Models\RecentSearch;
 use Illuminate\Http\Request;
 use App\Models\Message;
 use Illuminate\Support\Facades\Redis;
@@ -197,17 +198,15 @@ class UserController extends Controller
     public function recentSearches(Request $request)
     {
         $userId = $request->user()->id;
-        $recent = [];
-        try {
-            if (config('database.redis.client')) {
-                $recent = Redis::lrange("user:recent_searches:{$userId}", 0, 9);
-                if ($recent) {
-                    $recent = array_map('json_decode', $recent);
-                }
-            }
-        } catch (\Throwable $e) {
-            // Redis unavailable
-        }
+        $recent = RecentSearch::where('user_id', $userId)
+            ->with('searchedUser:id,username,avatar')
+            ->orderByDesc('updated_at')
+            ->limit(10)
+            ->get()
+            ->pluck('searchedUser')
+            ->filter()
+            ->values();
+
         return response()->json($recent);
     }
 
@@ -217,27 +216,17 @@ class UserController extends Controller
         $userId = $request->user()->id;
         $targetId = (int) $request->input('user_id');
 
-        try {
-            if (config('database.redis.client')) {
-                $key = "user:recent_searches:{$userId}";
-                $existing = Redis::lrange($key, 0, -1);
-                foreach ($existing as $i => $entry) {
-                    $data = json_decode($entry, true);
-                    if ($data && $data['id'] === $targetId) {
-                        Redis::lrem($key, 1, $entry);
-                        break;
-                    }
-                }
-                $user = User::find($targetId);
-                if ($user) {
-                    $entry = json_encode(['id' => $user->id, 'username' => $user->username, 'avatar' => $user->avatar]);
-                    Redis::lpush($key, $entry);
-                    Redis::ltrim($key, 0, 9);
-                    Redis::expire($key, 86400 * 7);
-                }
-            }
-        } catch (\Throwable $e) {
-            // Redis unavailable
+        RecentSearch::updateOrCreate(
+            ['user_id' => $userId, 'searched_user_id' => $targetId],
+            ['updated_at' => now()]
+        );
+
+        $total = RecentSearch::where('user_id', $userId)->count();
+        if ($total > 10) {
+            RecentSearch::where('user_id', $userId)
+                ->orderByAsc('updated_at')
+                ->limit($total - 10)
+                ->delete();
         }
 
         return response()->json(['message' => 'Saved']);
@@ -245,13 +234,7 @@ class UserController extends Controller
 
     public function clearRecentSearches(Request $request)
     {
-        try {
-            if (config('database.redis.client')) {
-                Redis::del("user:recent_searches:{$request->user()->id}");
-            }
-        } catch (\Throwable $e) {
-            // Redis unavailable
-        }
+        RecentSearch::where('user_id', $request->user()->id)->delete();
         return response()->json(['message' => 'Cleared']);
     }
 

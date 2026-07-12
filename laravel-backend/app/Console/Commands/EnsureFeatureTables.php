@@ -23,6 +23,7 @@ class EnsureFeatureTables extends Command
             '2026_07_11_000011_create_profile_templates_table',
             '2026_07_12_000001_create_missing_feature_tables',
             '2026_07_12_000001_add_vanish_and_edit_fields_to_messages',
+            '2026_07_12_000013_create_recent_searches_table',
         ];
 
         foreach ($staleMigrations as $migration) {
@@ -82,6 +83,21 @@ class EnsureFeatureTables extends Command
             $created++;
         } else {
             $this->info('profile_templates table already exists');
+        }
+
+        // Create recent_searches table
+        if (!Schema::hasTable('recent_searches')) {
+            Schema::create('recent_searches', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+                $table->foreignId('searched_user_id')->constrained('users')->cascadeOnDelete();
+                $table->timestamps();
+                $table->unique(['user_id', 'searched_user_id']);
+            });
+            $this->info('Created recent_searches table');
+            $created++;
+        } else {
+            $this->info('recent_searches table already exists');
         }
 
         // Add missing columns to messages table (PostgreSQL-safe, no ->after())
