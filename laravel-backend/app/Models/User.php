@@ -25,6 +25,9 @@ class User extends Authenticatable
         'push_token',
         'online_at',
         'notification_prefs',
+        'role',
+        'two_factor_enabled',
+        'two_factor_secret',
     ];
 
     protected function casts(): array

@@ -28,12 +28,20 @@ class BadWordController extends Controller
 
     public function index()
     {
+        if (!Auth::user() || Auth::user()->role !== 'admin') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
         $words = \App\Models\BlockedWord::orderBy('word')->paginate(100);
         return response()->json($words);
     }
 
     public function store(Request $request)
     {
+        if (!Auth::user() || Auth::user()->role !== 'admin') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
         $request->validate([
             'word' => 'required|string|max:100',
             'category' => 'nullable|string|max:50',
@@ -51,6 +59,10 @@ class BadWordController extends Controller
 
     public function destroy($id)
     {
+        if (!Auth::user() || Auth::user()->role !== 'admin') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
         \App\Models\BlockedWord::findOrFail($id)->delete();
         Cache::forget('blocked_words');
         return response()->json(['message' => 'Word removed']);

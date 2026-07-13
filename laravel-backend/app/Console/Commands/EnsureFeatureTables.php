@@ -150,6 +150,34 @@ class EnsureFeatureTables extends Command
             $this->info("Successfully added {$missingMessageColumns} missing column(s) to messages table");
         }
 
+        // Add missing columns to users table
+        $missingUserColumns = 0;
+        if (!Schema::hasColumn('users', 'role')) {
+            Schema::table('users', function (Blueprint $table) {
+                $table->string('role')->default('user');
+            });
+            $this->info('Added role column to users');
+            $missingUserColumns++;
+        }
+        if (!Schema::hasColumn('users', 'two_factor_enabled')) {
+            Schema::table('users', function (Blueprint $table) {
+                $table->boolean('two_factor_enabled')->default(false);
+            });
+            $this->info('Added two_factor_enabled column to users');
+            $missingUserColumns++;
+        }
+        if (!Schema::hasColumn('users', 'two_factor_secret')) {
+            Schema::table('users', function (Blueprint $table) {
+                $table->text('two_factor_secret')->nullable();
+            });
+            $this->info('Added two_factor_secret column to users');
+            $missingUserColumns++;
+        }
+
+        if ($missingUserColumns > 0) {
+            $this->info("Successfully added {$missingUserColumns} missing column(s) to users table");
+        }
+
         // Group chat tables
         $groupTablesCreated = 0;
         if (!Schema::hasTable('groups')) {

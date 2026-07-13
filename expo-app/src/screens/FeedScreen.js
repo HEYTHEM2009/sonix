@@ -40,7 +40,7 @@ function renderContent(text, nav) {
     if (part.startsWith("@")) {
       const username = part.slice(1);
       return (
-        <Text key={i} style={s.mention} onPress={() => nav?.("UserProfile", { userId: username })}>
+        <Text key={i} style={s.mention} onPress={() => nav?.("UserProfile", { username })}>
           {part}
         </Text>
       );

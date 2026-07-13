@@ -28,7 +28,8 @@ const MessageBubble = ({ item, isMine }) => {
 };
 
 export default function GroupChatScreen({ navigation, route }) {
-  const { groupId, groupName } = route.params;
+  const groupId = route.params?.groupId ?? null;
+  const groupName = route.params?.groupName ?? '';
   const { t } = useLanguage();
   const { user } = useAuth();
   const insets = useSafeAreaInsets();

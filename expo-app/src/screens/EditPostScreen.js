@@ -8,7 +8,8 @@ import Screen3D from "../components/3D/Screen3D";
 
 export default function EditPostScreen({ route, navigation }) {
   const { t } = useLanguage();
-  const { postId, initialContent } = route.params;
+  const postId = route.params?.postId ?? null;
+  const initialContent = route.params?.initialContent ?? '';
   const [content, setContent] = useState(initialContent || "");
   const [loading, setLoading] = useState(false);
   const insets = useSafeAreaInsets();

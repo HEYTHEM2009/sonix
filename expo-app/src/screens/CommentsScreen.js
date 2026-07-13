@@ -19,7 +19,7 @@ function renderLinkable(text) {
 
 export default function CommentsScreen({ route, navigation }) {
   const { t, isRTL } = useLanguage();
-  const { postId } = route.params;
+  const postId = route.params?.postId ?? null;
   const [comments, setComments] = useState([]);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(true);

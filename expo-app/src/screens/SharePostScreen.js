@@ -8,12 +8,12 @@ import Screen3D from "../components/3D/Screen3D";
 
 export default function SharePostScreen({ route, navigation }) {
   const { t } = useLanguage();
-  const { postId } = route.params;
+  const postId = route.params?.postId ?? null;
   const [users, setUsers] = useState([]);
   const [sending, setSending] = useState(null);
   const insets = useSafeAreaInsets();
 
-  const postUrl = `${IMAGE_BASE.replace("/api", "")}/posts/${postId}`;
+  const postUrl = `${IMAGE_BASE}/posts/${postId}`;
 
   useEffect(() => {
     (async () => {

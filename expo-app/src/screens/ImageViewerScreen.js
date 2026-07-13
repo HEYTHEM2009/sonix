@@ -3,12 +3,13 @@ import { View, Image, StyleSheet, Dimensions, TouchableOpacity, Text, Animated, 
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { downloadAsync, cacheDirectory } from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
-import client, { resolveUrl } from "../api/client";
+import { resolveUrl } from "../api/client";
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
 
 export default function ImageViewerScreen({ route, navigation }) {
-  const { imageUrl, username } = route.params;
+  const imageUrl = route.params?.imageUrl ?? '';
+  const username = route.params?.username ?? '';
   const insets = useSafeAreaInsets();
   const scale = useRef(new Animated.Value(1)).current;
   const [currentScale, setCurrentScale] = useState(1);

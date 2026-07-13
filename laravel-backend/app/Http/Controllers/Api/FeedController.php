@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Follow;
 use App\Models\Post;
-use App\Models\Bookmark;
 use Illuminate\Http\Request;
 
 class FeedController extends Controller

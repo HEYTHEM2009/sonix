@@ -301,6 +301,10 @@ class UserController extends Controller
 
     public function addBadge(Request $request)
     {
+        if ($request->user()->role !== 'admin') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
         try {
             $request->validate([
                 'user_id' => 'required|exists:users,id',
@@ -313,12 +317,17 @@ class UserController extends Controller
             $badge = UserBadge::create($request->only(['user_id', 'badge_type', 'badge_name', 'description', 'icon_url']));
             return response()->json($badge, 201);
         } catch (\Throwable $e) {
-            return response()->json(['message' => 'Failed to add badge', 'error' => $e->getMessage()], 500);
+            return response()->json(['message' => 'Failed to add badge', 'error' => 'Internal server error'], 500);
         }
     }
 
     public function removeBadge($id)
     {
+        $user = request()->user();
+        if (!$user || $user->role !== 'admin') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
         try {
             $badge = UserBadge::findOrFail($id);
             $badge->delete();
@@ -357,7 +366,7 @@ class UserController extends Controller
 
             return response()->json($template, 201);
         } catch (\Throwable $e) {
-            return response()->json(['message' => 'Failed to set template', 'error' => $e->getMessage()], 500);
+            return response()->json(['message' => 'Failed to set template', 'error' => 'Internal server error'], 500);
         }
     }
 }

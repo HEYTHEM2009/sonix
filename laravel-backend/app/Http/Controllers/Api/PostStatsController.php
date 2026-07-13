@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 class PostStatsController extends Controller
@@ -55,7 +54,7 @@ class PostStatsController extends Controller
 
             return response()->json(['message' => 'View recorded']);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'View recorded']);
+            return response()->json(['message' => 'Operation failed'], 500);
         }
     }
 
@@ -77,7 +76,7 @@ class PostStatsController extends Controller
 
             return response()->json(['message' => 'Post pinned']);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Post pinned'], 200);
+            return response()->json(['message' => 'Operation failed'], 500);
         }
     }
 
@@ -92,7 +91,7 @@ class PostStatsController extends Controller
 
             return response()->json(['message' => 'Post unpinned']);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Post unpinned'], 200);
+            return response()->json(['message' => 'Operation failed'], 500);
         }
     }
 

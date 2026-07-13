@@ -8,7 +8,6 @@ use App\Helpers\StorageHelper;
 use App\Models\Post;
 use App\Models\Follow;
 use App\Models\User;
-use App\Models\BlockedUser;
 use Illuminate\Http\Request;
 
 class PostController extends Controller

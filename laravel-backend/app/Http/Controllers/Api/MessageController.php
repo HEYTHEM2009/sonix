@@ -311,6 +311,10 @@ class MessageController extends Controller
         $message = Message::find($id);
         if (!$message) return response()->json(['message' => 'Not found'], 404);
 
+        if ($message->sender_id !== $request->user()->id && $message->receiver_id !== $request->user()->id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
         $request->validate(['emoji' => 'required|string|max:10']);
 
         $reaction = MessageReaction::updateOrCreate(
@@ -323,6 +327,13 @@ class MessageController extends Controller
 
     public function removeReaction(Request $request, $id)
     {
+        $message = Message::find($id);
+        if (!$message) return response()->json(['message' => 'Not found'], 404);
+
+        if ($message->sender_id !== $request->user()->id && $message->receiver_id !== $request->user()->id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
         MessageReaction::where('message_id', $id)
             ->where('user_id', $request->user()->id)
             ->delete();
@@ -415,6 +426,10 @@ class MessageController extends Controller
     {
         $message = Message::find($id);
         if (!$message) return response()->json(['message' => 'Not found'], 404);
+
+        if ($message->sender_id !== $request->user()->id && $message->receiver_id !== $request->user()->id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
 
         $request->validate(['receiver_id' => 'required|exists:users,id']);
 

@@ -6,7 +6,7 @@ import client, { resolveUrl } from "../api/client";
 import { useLanguage } from "../context/LanguageContext";
 
 export default function HashtagPostsScreen({ route, navigation }) {
-  const { tag } = route.params;
+  const tag = route.params?.tag ?? '';
   const { t } = useLanguage();
   const insets = useSafeAreaInsets();
   const [posts, setPosts] = useState([]);

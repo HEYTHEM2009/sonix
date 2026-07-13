@@ -14,7 +14,6 @@ use App\Models\Follow;
 use App\Models\User;
 use App\Models\Notification;
 use App\Events\StoryCreated;
-use App\Services\ImageService;
 use App\Services\StoryCacheService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;

@@ -121,13 +121,7 @@ class AuthController extends Controller
             return response()->json(['message' => 'Failed to send email. Please try again later.'], 500);
         }
 
-        $mailDriver = config('mail.default');
-        $response = ['message' => 'Reset code sent to your email.'];
-        if ($mailDriver === 'log' || $mailDriver === 'array') {
-            $response['reset_code'] = $token;
-        }
-
-        return response()->json($response);
+        return response()->json(['message' => 'Reset code sent to your email.']);
     }
 
     public function resetPassword(Request $request)

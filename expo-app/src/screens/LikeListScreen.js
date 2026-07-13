@@ -8,7 +8,7 @@ import Screen3D from "../components/3D/Screen3D";
 
 export default function LikeListScreen({ route, navigation }) {
   const { t } = useLanguage();
-  const { postId } = route.params;
+  const postId = route.params?.postId ?? null;
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const insets = useSafeAreaInsets();

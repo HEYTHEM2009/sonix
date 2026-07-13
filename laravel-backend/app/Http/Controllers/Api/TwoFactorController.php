@@ -34,7 +34,6 @@ class TwoFactorController extends Controller
 
         return response()->json([
             'message' => '2FA enabled',
-            'code' => $code,
         ]);
     }
 
@@ -42,11 +41,25 @@ class TwoFactorController extends Controller
     {
         $request->validate([
             'password' => 'required|string',
+            'code' => 'required|string|size:6',
         ]);
 
         if (!Hash::check($request->password, Auth::user()->password)) {
             return response()->json(['error' => 'Invalid password'], 401);
         }
+
+        // TODO: verify 2FA code before disabling
+        $token = \App\Models\TwoFactorToken::where('user_id', Auth::id())
+            ->where('token', $request->code)
+            ->where('used', false)
+            ->where('expires_at', '>', now())
+            ->first();
+
+        if (!$token) {
+            return response()->json(['error' => 'Invalid or expired 2FA code'], 401);
+        }
+
+        $token->update(['used' => true]);
 
         \App\Models\User::where('id', Auth::id())->update([
             'two_factor_enabled' => false,
