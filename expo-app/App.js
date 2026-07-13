@@ -1,5 +1,5 @@
-import React, { Component } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, LogBox } from "react-native";
+import React, { Component, Suspense } from "react";
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, LogBox, ActivityIndicator } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -46,7 +46,9 @@ export default function App() {
           <LanguageProvider>
             <NavigationContainer>
               <StatusBar style="light" backgroundColor="#0D0D1A" />
-              <AppNavigator />
+              <Suspense fallback={<View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#0D0D1A" }}><ActivityIndicator size="large" color="#6C63FF" /></View>}>
+                <AppNavigator />
+              </Suspense>
             </NavigationContainer>
           </LanguageProvider>
         </AuthProvider>
