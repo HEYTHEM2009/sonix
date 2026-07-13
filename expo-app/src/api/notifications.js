@@ -45,7 +45,6 @@ export const savePushToken = async (token) => {
 
 export const setupNotificationListeners = (navigation) => {
   const receivedSub = Notifications.addNotificationReceivedListener((notification) => {
-    console.log("Notification received:", notification);
   });
 
   const responseSub = Notifications.addNotificationResponseReceivedListener((response) => {
