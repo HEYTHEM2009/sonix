@@ -1,0 +1,7 @@
+android/
+ios/
+.git/
+node_modules/.cache/
+*.apk
+*.aab
+.expo/
