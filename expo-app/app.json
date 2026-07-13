@@ -62,12 +62,6 @@
         }
       ],
       [
-        "expo-av",
-        {
-          "microphonePermission": "Allow Sonix to access your microphone for voice messages."
-        }
-      ],
-      [
         "expo-notifications",
         {
           "icon": "./assets/icon.png",
