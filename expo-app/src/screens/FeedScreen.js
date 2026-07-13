@@ -115,7 +115,7 @@ const PostCard = memo(({ post, onLike, onBookmark, onComment, onShare, onImagePr
       <View style={s.cardHeader}>
         <TouchableOpacity style={s.cardHeaderLeft} onPress={() => onUserPress(post.user?.id)} activeOpacity={0.7}>
           {post.user?.avatar ? (
-            <Image source={{ uri: resolveUrl(post.user.avatar) }} style={[s.cardAvatar, { backgroundColor: COLORS.primary + "30" }]} />
+            <Image source={{ uri: `${resolveUrl(post.user.avatar)}${post.user?.id === user?.id ? "?t=" + Date.now() : ""}` }} style={[s.cardAvatar, { backgroundColor: COLORS.primary + "30" }]} />
           ) : (
             <View style={[s.cardAvatar, { backgroundColor: COLORS.primary + "30" }]}>
               <Text style={[s.cardAvatarText, { color: COLORS.primary }]}>{post.user?.username?.[0]?.toUpperCase() || "?"}</Text>
@@ -369,7 +369,7 @@ export default function FeedScreen({ navigation, route }) {
                 <View style={[s.storyRing, !item.has_unseen && { borderColor: COLORS.border }]}>
                   <View style={s.storyAvatar}>
                     {item.user?.avatar ? (
-                      <Image source={{ uri: resolveUrl(item.user.avatar) }} style={{ width: "100%", height: "100%", borderRadius: 29 }} />
+                      <Image source={{ uri: `${resolveUrl(item.user.avatar)}${item.user?.id === user?.id ? "?t=" + Date.now() : ""}` }} style={{ width: "100%", height: "100%", borderRadius: 29 }} />
                     ) : (
                       <Text style={s.storyInitial}>{item.user?.username?.[0]?.toUpperCase() || "?"}</Text>
                     )}
