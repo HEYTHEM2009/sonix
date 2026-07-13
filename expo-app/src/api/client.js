@@ -9,15 +9,16 @@ export function setAuthExpiredHandler(handler) {
   onAuthExpired = handler;
 }
 
-const client = axios.create({ baseURL: API, timeout: 60000 });
+const client = axios.create({ baseURL: API, timeout: 30000 });
 
 let currentToken = null;
 
 client.interceptors.request.use(async (config) => {
-  const token = await AsyncStorage.getItem("token");
-  currentToken = token;
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+  if (!currentToken) {
+    currentToken = await AsyncStorage.getItem("token");
+  }
+  if (currentToken) {
+    config.headers.Authorization = `Bearer ${currentToken}`;
   }
   return config;
 });
@@ -36,6 +37,7 @@ client.interceptors.response.use(
       const now = Date.now();
       if (now - last401 > 3000) {
         last401 = now;
+        currentToken = null;
         await AsyncStorage.multiRemove(["token", "user"]);
         if (onAuthExpired) onAuthExpired();
       }
@@ -44,6 +46,10 @@ client.interceptors.response.use(
     return Promise.reject(err);
   }
 );
+
+export function setAuthToken(token) {
+  currentToken = token;
+}
 
 export const IMAGE_BASE = API.replace("/api", "");
 

@@ -1,13 +1,13 @@
-import { useState, useRef, useEffect, useMemo } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, Modal, Animated, Keyboard, KeyboardAvoidingView, Platform, FlatList, Image, Dimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
-import * as MediaLibrary from "expo-media-library";
-import { getInfoAsync } from "expo-file-system/legacy";
+const loadMediaLibrary = () => import("expo-media-library");
+const loadFileSystem = () => import("expo-file-system/legacy");
 import client from "../api/client";
 import { COLORS, SIZES, FONTS } from "../components/Theme";
 import { useLanguage } from "../context/LanguageContext";
-import StoryEditor from "../components/StoryEditor";
+const StoryEditor = React.lazy(() => import("../components/StoryEditor"));
 import Screen3D from "../components/3D/Screen3D";
 
 const { width: SCREEN_W } = Dimensions.get("window");
@@ -35,6 +35,7 @@ export default function CreateStoryScreen({ navigation }) {
 
   const loadRecentAssets = async () => {
     try {
+      const MediaLibrary = await loadMediaLibrary();
       const { status } = await MediaLibrary.requestPermissionsAsync();
       setHasPermission(status === "granted");
       if (status !== "granted") {
@@ -180,7 +181,8 @@ export default function CreateStoryScreen({ navigation }) {
     if (hasVideo && videoUri) {
       setUploadPhase(t("uploadingVideo"));
       try {
-        const fileInfo = await getInfoAsync(videoUri);
+        const FS = await loadFileSystem();
+        const fileInfo = await FS.getInfoAsync(videoUri);
         if (fileInfo.exists && fileInfo.size > 50 * 1024 * 1024) {
           setUploading(false);
           Alert.alert(t("error"), "Video too large (max 50MB)");

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { View, Text, TouchableOpacity, TextInput, StyleSheet, Alert, ActivityIndicator, ScrollView, Switch } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import client from "../api/client";
@@ -20,6 +20,8 @@ export default function SettingsScreen({ navigation }) {
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
   const [showLanguage, setShowLanguage] = useState(false);
+  const [notifPrefs, setNotifPrefs] = useState(null);
+  const [notifLoading, setNotifLoading] = useState(false);
 
   const changePasswordFn = async () => {
     if (!currentPassword || !newPassword) return Alert.alert(t("error"), t("fillAllFields"));
@@ -79,11 +81,32 @@ export default function SettingsScreen({ navigation }) {
     Alert.alert(t("success"), t("languageChanged"));
   };
 
+  const loadNotifPrefs = useCallback(async () => {
+    try {
+      const res = await client.get("/notifications/preferences");
+      setNotifPrefs(res.data);
+    } catch {}
+  }, []);
+
+  const toggleNotif = useCallback(async (key) => {
+    if (!notifPrefs) return;
+    setNotifLoading(true);
+    const next = { ...notifPrefs, [key]: !notifPrefs[key] };
+    try {
+      await client.put("/notifications/preferences", next);
+      setNotifPrefs(next);
+    } catch {
+      Alert.alert(t("error"), t("failedToSave"));
+    }
+    setNotifLoading(false);
+  }, [notifPrefs, t]);
+
   useEffect(() => {
     client.get("/users/me").then((res) => {
       if (res.data?.is_private !== undefined) setIsPrivate(res.data.is_private);
     }).catch(() => {});
-  }, []);
+    loadNotifPrefs();
+  }, [loadNotifPrefs]);
 
   return (
     <Screen3D style={[s.wrap, { paddingTop: insets.top }]}>
@@ -187,9 +210,11 @@ export default function SettingsScreen({ navigation }) {
               <Text style={s.rowHint}>{t("pushNotificationsHint")}</Text>
             </View>
             <Switch
-              value={true}
+              value={notifPrefs?.push_enabled ?? true}
+              onValueChange={() => toggleNotif("push_enabled")}
               trackColor={{ false: COLORS.input, true: COLORS.accent }}
               thumbColor={COLORS.text}
+              disabled={notifLoading}
             />
           </View>
 
@@ -200,9 +225,71 @@ export default function SettingsScreen({ navigation }) {
               <Text style={s.rowHint}>{t("emailNotificationsHint")}</Text>
             </View>
             <Switch
-              value={false}
+              value={notifPrefs?.email_enabled ?? false}
+              onValueChange={() => toggleNotif("email_enabled")}
               trackColor={{ false: COLORS.input, true: COLORS.accent }}
               thumbColor={COLORS.text}
+              disabled={notifLoading}
+            />
+          </View>
+
+          <View style={s.row}>
+            <Text style={s.rowIcon}>❤️</Text>
+            <View style={s.rowContent}>
+              <Text style={s.rowLabel}>{t("likeNotifications")}</Text>
+              <Text style={s.rowHint}>{t("likeNotificationsHint")}</Text>
+            </View>
+            <Switch
+              value={notifPrefs?.like_notifications ?? true}
+              onValueChange={() => toggleNotif("like_notifications")}
+              trackColor={{ false: COLORS.input, true: COLORS.accent }}
+              thumbColor={COLORS.text}
+              disabled={notifLoading}
+            />
+          </View>
+
+          <View style={s.row}>
+            <Text style={s.rowIcon}>💬</Text>
+            <View style={s.rowContent}>
+              <Text style={s.rowLabel}>{t("commentNotifications")}</Text>
+              <Text style={s.rowHint}>{t("commentNotificationsHint")}</Text>
+            </View>
+            <Switch
+              value={notifPrefs?.comment_notifications ?? true}
+              onValueChange={() => toggleNotif("comment_notifications")}
+              trackColor={{ false: COLORS.input, true: COLORS.accent }}
+              thumbColor={COLORS.text}
+              disabled={notifLoading}
+            />
+          </View>
+
+          <View style={s.row}>
+            <Text style={s.rowIcon}>👥</Text>
+            <View style={s.rowContent}>
+              <Text style={s.rowLabel}>{t("followNotifications")}</Text>
+              <Text style={s.rowHint}>{t("followNotificationsHint")}</Text>
+            </View>
+            <Switch
+              value={notifPrefs?.follow_notifications ?? true}
+              onValueChange={() => toggleNotif("follow_notifications")}
+              trackColor={{ false: COLORS.input, true: COLORS.accept }}
+              thumbColor={COLORS.text}
+              disabled={notifLoading}
+            />
+          </View>
+
+          <View style={s.row}>
+            <Text style={s.rowIcon}>📩</Text>
+            <View style={s.rowContent}>
+              <Text style={s.rowLabel}>{t("messageNotifications")}</Text>
+              <Text style={s.rowHint}>{t("messageNotificationsHint")}</Text>
+            </View>
+            <Switch
+              value={notifPrefs?.message_notifications ?? true}
+              onValueChange={() => toggleNotif("message_notifications")}
+              trackColor={{ false: COLORS.input, true: COLORS.accent }}
+              thumbColor={COLORS.text}
+              disabled={notifLoading}
             />
           </View>
         </View>
@@ -220,7 +307,7 @@ export default function SettingsScreen({ navigation }) {
             <Text style={s.rowArrow}>›</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={s.row}>
+          <TouchableOpacity style={s.row} onPress={() => navigation.navigate("BlockedUsers")}>
             <Text style={s.rowIcon}>📌</Text>
             <View style={s.rowContent}>
               <Text style={s.rowLabel}>{t("blockedUsers")}</Text>
@@ -247,7 +334,7 @@ export default function SettingsScreen({ navigation }) {
         <View style={s.section}>
           <Text style={s.sectionTitle}>{t("support").toUpperCase()}</Text>
 
-          <TouchableOpacity style={s.row}>
+          <TouchableOpacity style={s.row} onPress={() => navigation.navigate("HelpCenter")}>
             <Text style={s.rowIcon}>❓</Text>
             <View style={s.rowContent}>
               <Text style={s.rowLabel}>{t("helpCenter")}</Text>
@@ -256,7 +343,7 @@ export default function SettingsScreen({ navigation }) {
             <Text style={s.rowArrow}>›</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={s.row}>
+          <TouchableOpacity style={s.row} onPress={() => navigation.navigate("ReportProblem")}>
             <Text style={s.rowIcon}>⚠️</Text>
             <View style={s.rowContent}>
               <Text style={s.rowLabel}>{t("reportProblem")}</Text>
@@ -265,7 +352,7 @@ export default function SettingsScreen({ navigation }) {
             <Text style={s.rowArrow}>›</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={s.row}>
+          <TouchableOpacity style={s.row} onPress={() => navigation.navigate("Terms")}>
             <Text style={s.rowIcon}>📋</Text>
             <View style={s.rowContent}>
               <Text style={s.rowLabel}>{t("termsOfService")}</Text>
@@ -273,7 +360,7 @@ export default function SettingsScreen({ navigation }) {
             <Text style={s.rowArrow}>›</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={s.row}>
+          <TouchableOpacity style={s.row} onPress={() => navigation.navigate("Privacy")}>
             <Text style={s.rowIcon}>🛡️</Text>
             <View style={s.rowContent}>
               <Text style={s.rowLabel}>{t("privacyPolicy")}</Text>

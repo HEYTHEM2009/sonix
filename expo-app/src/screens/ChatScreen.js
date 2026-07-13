@@ -2,7 +2,7 @@ import { useState, useEffect, useLayoutEffect, useCallback, useRef, memo } from 
 import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Image, Alert, ActivityIndicator, Dimensions, Animated, Keyboard, Modal, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
-import { Audio } from "expo-av";
+import { isExpoGo } from "../utils/audioHelper";
 import client, { resolveUrl } from "../api/client";
 import { getEcho } from "../api/websocket";
 import { cacheMessages, getCachedMessages, addToOfflineQueue, getOfflineQueue, removeFromOfflineQueue } from "../api/cache";
@@ -62,22 +62,8 @@ const MessageBubble = memo(({ item, isMine, onLongPress, onDoubleTap }) => {
         setPlaying(false);
         return;
       }
-      const { sound } = await Audio.Sound.createAsync(
-        { uri: resolveUrl(item.voice) },
-        { shouldPlay: true }
-      );
-      soundRef.current = sound;
-      setPlaying(true);
-      sound.setOnPlaybackStatusUpdate((status) => {
-        if (status.isLoaded) {
-          setPosition(status.positionMillis);
-          setDuration(status.durationMillis || 0);
-          if (status.didJustFinish) {
-            setPlaying(false);
-            sound.unloadAsync();
-          }
-        }
-      });
+      if (isExpoGo()) { Alert.alert(t("error"), "Voice playback requires a dev build"); return; }
+      Alert.alert(t("error"), "Voice playback requires a dev build");
     } catch (e) {
       console.warn("Voice play error", e);
     }
@@ -411,7 +397,9 @@ export default function ChatScreen({ route, navigation }) {
   };
 
   const startRecording = async () => {
+    if (isExpoGo()) { Alert.alert(t("error"), "Voice messages require a dev build"); return; }
     try {
+      const { Audio } = require("expo-av");
       const { status } = await Audio.requestPermissionsAsync();
       if (status !== "granted") { Alert.alert(t("error"), t("failedToRecord")); return; }
       await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
@@ -431,7 +419,7 @@ export default function ChatScreen({ route, navigation }) {
     clearInterval(recordTimerRef.current);
     try {
       await recordingRef.current.stopAndUnloadAsync();
-      await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
+      try { const { Audio } = require("expo-av"); await Audio.setAudioModeAsync({ allowsRecordingIOS: false }); } catch (_) {}
       if (!cancel && recordTime > 0) {
         const uri = recordingRef.current.getURI();
         const formData = new FormData();

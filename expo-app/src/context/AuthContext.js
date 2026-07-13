@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import client, { setAuthExpiredHandler } from "../api/client";
+import client, { setAuthExpiredHandler, setAuthToken } from "../api/client";
 
 const AuthContext = createContext(null);
 
@@ -23,6 +23,7 @@ export function AuthProvider({ children }) {
       const [t, u] = await AsyncStorage.multiGet(["token", "user"]);
       if (t[1]) {
         try {
+          setAuthToken(t[1]);
           const res = await client.get("/users/me");
           if (res.status === 200) {
             setToken(t[1]);
@@ -30,6 +31,7 @@ export function AuthProvider({ children }) {
             await AsyncStorage.setItem("user", JSON.stringify(res.data));
           }
         } catch (_) {
+          setAuthToken(null);
           await AsyncStorage.multiRemove(["token", "user"]);
         }
       }
@@ -40,6 +42,7 @@ export function AuthProvider({ children }) {
     const res = await client.post("/auth/login", { email, password });
     const { token: t, user: u } = res.data;
     await AsyncStorage.multiSet([["token", t], ["user", JSON.stringify(u)]]);
+    setAuthToken(t);
     setToken(t);
     setUser(u);
   }, []);
@@ -48,12 +51,14 @@ export function AuthProvider({ children }) {
     const res = await client.post("/auth/register", { username, email, password });
     const { token: t, user: u } = res.data;
     await AsyncStorage.multiSet([["token", t], ["user", JSON.stringify(u)]]);
+    setAuthToken(t);
     setToken(t);
     setUser(u);
   }, []);
 
   const logout = useCallback(async () => {
     await AsyncStorage.multiRemove(["token", "user"]);
+    setAuthToken(null);
     setToken(null);
     setUser(null);
   }, []);

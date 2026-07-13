@@ -20,18 +20,24 @@ import UsersScreen from "../screens/UsersScreen";
 import MessagesScreen from "../screens/MessagesScreen";
 import ChatScreen from "../screens/ChatScreen";
 import CommentsScreen from "../screens/CommentsScreen";
-import CameraScreen from "../screens/CameraScreen";
+const CameraScreen = React.lazy(() => import("../screens/CameraScreen"));
 import StoryViewerScreen from "../screens/StoryViewerScreen";
 import EditProfileScreen from "../screens/EditProfileScreen";
 import SavedPostsScreen from "../screens/SavedPostsScreen";
-import ImageViewerScreen from "../screens/ImageViewerScreen";
+const ImageViewerScreen = React.lazy(() => import("../screens/ImageViewerScreen"));
 import SharePostScreen from "../screens/SharePostScreen";
 import LikeListScreen from "../screens/LikeListScreen";
 import EditPostScreen from "../screens/EditPostScreen";
 import SettingsScreen from "../screens/SettingsScreen";
-import CreateStoryScreen from "../screens/CreateStoryScreen";
+const CreateStoryScreen = React.lazy(() => import("../screens/CreateStoryScreen"));
 import VideoPostScreen from "../screens/VideoPostScreen";
 import HighlightsScreen from "../screens/HighlightsScreen";
+import BlockedUsersScreen from "../screens/BlockedUsersScreen";
+import HelpCenterScreen from "../screens/HelpCenterScreen";
+import ReportProblemScreen from "../screens/ReportProblemScreen";
+import TermsScreen from "../screens/TermsScreen";
+import PrivacyScreen from "../screens/PrivacyScreen";
+import HashtagPostsScreen from "../screens/HashtagPostsScreen";
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -244,6 +250,12 @@ export default function AppNavigator() {
           <Stack.Screen name="CreateStory" component={CreateStoryScreen} options={{ animation: "slide_from_bottom" }} />
           <Stack.Screen name="VideoPost" component={VideoPostScreen} options={{ animation: "fade" }} />
           <Stack.Screen name="Highlights" component={HighlightsScreen} />
+          <Stack.Screen name="BlockedUsers" component={BlockedUsersScreen} />
+          <Stack.Screen name="HelpCenter" component={HelpCenterScreen} />
+          <Stack.Screen name="ReportProblem" component={ReportProblemScreen} />
+          <Stack.Screen name="Terms" component={TermsScreen} />
+          <Stack.Screen name="Privacy" component={PrivacyScreen} />
+          <Stack.Screen name="HashtagPosts" component={HashtagPostsScreen} />
         </>
       )}
     </Stack.Navigator>

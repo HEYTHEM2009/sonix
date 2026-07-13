@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from "react-native";
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, Share } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import client, { IMAGE_BASE } from "../api/client";
 import { COLORS, SIZES } from "../components/Theme";
@@ -13,6 +13,8 @@ export default function SharePostScreen({ route, navigation }) {
   const [sending, setSending] = useState(null);
   const insets = useSafeAreaInsets();
 
+  const postUrl = `${IMAGE_BASE.replace("/api", "")}/posts/${postId}`;
+
   useEffect(() => {
     (async () => {
       try {
@@ -25,7 +27,6 @@ export default function SharePostScreen({ route, navigation }) {
   const shareWith = async (userId, username) => {
     setSending(userId);
     try {
-      const postUrl = `${IMAGE_BASE.replace("/api", "")}/posts/${postId}`;
       await client.post("/messages", { receiver_id: userId, content: `${t("sharedPostWith")} ${postUrl}` });
       Alert.alert(t("sent"), `${t("postSharedWith")} ${username}`);
       navigation.goBack();
@@ -35,6 +36,20 @@ export default function SharePostScreen({ route, navigation }) {
     setSending(null);
   };
 
+  const shareExternal = async () => {
+    try {
+      await Share.share({
+        message: `${t("sharedPostWith")} ${postUrl}`,
+        url: postUrl,
+        title: t("sharePost"),
+      });
+    } catch (e) {
+      if (e?.message !== "User did not share") {
+        Alert.alert(t("error"), t("failedToShare"));
+      }
+    }
+  };
+
   return (
     <Screen3D style={[s.wrap, { paddingTop: insets.top }]}>
       <View style={s.topBar}>
@@ -42,7 +57,19 @@ export default function SharePostScreen({ route, navigation }) {
         <Text style={s.title}>{t("sharePost")}</Text>
         <View style={{ width: 36 }} />
       </View>
-      <Text style={s.info}>{t("sharePostDesc")}</Text>
+
+      <TouchableOpacity style={s.externalBtn} onPress={shareExternal}>
+        <Text style={s.externalIcon}>🌐</Text>
+        <View style={s.externalContent}>
+          <Text style={s.externalLabel}>{t("shareExternal")}</Text>
+          <Text style={s.externalHint}>{t("shareExternalHint")}</Text>
+        </View>
+        <Text style={s.externalArrow}>➤</Text>
+      </TouchableOpacity>
+
+      <View style={s.divider} />
+      <Text style={s.sectionLabel}>{t("shareToSonix")}</Text>
+
       <FlatList
         data={users}
         keyExtractor={(u) => String(u.id)}
@@ -69,7 +96,14 @@ const s = StyleSheet.create({
   topBar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 12, paddingBottom: 8, borderBottomWidth: 0.5, borderBottomColor: COLORS.border },
   backBtn: { fontSize: 22, color: COLORS.text, padding: 8 },
   title: { fontSize: 16, fontWeight: "600", color: COLORS.text },
-  info: { color: COLORS.muted, fontSize: 13, paddingHorizontal: 16, marginBottom: 12, marginTop: 8 },
+  externalBtn: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 14, marginTop: 8, gap: 12 },
+  externalIcon: { fontSize: 24, width: 36, textAlign: "center" },
+  externalContent: { flex: 1 },
+  externalLabel: { fontSize: 15, fontWeight: "600", color: COLORS.text },
+  externalHint: { fontSize: 12, color: COLORS.muted, marginTop: 2 },
+  externalArrow: { fontSize: 16, color: COLORS.muted },
+  divider: { height: 0.5, backgroundColor: COLORS.border, marginHorizontal: 16 },
+  sectionLabel: { color: COLORS.muted, fontSize: 12, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.5, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 6 },
   userRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 12, gap: 12, borderBottomWidth: 0.5, borderBottomColor: COLORS.border },
   avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: COLORS.primary + "30", alignItems: "center", justifyContent: "center" },
   avatarText: { color: COLORS.primary, fontSize: 18, fontWeight: "600" },

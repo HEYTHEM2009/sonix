@@ -54,6 +54,7 @@ Route::get('/posts', [PostController::class, 'index'])->middleware('auth:sanctum
 Route::post('/posts', [PostController::class, 'store'])->middleware(['auth:sanctum', 'throttle:10,1']);
 Route::get('/posts/{id}', [PostController::class, 'show'])->middleware('auth:sanctum');
 Route::put('/posts/{id}', [PostController::class, 'update'])->middleware('auth:sanctum');
+Route::get('/posts/hashtag/{tag}', [PostController::class, 'byHashtag'])->middleware('auth:sanctum');
 Route::get('/posts/user/{userId}', [PostController::class, 'userPosts'])->middleware('auth:sanctum');
 Route::delete('/posts/{id}', [PostController::class, 'destroy'])->middleware(['auth:sanctum', 'throttle:20,1']);
 

@@ -104,6 +104,32 @@ class PostController extends Controller
         return response()->json($post);
     }
 
+    public function byHashtag($tag, Request $request)
+    {
+        $currentUser = $request->user();
+        $perPage = (int) ($request->input('per_page', 20));
+        $pattern = '#' . $tag;
+
+        $posts = Post::with('user:id,username,avatar')
+            ->withCount(['likes', 'likes as liked' => fn($q) => $q->where('user_id', $currentUser?->id ?? 0)])
+            ->withCount('comments as comments_count')
+            ->where('content', 'ILIKE', "%{$pattern}%")
+            ->where(function ($q) use ($currentUser) {
+                $q->whereHas('user', fn($sub) => $sub->where('is_private', false));
+                if ($currentUser) {
+                    $q->orWhereExists(fn($sub) => $sub->selectRaw(1)->from('follows')
+                        ->whereColumn('follows.following_id', 'posts.user_id')
+                        ->where('follows.follower_id', $currentUser->id)
+                        ->where('follows.status', 'accepted'));
+                    $q->orWhere('user_id', $currentUser->id);
+                }
+            })
+            ->latest()
+            ->paginate($perPage);
+
+        return response()->json($posts);
+    }
+
     public function store(Request $request)
     {
         $rules = ['content' => 'nullable|string'];

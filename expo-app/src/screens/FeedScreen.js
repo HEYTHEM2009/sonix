@@ -25,12 +25,25 @@ function formatTime(dateStr, t) {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-function renderContent(text) {
+function renderContent(text, nav) {
   if (!text) return null;
-  const parts = text.split(/(#\w+)/g);
+  const parts = text.split(/([#@]\w+)/g);
   return parts.map((part, i) => {
     if (part.startsWith("#")) {
-      return <Text key={i} style={s.hashtag}>{part}</Text>;
+      const tag = part.slice(1);
+      return (
+        <Text key={i} style={s.hashtag} onPress={() => nav?.("HashtagPosts", { tag })}>
+          {part}
+        </Text>
+      );
+    }
+    if (part.startsWith("@")) {
+      const username = part.slice(1);
+      return (
+        <Text key={i} style={s.mention} onPress={() => nav?.("UserProfile", { userId: username })}>
+          {part}
+        </Text>
+      );
     }
     return <Text key={i}>{part}</Text>;
   });
@@ -61,7 +74,7 @@ const HeartAnimation = memo(({ show }) => {
   );
 });
 
-const PostCard = memo(({ post, onLike, onBookmark, onComment, onShare, onImagePress, onVideoPress, onMenuPress, onUserPress, onLikesPress }) => {
+const PostCard = memo(({ post, onLike, onBookmark, onComment, onShare, onImagePress, onVideoPress, onMenuPress, onUserPress, onLikesPress, onHashtagPress }) => {
   const { t } = useLanguage();
   const [showHeart, setShowHeart] = useState(false);
   const lastTap = useRef(0);
@@ -139,7 +152,7 @@ const PostCard = memo(({ post, onLike, onBookmark, onComment, onShare, onImagePr
         <View style={[s.contentWrap, !post.image && !(post.type === "video" && post.video) && s.textContentNoImage]}>
           <Text style={[s.contentText, !post.image && !(post.type === "video" && post.video) && s.textContentLarge]}>
             <Text style={s.contentUser}>{post.user?.username} </Text>
-            {renderContent(post.content)}
+            {renderContent(post.content, onHashtagPress)}
           </Text>
         </View>
       ) : null}
@@ -226,10 +239,9 @@ export default function FeedScreen({ navigation, route }) {
     setLoading(false);
   }, []);
 
-  const loadStories = useCallback(async (force = false) => {
+  const loadStories = useCallback(async () => {
     try {
-      const url = force ? `/stories?_t=${Date.now()}` : "/stories";
-      const res = await client.get(url);
+      const res = await client.get("/stories");
       setStories(res.data || []);
     } catch (e) {
       const status = e?.response?.status;
@@ -244,7 +256,7 @@ export default function FeedScreen({ navigation, route }) {
 
   const refreshAll = useCallback(() => {
     load(1);
-    loadStories(true);
+    loadStories();
     loadHighlights();
   }, [load, loadStories, loadHighlights]);
 
@@ -256,33 +268,33 @@ export default function FeedScreen({ navigation, route }) {
     }, [refreshAll])
   );
 
-  const onRefresh = async () => {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
     setHasMore(true);
-    await Promise.all([load(1), loadStories(true), loadHighlights()]);
+    await Promise.all([load(1), loadStories(), loadHighlights()]);
     setRefreshing(false);
-  };
+  }, [load, loadStories, loadHighlights]);
 
-  const onEndReached = async () => {
+  const onEndReached = useCallback(async () => {
     if (!hasMore || loadingMore) return;
     setLoadingMore(true);
     await load(page + 1, true);
     setLoadingMore(false);
-  };
+  }, [hasMore, loadingMore, page, load]);
 
-  const likePost = async (postId, liked, count) => {
+  const likePost = useCallback(async (postId, liked, count) => {
     setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, liked: liked ? 0 : 1, likes_count: count + (liked ? -1 : 1) } : p));
     try { await client.post("/likes", { postId }); }
     catch (e) { setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, liked: liked ? 1 : 0, likes_count: count } : p)); }
-  };
+  }, []);
 
-  const toggleBookmark = async (postId) => {
+  const toggleBookmark = useCallback(async (postId) => {
     setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, bookmarked: !p.bookmarked } : p));
     try { await client.post("/bookmarks", { postId }); }
     catch (e) { setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, bookmarked: !p.bookmarked } : p)); }
-  };
+  }, []);
 
-  const deletePost = (postId) => {
+  const deletePost = useCallback((postId) => {
     Alert.alert(t("deletePost"), t("deletePostConfirm"), [
       { text: t("cancel"), style: "cancel" },
       { text: t("delete"), style: "destructive", onPress: async () => {
@@ -290,9 +302,9 @@ export default function FeedScreen({ navigation, route }) {
         catch (e) { Alert.alert(t("error"), t("failedToDelete")); }
       }},
     ]);
-  };
+  }, [t]);
 
-  const showPostMenu = (post) => {
+  const showPostMenu = useCallback((post) => {
     const isMine = post.user?.id === user?.id;
     const options = [];
     if (isMine) {
@@ -305,7 +317,15 @@ export default function FeedScreen({ navigation, route }) {
     }
     options.push({ text: t("cancel"), style: "cancel" });
     Alert.alert(null, null, options);
-  };
+  }, [user, t, navigation, deletePost]);
+
+  const navigateComments = useCallback((id) => navigation.navigate("Comments", { postId: id }), [navigation]);
+  const navigateShare = useCallback((id) => navigation.navigate("SharePost", { postId: id }), [navigation]);
+  const navigateImage = useCallback((p) => navigation.navigate("ImageViewer", { imageUrl: p.image, username: p.user?.username }), [navigation]);
+  const navigateVideo = useCallback((p) => navigation.navigate("VideoPost", { videoUrl: p.video, username: p.user?.username }), [navigation]);
+  const navigateUser = useCallback((id) => navigation.navigate("UserProfile", { userId: id }), [navigation]);
+  const navigateLikes = useCallback((id) => navigation.navigate("LikeList", { postId: id }), [navigation]);
+  const navigateHashtag = useCallback((screen, params) => navigation.navigate(screen, params), [navigation]);
 
   const storiesData = useMemo(() => [
     { _k: "me", isMe: true },
@@ -349,7 +369,7 @@ export default function FeedScreen({ navigation, route }) {
                 <View style={[s.storyRing, !item.has_unseen && { borderColor: COLORS.border }]}>
                   <View style={s.storyAvatar}>
                     {item.user?.avatar ? (
-                      <Image source={{ uri: `${resolveUrl(item.user.avatar)}?t=${Date.now()}` }} style={{ width: "100%", height: "100%", borderRadius: 29 }} />
+                      <Image source={{ uri: resolveUrl(item.user.avatar) }} style={{ width: "100%", height: "100%", borderRadius: 29 }} />
                     ) : (
                       <Text style={s.storyInitial}>{item.user?.username?.[0]?.toUpperCase() || "?"}</Text>
                     )}
@@ -432,7 +452,12 @@ export default function FeedScreen({ navigation, route }) {
         data={posts}
         keyExtractor={(p) => String(p.id)}
         ListHeaderComponent={header}
-        extraData={stories}
+        extraData={posts.length}
+        initialNumToRender={8}
+        maxToRenderPerBatch={10}
+        windowSize={11}
+        removeClippedSubviews={true}
+        updateCellsBatchingPeriod={50}
         ListEmptyComponent={
           <View style={s.emptyWrap}>
             <View style={s.emptyCircle}>
@@ -461,13 +486,14 @@ export default function FeedScreen({ navigation, route }) {
             post={post}
             onLike={likePost}
             onBookmark={toggleBookmark}
-            onComment={(id) => navigation.navigate("Comments", { postId: id })}
-            onShare={(id) => navigation.navigate("SharePost", { postId: id })}
-            onImagePress={(p) => navigation.navigate("ImageViewer", { imageUrl: p.image, username: p.user?.username })}
-            onVideoPress={(p) => navigation.navigate("VideoPost", { videoUrl: p.video, username: p.user?.username })}
+            onComment={navigateComments}
+            onShare={navigateShare}
+            onImagePress={navigateImage}
+            onVideoPress={navigateVideo}
             onMenuPress={showPostMenu}
-            onUserPress={(id) => navigation.navigate("UserProfile", { userId: id })}
-            onLikesPress={(id) => navigation.navigate("LikeList", { postId: id })}
+            onUserPress={navigateUser}
+            onLikesPress={navigateLikes}
+            onHashtagPress={navigateHashtag}
           />
         )}
         />
@@ -561,6 +587,7 @@ const s = StyleSheet.create({
   likedIcon: { transform: [{ scale: 1.1 }] },
   bookmarkedIcon: { transform: [{ scale: 1.1 }] },
   hashtag: { color: COLORS.accent, fontWeight: "600" },
+  mention: { color: COLORS.primary, fontWeight: "600" },
 
   likesText: { fontSize: SIZES.sm, fontWeight: "700", color: COLORS.text, paddingVertical: 2 },
 
