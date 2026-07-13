@@ -85,6 +85,21 @@ class EnsureFeatureTables extends Command
             $this->info('profile_templates table already exists');
         }
 
+        // Create support_messages table
+        if (!Schema::hasTable('support_messages')) {
+            Schema::create('support_messages', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+                $table->string('subject', 255);
+                $table->text('message');
+                $table->timestamps();
+            });
+            $this->info('Created support_messages table');
+            $created++;
+        } else {
+            $this->info('support_messages table already exists');
+        }
+
         // Create recent_searches table
         if (!Schema::hasTable('recent_searches')) {
             Schema::create('recent_searches', function (Blueprint $table) {
