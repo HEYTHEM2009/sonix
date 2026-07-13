@@ -27,7 +27,7 @@ function formatTime(dateStr, t) {
 
 function renderContent(text, nav) {
   if (!text) return null;
-  const parts = text.split(/([#@]\w+)/g);
+  const parts = text.split(/([#@][\p{L}\p{N}_]+)/gu);
   return parts.map((part, i) => {
     if (part.startsWith("#")) {
       const tag = part.slice(1);

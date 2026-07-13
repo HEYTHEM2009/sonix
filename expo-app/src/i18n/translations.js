@@ -255,6 +255,8 @@ const translations = {
     // Users
     searchPeople: "Search people...",
     searchUsers: "Search users by name or bio...",
+    trending: "🔥 Trending",
+    suggested: "👥 Suggested",
     noUsersFound: "No users found",
     follow: "Follow",
     followingStatus: "Following",
@@ -664,6 +666,8 @@ const translations = {
     // Users
     searchPeople: "البحث عن أشخاص...",
     searchUsers: "ابحث عن مستخدمين بالاسم أو السيرة...",
+    trending: "🔥 رائج",
+    suggested: "👥 مقترح لك",
     noUsersFound: "لم يتم العثور على مستخدمين",
     follow: "متابعة",
     followingStatus: "يتابع",

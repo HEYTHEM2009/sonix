@@ -33,6 +33,7 @@ const CreateStoryScreen = React.lazy(() => import("../screens/CreateStoryScreen"
 import VideoPostScreen from "../screens/VideoPostScreen";
 import HighlightsScreen from "../screens/HighlightsScreen";
 import BlockedUsersScreen from "../screens/BlockedUsersScreen";
+import ExploreScreen from "../screens/ExploreScreen";
 import HelpCenterScreen from "../screens/HelpCenterScreen";
 import ReportProblemScreen from "../screens/ReportProblemScreen";
 import TermsScreen from "../screens/TermsScreen";
@@ -44,7 +45,7 @@ const Tab = createBottomTabNavigator();
 
 const TAB_ICONS = {
   Feed: { active: "🏠", inactive: "🏠" },
-  Search: { active: "🔍", inactive: "🔍" },
+  Explore: { active: "🔍", inactive: "🔍" },
   Messages: { active: "💬", inactive: "💬" },
   Profile: { active: "👤", inactive: "👤" },
 };
@@ -201,7 +202,7 @@ function HomeTabs() {
       screenOptions={{ headerShown: false }}
     >
       <Tab.Screen name="Feed" component={FeedScreen} />
-      <Tab.Screen name="Search" component={UsersScreen} />
+      <Tab.Screen name="Explore" component={ExploreScreen} />
       <Tab.Screen name="Create" component={CreatePostScreen} />
       <Tab.Screen name="Messages" component={MessagesScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />

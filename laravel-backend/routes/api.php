@@ -75,6 +75,7 @@ Route::post('/follow/reject/{id}', [FollowController::class, 'reject'])->middlew
 Route::get('/follow/{userId}/status', [FollowController::class, 'status'])->middleware('auth:sanctum');
 
 Route::get('/feed', [FeedController::class, 'index'])->middleware('auth:sanctum');
+Route::get('/explore', [App\Http\Controllers\Api\ExploreController::class, 'index'])->middleware('auth:sanctum');
 
 Route::get('/notifications', [NotificationController::class, 'index'])->middleware('auth:sanctum');
 Route::patch('/notifications/seen', [NotificationController::class, 'markAsSeen'])->middleware('auth:sanctum');

@@ -7,6 +7,16 @@ import { useLanguage } from "../context/LanguageContext";
 import { COLORS, SIZES } from "../components/Theme";
 import Screen3D from "../components/3D/Screen3D";
 
+function renderLinkable(text) {
+  if (!text) return null;
+  const parts = text.split(/([#@][\p{L}\p{N}_]+)/gu);
+  return parts.map((part, i) => {
+    if (part.startsWith("#")) return <Text key={i} style={s.linkHash}>{part}</Text>;
+    if (part.startsWith("@")) return <Text key={i} style={s.linkMention}>{part}</Text>;
+    return <Text key={i}>{part}</Text>;
+  });
+}
+
 export default function CommentsScreen({ route, navigation }) {
   const { t } = useLanguage();
   const { postId } = route.params;
@@ -77,7 +87,7 @@ export default function CommentsScreen({ route, navigation }) {
               <View style={s.content}>
                 <Text style={s.msg}>
                   <Text style={s.user}>{c.user?.username} </Text>
-                  {c.content}
+                  {renderLinkable(c.content)}
                 </Text>
                 <Text style={s.time}>{new Date(c.created_at).toLocaleDateString()}</Text>
               </View>
@@ -118,4 +128,6 @@ const s = StyleSheet.create({
   input: { flex: 1, height: 38, borderRadius: 19, backgroundColor: COLORS.input, paddingHorizontal: 16, fontSize: 13, color: COLORS.text },
   postBtn: { fontSize: 14, fontWeight: "600", color: COLORS.accent, opacity: 0.5 },
   postBtnActive: { opacity: 1 },
+  linkHash: { color: COLORS.accent, fontWeight: "600" },
+  linkMention: { color: COLORS.primary, fontWeight: "600" },
 });

@@ -1,5 +1,5 @@
-import { useState, useRef } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Alert, KeyboardAvoidingView, Platform, ScrollView, Dimensions } from "react-native";
+import { useState, useRef, useEffect } from "react";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Alert, KeyboardAvoidingView, Platform, ScrollView, Dimensions, FlatList } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import client from "../api/client";
@@ -17,8 +17,58 @@ export default function CreatePostScreen({ navigation }) {
   const [mediaUri, setMediaUri] = useState(null);
   const [mediaType, setMediaType] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState(null);
+  const [mentionResults, setMentionResults] = useState([]);
+  const [mentionIndex, setMentionIndex] = useState(-1);
+  const [cursorPos, setCursorPos] = useState(0);
   const inputRef = useRef(null);
   const insets = useSafeAreaInsets();
+
+  const detectMention = (text, pos) => {
+    const before = text.slice(0, pos);
+    const match = before.match(/@([\p{L}\p{N}_]*)$/u);
+    if (match) {
+      setMentionQuery(match[1]);
+    } else {
+      setMentionQuery(null);
+      setMentionResults([]);
+    }
+  };
+
+  const handleChangeText = (text) => {
+    setContent(text);
+    detectMention(text, cursorPos);
+  };
+
+  const handleSelectionChange = (e) => {
+    const pos = e.nativeEvent.selection.end;
+    setCursorPos(pos);
+    if (mentionQuery !== null) detectMention(content, pos);
+  };
+
+  useEffect(() => {
+    if (mentionQuery !== null && mentionQuery.length >= 1) {
+      const timeout = setTimeout(async () => {
+        try {
+          const res = await client.get(`/users/search?q=${encodeURIComponent(mentionQuery)}&per_page=5`);
+          setMentionResults(res.data?.data || res.data || []);
+          setMentionIndex(-1);
+        } catch (e) {}
+      }, 200);
+      return () => clearTimeout(timeout);
+    } else {
+      setMentionResults([]);
+    }
+  }, [mentionQuery]);
+
+  const insertMention = (username) => {
+    const before = content.slice(0, cursorPos);
+    const after = content.slice(cursorPos);
+    const replaced = before.replace(/@[\p{L}\p{N}_]*$/u, `@${username} `);
+    setContent(replaced + after);
+    setMentionQuery(null);
+    setMentionResults([]);
+  };
 
   const pickMedia = async (type) => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -97,7 +147,8 @@ export default function CreatePostScreen({ navigation }) {
           placeholder={t("whatsOnMind")}
           placeholderTextColor={COLORS.muted}
           value={content}
-          onChangeText={setContent}
+          onChangeText={handleChangeText}
+          onSelectionChange={handleSelectionChange}
           textAlignVertical="top"
           autoFocus
         />
@@ -126,6 +177,27 @@ export default function CreatePostScreen({ navigation }) {
           </View>
         )}
       </ScrollView>
+
+      {mentionResults.length > 0 && (
+        <View style={s.mentionDropdown}>
+          <FlatList
+            data={mentionResults}
+            keyExtractor={(item) => String(item.id)}
+            renderItem={({ item, index }) => (
+              <TouchableOpacity
+                style={[s.mentionRow, index === mentionIndex && s.mentionRowActive]}
+                onPress={() => insertMention(item.username)}
+              >
+                <View style={s.mentionAvatar}>
+                  <Text style={s.mentionAvatarText}>{item.username?.[0]?.toUpperCase() || "?"}</Text>
+                </View>
+                <Text style={s.mentionName}>{item.username}</Text>
+                {item.name && <Text style={s.mentionFullName}>{item.name}</Text>}
+              </TouchableOpacity>
+            )}
+          />
+        </View>
+      )}
 
       <View style={[s.toolbar, { paddingBottom: Math.max(insets.bottom + 8, 16) }]}>
         <View style={s.toolActions}>
@@ -200,4 +272,12 @@ const s = StyleSheet.create({
   toolLabel: { fontSize: SIZES.sm, fontWeight: "600", color: COLORS.textSecondary },
   charCount: { alignItems: "flex-end" },
   charText: { fontSize: SIZES.xs, color: COLORS.muted },
+
+  mentionDropdown: { position: "absolute", left: 16, right: 16, bottom: 60, maxHeight: 200, backgroundColor: COLORS.card, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border, zIndex: 100, elevation: 10 },
+  mentionRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 14, paddingVertical: 10, borderBottomWidth: 0.5, borderBottomColor: COLORS.border },
+  mentionRowActive: { backgroundColor: COLORS.input },
+  mentionAvatar: { width: 30, height: 30, borderRadius: 15, backgroundColor: COLORS.primary + "30", alignItems: "center", justifyContent: "center" },
+  mentionAvatarText: { fontSize: 13, fontWeight: "700", color: COLORS.primary },
+  mentionName: { fontSize: SIZES.md, fontWeight: "600", color: COLORS.text },
+  mentionFullName: { fontSize: SIZES.sm, color: COLORS.muted, flex: 1 },
 });
