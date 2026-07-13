@@ -58,12 +58,21 @@ const MessageBubble = memo(({ item, isMine, onLongPress, onDoubleTap }) => {
   const toggleVoice = async () => {
     try {
       if (playing && soundRef.current) {
-        await soundRef.current.stopAsync();
+        soundRef.current.pause();
         setPlaying(false);
         return;
       }
       if (isExpoGo()) { Alert.alert(t("error"), t("voicePlaybackRequiresDevBuild")); return; }
-      Alert.alert(t("error"), t("voicePlaybackRequiresDevBuild"));
+      const { Audio } = require("expo-audio");
+      const uri = resolveUrl(item.voice);
+      const player = Audio.createAudioPlayer(uri);
+      soundRef.current = player;
+      player.addListener("playbackStatusUpdate", (status) => {
+        if (status.didJustFinish) { setPlaying(false); setPosition(0); }
+        else { setPosition(Math.floor((status.currentTime || 0) * 1000)); setDuration(Math.floor((status.duration || 0) * 1000)); }
+      });
+      await player.play();
+      setPlaying(true);
     } catch (e) {
       console.warn("Voice play error", e);
     }
@@ -71,7 +80,7 @@ const MessageBubble = memo(({ item, isMine, onLongPress, onDoubleTap }) => {
 
   useEffect(() => {
     return () => {
-      if (soundRef.current) soundRef.current.unloadAsync();
+      if (soundRef.current) { try { soundRef.current.pause(); soundRef.current.release(); } catch (_) {} }
     };
   }, []);
 
@@ -399,14 +408,14 @@ export default function ChatScreen({ route, navigation }) {
   const startRecording = async () => {
     if (isExpoGo()) { Alert.alert(t("error"), t("voiceMessagesRequireDevBuild")); return; }
     try {
-      const { Audio } = require("expo-av");
-      const { status } = await Audio.requestPermissionsAsync();
+      const audio = require("expo-audio");
+      const { status } = await audio.AudioModule.requestRecordingPermissionsAsync();
       if (status !== "granted") { Alert.alert(t("error"), t("failedToRecord")); return; }
-      await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
-      const recording = new Audio.Recording();
-      await recording.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
-      await recording.startAsync();
-      recordingRef.current = recording;
+      await audio.setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
+      const recorder = audio.Audio.createAudioRecorder(audio.RecordingPresets.HIGH_QUALITY);
+      await recorder.prepareToRecordAsync();
+      recorder.record();
+      recordingRef.current = recorder;
       setIsRecording(true);
       setRecordTime(0);
       setRecordCancel(false);
@@ -418,10 +427,10 @@ export default function ChatScreen({ route, navigation }) {
     if (!recordingRef.current) return;
     clearInterval(recordTimerRef.current);
     try {
-      await recordingRef.current.stopAndUnloadAsync();
-      try { const { Audio } = require("expo-av"); await Audio.setAudioModeAsync({ allowsRecordingIOS: false }); } catch (_) {}
+      await recordingRef.current.stop();
+      try { const audio = require("expo-audio"); await audio.setAudioModeAsync({ allowsRecording: false }); } catch (_) {}
       if (!cancel && recordTime > 0) {
-        const uri = recordingRef.current.getURI();
+        const uri = recordingRef.current.uri;
         const formData = new FormData();
         formData.append("receiver_id", String(userId));
         formData.append("duration", String(recordTime));
