@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Alert, Scro
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Screen3D from "../components/3D/Screen3D";
 import * as ImagePicker from "expo-image-picker";
-import client, { IMAGE_BASE } from "../api/client";
+import client from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import { COLORS, SIZES, FONTS } from "../components/Theme";

@@ -31,7 +31,7 @@ function Logo3D() {
 }
 
 export default function ResetPasswordScreen({ navigation }) {
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const [email, setEmail] = useState("");
   const [token, setToken] = useState("");
   const [password, setPassword] = useState("");
@@ -104,23 +104,23 @@ export default function ResetPasswordScreen({ navigation }) {
 
           <Animated.View style={[s.inputWrap, focusedField === "email" && s.inputWrapActive, { transform: [{ scale: inputAnims.email.interpolate({ inputRange: [0, 1], outputRange: [1, 1.02] }) }], shadowOpacity: inputAnims.email.interpolate({ inputRange: [0, 1], outputRange: [0.1, 0.4] }) }]}>
             <View style={[s.inputIconWrap, focusedField === "email" && s.inputIconActive]}><Text style={s.inputIcon}>✉️</Text></View>
-            <TextInput style={s.input} placeholder={t("email")} placeholderTextColor={COLORS.muted} value={email} onChangeText={setEmail} onFocus={() => focusInput("email")} onBlur={() => blurInput("email")} autoCapitalize="none" keyboardType="email-address" textAlign="right" />
+            <TextInput style={s.input} placeholder={t("email")} placeholderTextColor={COLORS.muted} value={email} onChangeText={setEmail} onFocus={() => focusInput("email")} onBlur={() => blurInput("email")} autoCapitalize="none" keyboardType="email-address" textAlign={isRTL ? "right" : "left"} />
           </Animated.View>
 
           <Animated.View style={[s.inputWrap, focusedField === "token" && s.inputWrapActive, { transform: [{ scale: inputAnims.token.interpolate({ inputRange: [0, 1], outputRange: [1, 1.02] }) }], shadowOpacity: inputAnims.token.interpolate({ inputRange: [0, 1], outputRange: [0.1, 0.4] }) }]}>
             <View style={[s.inputIconWrap, focusedField === "token" && s.inputIconActive]}><Text style={s.inputIcon}>🔑</Text></View>
-            <TextInput style={s.input} placeholder={t("resetCode")} placeholderTextColor={COLORS.muted} value={token} onChangeText={setToken} onFocus={() => focusInput("token")} onBlur={() => blurInput("token")} autoCapitalize="none" textAlign="right" />
+            <TextInput style={s.input} placeholder={t("resetCode")} placeholderTextColor={COLORS.muted} value={token} onChangeText={setToken} onFocus={() => focusInput("token")} onBlur={() => blurInput("token")} autoCapitalize="none" textAlign={isRTL ? "right" : "left"} />
           </Animated.View>
 
           <Animated.View style={[s.inputWrap, focusedField === "password" && s.inputWrapActive, { transform: [{ scale: inputAnims.password.interpolate({ inputRange: [0, 1], outputRange: [1, 1.02] }) }], shadowOpacity: inputAnims.password.interpolate({ inputRange: [0, 1], outputRange: [0.1, 0.4] }) }]}>
             <View style={[s.inputIconWrap, focusedField === "password" && s.inputIconActive]}><Text style={s.inputIcon}>🔒</Text></View>
-            <TextInput style={s.input} placeholder={t("newPassword")} placeholderTextColor={COLORS.muted} value={password} onChangeText={setPassword} onFocus={() => focusInput("password")} onBlur={() => blurInput("password")} secureTextEntry={!showPassword} textAlign="right" />
+            <TextInput style={s.input} placeholder={t("newPassword")} placeholderTextColor={COLORS.muted} value={password} onChangeText={setPassword} onFocus={() => focusInput("password")} onBlur={() => blurInput("password")} secureTextEntry={!showPassword} textAlign={isRTL ? "right" : "left"} />
             <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={s.eyeBtn}><Text style={s.eyeIcon}>{showPassword ? "👁️" : "👁️‍🗨️"}</Text></TouchableOpacity>
           </Animated.View>
 
           <Animated.View style={[s.inputWrap, focusedField === "confirm" && s.inputWrapActive, { transform: [{ scale: inputAnims.confirm.interpolate({ inputRange: [0, 1], outputRange: [1, 1.02] }) }], shadowOpacity: inputAnims.confirm.interpolate({ inputRange: [0, 1], outputRange: [0.1, 0.4] }) }]}>
             <View style={[s.inputIconWrap, focusedField === "confirm" && s.inputIconActive]}><Text style={s.inputIcon}>🔒</Text></View>
-            <TextInput style={s.input} placeholder={t("confirmPassword")} placeholderTextColor={COLORS.muted} value={passwordConfirmation} onChangeText={setPasswordConfirmation} onFocus={() => focusInput("confirm")} onBlur={() => blurInput("confirm")} secureTextEntry={!showConfirm} textAlign="right" />
+            <TextInput style={s.input} placeholder={t("confirmPassword")} placeholderTextColor={COLORS.muted} value={passwordConfirmation} onChangeText={setPasswordConfirmation} onFocus={() => focusInput("confirm")} onBlur={() => blurInput("confirm")} secureTextEntry={!showConfirm} textAlign={isRTL ? "right" : "left"} />
             <TouchableOpacity onPress={() => setShowConfirm(!showConfirm)} style={s.eyeBtn}><Text style={s.eyeIcon}>{showConfirm ? "👁️" : "👁️‍🗨️"}</Text></TouchableOpacity>
           </Animated.View>
 

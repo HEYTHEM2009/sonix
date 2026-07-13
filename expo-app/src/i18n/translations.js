@@ -417,6 +417,16 @@ const translations = {
     arabic: "العربية",
     english: "English",
     languageChanged: "Language changed",
+
+    // ImageViewer
+    saveImage: "Save Image",
+    imageSaved: "Image saved to cache",
+    downloadFailed: "Failed to download image",
+    saveFailed: "Failed to save image",
+
+    // Voice
+    voicePlaybackRequiresDevBuild: "Voice playback requires a dev build",
+    voiceMessagesRequireDevBuild: "Voice messages require a dev build",
   },
 
   ar: {
@@ -837,6 +847,16 @@ const translations = {
     arabic: "العربية",
     english: "English",
     languageChanged: "تم تغيير اللغة",
+
+    // ImageViewer
+    saveImage: "حفظ الصورة",
+    imageSaved: "تم حفظ الصورة",
+    downloadFailed: "فشل تحميل الصورة",
+    saveFailed: "فشل حفظ الصورة",
+
+    // Voice
+    voicePlaybackRequiresDevBuild: "تشغيل الصوت يتطلب إصدار تطوير",
+    voiceMessagesRequireDevBuild: "الرسائل الصوتية تتطلب إصدار تطوير",
   },
 };
 

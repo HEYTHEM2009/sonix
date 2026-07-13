@@ -31,7 +31,7 @@ function Logo3D() {
 }
 
 export default function ForgotPasswordScreen({ navigation }) {
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [focusedField, setFocusedField] = useState(null);
@@ -87,7 +87,7 @@ export default function ForgotPasswordScreen({ navigation }) {
 
           <Animated.View style={[s.inputWrap, focusedField === "email" && s.inputWrapActive, { transform: [{ scale: emailAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.02] }) }], shadowOpacity: emailAnim.interpolate({ inputRange: [0, 1], outputRange: [0.1, 0.4] }) }]}>
             <View style={[s.inputIconWrap, focusedField === "email" && s.inputIconActive]}><Text style={s.inputIcon}>✉️</Text></View>
-            <TextInput style={s.input} placeholder={t("email")} placeholderTextColor={COLORS.muted} value={email} onChangeText={setEmail} onFocus={focusInput} onBlur={blurInput} autoCapitalize="none" keyboardType="email-address" textAlign="right" />
+            <TextInput style={s.input} placeholder={t("email")} placeholderTextColor={COLORS.muted} value={email} onChangeText={setEmail} onFocus={focusInput} onBlur={blurInput} autoCapitalize="none" keyboardType="email-address" textAlign={isRTL ? "right" : "left"} />
           </Animated.View>
 
           <Animated.View style={{ transform: [{ scale: btnScale }] }}>

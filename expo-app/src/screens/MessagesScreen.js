@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, memo, useRef } from "react";
-import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, RefreshControl, TextInput, Alert, Animated } from "react-native";
+import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, RefreshControl, TextInput, Alert, Animated, I18nManager } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
@@ -89,7 +89,7 @@ function formatTime(dateStr, t) {
   if (diffMin < 60) return `${diffMin}m`;
   if (diffHr < 24) return `${diffHr}h`;
   if (diffDay < 7) return `${diffDay}d`;
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  return d.toLocaleDateString(I18nManager.isRTL ? "ar" : "en-US", { month: "short", day: "numeric" });
 }
 
 export default function MessagesScreen({ navigation }) {
@@ -135,7 +135,7 @@ export default function MessagesScreen({ navigation }) {
     ? groups.filter((g) => g.name.toLowerCase().includes(search.toLowerCase()))
     : groups;
   const convFiltered = search
-    ? conversations.filter((c) => c.user.username.toLowerCase().includes(search.toLowerCase()))
+    ? conversations.filter((c) => c.user?.username?.toLowerCase().includes(search.toLowerCase()))
     : conversations;
 
   const data = [];
@@ -215,8 +215,9 @@ export default function MessagesScreen({ navigation }) {
           return (
             <ConversationItem
               item={item}
-              onPress={() => navigation.navigate("Chat", { userId: item.user.id, username: item.user.username })}
+              onPress={() => item.user && navigation.navigate("Chat", { userId: item.user.id, username: item.user.username })}
               onLongPress={() => {
+                if (!item.user) return;
                 Alert.alert(item.user.username, null, [
                   { text: item.is_pinned ? t("unpin") : t("pin"), onPress: () => togglePin(item.user.id) },
                   { text: item.is_muted ? t("unmute") : t("mute"), onPress: () => toggleMute(item.user.id) },

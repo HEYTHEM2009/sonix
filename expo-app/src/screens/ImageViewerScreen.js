@@ -4,10 +4,12 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { downloadAsync, cacheDirectory } from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import { resolveUrl } from "../api/client";
+import { useLanguage } from "../context/LanguageContext";
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
 
 export default function ImageViewerScreen({ route, navigation }) {
+  const { t } = useLanguage();
   const imageUrl = route.params?.imageUrl ?? '';
   const username = route.params?.username ?? '';
   const insets = useSafeAreaInsets();
@@ -46,15 +48,15 @@ export default function ImageViewerScreen({ route, navigation }) {
       if (downloadResult.status === 200) {
         const canShare = await Sharing.isAvailableAsync();
         if (canShare) {
-          await Sharing.shareAsync(downloadResult.uri, { mimeType: "image/jpeg", dialogTitle: "Save image" });
+          await Sharing.shareAsync(downloadResult.uri, { mimeType: "image/jpeg", dialogTitle: t("saveImage") });
         } else {
-          Alert.alert("Saved", "Image downloaded to cache");
+          Alert.alert(t("success"), t("imageSaved"));
         }
       } else {
-        Alert.alert("Error", "Failed to download image");
+        Alert.alert(t("error"), t("downloadFailed"));
       }
     } catch (e) {
-      Alert.alert("Error", "Failed to save image: " + (e.message || "unknown"));
+      Alert.alert(t("error"), t("saveFailed"));
     } finally {
       setDownloading(false);
     }

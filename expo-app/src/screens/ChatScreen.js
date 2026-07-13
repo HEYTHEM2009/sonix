@@ -1,5 +1,5 @@
 import { useState, useEffect, useLayoutEffect, useCallback, useRef, memo } from "react";
-import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Image, Alert, ActivityIndicator, Dimensions, Animated, Keyboard, Modal, ScrollView } from "react-native";
+import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Image, Alert, ActivityIndicator, Dimensions, Animated, Keyboard, Modal, ScrollView, I18nManager } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import { isExpoGo } from "../utils/audioHelper";
@@ -62,8 +62,8 @@ const MessageBubble = memo(({ item, isMine, onLongPress, onDoubleTap }) => {
         setPlaying(false);
         return;
       }
-      if (isExpoGo()) { Alert.alert(t("error"), "Voice playback requires a dev build"); return; }
-      Alert.alert(t("error"), "Voice playback requires a dev build");
+      if (isExpoGo()) { Alert.alert(t("error"), t("voicePlaybackRequiresDevBuild")); return; }
+      Alert.alert(t("error"), t("voicePlaybackRequiresDevBuild"));
     } catch (e) {
       console.warn("Voice play error", e);
     }
@@ -170,7 +170,7 @@ function DateSeparator({ date }) {
   let label;
   if (d.toDateString() === today.toDateString()) label = t("today");
   else if (d.toDateString() === yesterday.toDateString()) label = t("yesterday");
-  else label = d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  else label = d.toLocaleDateString(I18nManager.isRTL ? "ar" : "en-US", { month: "short", day: "numeric", year: "numeric" });
   return (
     <View style={s.dateSep}>
       <View style={s.dateSepLine} />
@@ -397,7 +397,7 @@ export default function ChatScreen({ route, navigation }) {
   };
 
   const startRecording = async () => {
-    if (isExpoGo()) { Alert.alert(t("error"), "Voice messages require a dev build"); return; }
+    if (isExpoGo()) { Alert.alert(t("error"), t("voiceMessagesRequireDevBuild")); return; }
     try {
       const { Audio } = require("expo-av");
       const { status } = await Audio.requestPermissionsAsync();
