@@ -46,7 +46,7 @@ class MediaController extends Controller
         ];
 
         // Support range requests for video
-        if (in_array($ext, ['mp4', 'mov', 'webm'])) {
+        if (in_array($ext, ['mp4', 'mov', 'webm', 'm4a', 'mp3', 'wav', 'ogg'])) {
             $range = $request->header('Range');
             if ($range && preg_match('/bytes=(\d+)-(\d*)/', $range, $matches)) {
                 $fileSize = filesize($fullPath);
