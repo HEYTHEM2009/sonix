@@ -63,15 +63,16 @@ const MessageBubble = memo(({ item, isMine, onLongPress, onDoubleTap }) => {
         return;
       }
       if (isExpoGo()) { Alert.alert(t("error"), t("voicePlaybackRequiresDevBuild")); return; }
-      const { Audio } = require("expo-audio");
+      const { createAudioPlayer } = require("expo-audio");
       const uri = resolveUrl(item.voice);
-      const player = Audio.createAudioPlayer(uri);
+      const player = createAudioPlayer(uri);
+      if (soundRef.current) { try { soundRef.current.release(); } catch (_) {} }
       soundRef.current = player;
       player.addListener("playbackStatusUpdate", (status) => {
         if (status.didJustFinish) { setPlaying(false); setPosition(0); }
         else { setPosition(Math.floor((status.currentTime || 0) * 1000)); setDuration(Math.floor((status.duration || 0) * 1000)); }
       });
-      await player.play();
+      player.play();
       setPlaying(true);
     } catch (e) {
       console.warn("Voice play error", e);
@@ -408,12 +409,12 @@ export default function ChatScreen({ route, navigation }) {
   const startRecording = async () => {
     if (isExpoGo()) { Alert.alert(t("error"), t("voiceMessagesRequireDevBuild")); return; }
     try {
-      const audio = require("expo-audio");
-      const { status } = await audio.AudioModule.requestRecordingPermissionsAsync();
+      const { AudioModule, setAudioModeAsync, RecordingPresets, requestRecordingPermissionsAsync } = require("expo-audio");
+      const { status } = await requestRecordingPermissionsAsync();
       if (status !== "granted") { Alert.alert(t("error"), t("failedToRecord")); return; }
-      await audio.setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
-      const recorder = audio.Audio.createAudioRecorder(audio.RecordingPresets.HIGH_QUALITY);
-      await recorder.prepareToRecordAsync();
+      await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
+      const recorder = new AudioModule.AudioRecorder(RecordingPresets.HIGH_QUALITY);
+      await recorder.prepareToRecordAsync(RecordingPresets.HIGH_QUALITY);
       recorder.record();
       recordingRef.current = recorder;
       setIsRecording(true);
