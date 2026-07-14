@@ -31,7 +31,8 @@ class MediaController extends Controller
             'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'png' => 'image/png',
             'gif' => 'image/gif', 'webp' => 'image/webp',
             'mp4' => 'video/mp4', 'mov' => 'video/quicktime', 'avi' => 'video/x-msvideo',
-            'webm' => 'video/webm',
+            'webm' => 'video/webm', 'm4a' => 'audio/mp4', 'ogg' => 'audio/ogg',
+            'mp3' => 'audio/mpeg', 'wav' => 'audio/wav',
         ];
 
         $mime = $mimeMap[$ext] ?? mime_content_type($fullPath) ?? 'application/octet-stream';

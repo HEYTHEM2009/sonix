@@ -436,7 +436,7 @@ export default function ChatScreen({ route, navigation }) {
         formData.append("receiver_id", String(userId));
         formData.append("duration", String(time));
         const filename = `voice_${Date.now()}.m4a`;
-        formData.append("voice", { uri, name: filename, type: "audio/m4a" });
+          formData.append("voice", { uri, name: filename, type: "audio/mp4" });
         setSending(true);
         try {
           const res = await client.post("/messages", formData, { headers: { "Content-Type": "multipart/form-data" }, timeout: 120000 });
