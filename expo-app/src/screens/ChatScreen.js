@@ -10,6 +10,7 @@ import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import { COLORS, SIZES } from "../components/Theme";
 import Screen3D from "../components/3D/Screen3D";
+import AudioWaveform from "../components/AudioWaveform";
 
 const { width: SCREEN_W } = Dimensions.get("window");
 const EMOJI_LIST = ["❤️", "😂", "😮", "😢", "🔥", "👍", "👎", "😡"];
@@ -106,14 +107,10 @@ const MessageBubble = memo(({ item, isMine, onLongPress, onDoubleTap }) => {
         </TouchableOpacity>
       ) : isVoice ? (
         <TouchableOpacity onLongPress={handleLongPress} onPress={toggleVoice} activeOpacity={0.8} style={[s.bubble, isMine ? s.mine : s.theirs, s.voiceBubble]}>
-          <View style={s.voiceRow}>
-            <TouchableOpacity onPress={toggleVoice} style={s.playBtn}>
-              <Text style={s.playIcon}>{playing ? "⏸" : "▶"}</Text>
-            </TouchableOpacity>
-            <View style={s.voiceTrack}>
-              <View style={[s.voiceProgress, { width: duration > 0 ? `${(position / duration) * 100}%` : "0%" }]} />
-            </View>
-          </View>
+          <TouchableOpacity onPress={toggleVoice} style={s.playBtn}>
+            <Text style={s.playIcon}>{playing ? "⏸" : "▶"}</Text>
+          </TouchableOpacity>
+          <AudioWaveform playing={playing} width={130} height={28} color={isMine ? "#ffffff" : COLORS.primary} />
           <Text style={[s.voiceDuration, isMine && { color: "#ffffffaa" }]}>{formatMs(playing ? position : duration)}</Text>
         </TouchableOpacity>
       ) : isVideo ? (
@@ -658,17 +655,17 @@ export default function ChatScreen({ route, navigation }) {
 
           {/* Recording UI */}
           {isRecording && (
-            <View style={[s.recordingBar, { paddingBottom: Math.max(insets.bottom + 12, 20) }]}>
-              <TouchableOpacity onPress={cancelRecording} style={s.recCancel}>
-                <Text style={s.recCancelText}>✕</Text>
-              </TouchableOpacity>
-              <View style={s.recCenter}>
-                <View style={s.recDot} />
+            <View style={[s.recordingBarOuter, { paddingBottom: Math.max(insets.bottom + 12, 20) }]}>
+              <View style={s.recordingBar}>
+                <TouchableOpacity onPress={cancelRecording} style={s.recDeleteBtn}>
+                  <Text style={s.recDeleteIcon}>🗑️</Text>
+                </TouchableOpacity>
+                <AudioWaveform playing={isRecording} width={140} height={28} color="#ffffff" />
                 <Text style={s.recTimer}>{formatMs(recordTime * 1000)}</Text>
+                <TouchableOpacity onPress={() => stopRecording(false)} style={s.recSendBtn}>
+                  <Text style={s.recSendIcon}>⬆</Text>
+                </TouchableOpacity>
               </View>
-              <TouchableOpacity onPress={() => stopRecording(false)} style={s.recSend}>
-                <Text style={s.recSendIcon}>➤</Text>
-              </TouchableOpacity>
             </View>
           )}
 
@@ -872,13 +869,10 @@ const s = StyleSheet.create({
   playOverlay: { position: "absolute", inset: 0, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(0,0,0,0.3)", borderRadius: 16 },
   playOverlayIcon: { fontSize: 40, color: "#fff" },
 
-  voiceBubble: { flexDirection: "row", alignItems: "center", gap: 8, minWidth: 180 },
-  voiceRow: { flexDirection: "row", alignItems: "center", gap: 8, flex: 1 },
-  playBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },
+  voiceBubble: { flexDirection: "row", alignItems: "center", gap: 10, minWidth: 180 },
+  playBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(255,255,255,0.25)", alignItems: "center", justifyContent: "center" },
   playIcon: { fontSize: 14, color: "#fff" },
-  voiceTrack: { flex: 1, height: 3, borderRadius: 2, backgroundColor: "rgba(255,255,255,0.3)" },
-  voiceProgress: { height: 3, borderRadius: 2, backgroundColor: "#fff" },
-  voiceDuration: { fontSize: 11, color: "rgba(255,255,255,0.7)", minWidth: 35 },
+  voiceDuration: { fontSize: 11, color: "rgba(255,255,255,0.7)", minWidth: 35, textAlign: "right" },
 
   bubbleMeta: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2, paddingLeft: 4 },
   bubbleMetaMine: { justifyContent: "flex-end", paddingRight: 4 },
@@ -910,14 +904,13 @@ const s = StyleSheet.create({
   emojiBtn: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
   emojiBtnText: { fontSize: 22 },
 
-  recordingBar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingTop: 12, backgroundColor: COLORS.bg, borderTopWidth: 0.5, borderTopColor: COLORS.border },
-  recCancel: { width: 40, height: 40, borderRadius: 20, backgroundColor: COLORS.danger + "20", alignItems: "center", justifyContent: "center" },
-  recCancelText: { fontSize: 18, color: COLORS.danger, fontWeight: "700" },
-  recCenter: { flexDirection: "row", alignItems: "center", gap: 8 },
-  recDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: "#FF3B30" },
-  recTimer: { fontSize: 16, fontWeight: "600", color: COLORS.text },
-  recSend: { width: 42, height: 42, borderRadius: 21, backgroundColor: COLORS.primary, alignItems: "center", justifyContent: "center" },
-  recSendIcon: { color: "#fff", fontSize: 18 },
+  recordingBarOuter: { paddingHorizontal: 12, paddingTop: 12, backgroundColor: COLORS.bg, borderTopWidth: 0.5, borderTopColor: COLORS.border },
+  recordingBar: { flexDirection: "row", alignItems: "center", backgroundColor: COLORS.primary, borderRadius: 28, paddingHorizontal: 8, paddingVertical: 10, gap: 8 },
+  recDeleteBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },
+  recDeleteIcon: { fontSize: 18 },
+  recTimer: { fontSize: 14, fontWeight: "600", color: "#fff", minWidth: 40, textAlign: "center" },
+  recSendBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(255,255,255,0.25)", alignItems: "center", justifyContent: "center" },
+  recSendIcon: { color: "#fff", fontSize: 18, fontWeight: "700" },
 
   inputRow: { flexDirection: "row", alignItems: "flex-end", paddingHorizontal: 12, paddingTop: 8, borderTopWidth: 0.5, borderTopColor: COLORS.border, backgroundColor: COLORS.bg, gap: 6 },
   attachBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: COLORS.card, alignItems: "center", justifyContent: "center" },
