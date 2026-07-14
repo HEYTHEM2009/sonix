@@ -2,7 +2,7 @@
   "expo": {
     "name": "Sonix",
     "slug": "sonix-app",
-    "owner": "heythem2009s-team",
+    "owner": "sonix-team",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.heythem.sonix",
+      "bundleIdentifier": "com.sonix.app",
       "infoPlist": {
         "NSCameraUsageDescription": "Allow camera access for stories and posts",
         "NSPhotoLibraryUsageDescription": "Allow photo access for stories and posts"
@@ -26,7 +26,7 @@
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#0D0D1A"
       },
-      "package": "com.heythem.sonix",
+      "package": "com.sonix.app",
       "softwareKeyboardLayoutMode": "resize",
       "permissions": [
         "android.permission.CAMERA",

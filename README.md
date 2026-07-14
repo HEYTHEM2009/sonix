@@ -407,4 +407,4 @@ All Rights Reserved. This source code is the property of the copyright holder. D
 
 For technical inquiries or purchase information, please contact the repository owner.
 
-**Repository:** [github.com/HEYTHEM2009/sonix](https://github.com/HEYTHEM2009/sonix)
+**Repository:** Contact seller for access

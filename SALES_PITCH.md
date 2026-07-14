@@ -548,7 +548,7 @@ npx expo start
 
 For inquiries or to make an offer:
 
-**Repository:** [github.com/HEYTHEM2009/sonix](https://github.com/HEYTHEM2009/sonix)
+**Repository:** Contact seller for access
 
 ---
 
