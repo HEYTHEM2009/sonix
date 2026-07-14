@@ -9,7 +9,7 @@ This checklist ensures all personal information is removed before selling the so
 ### 1. Code Cleanup
 
 - [x] Removed personal username from `expo-app/app.json` (owner field)
-- [x] Changed bundle identifier from `com.heythem.sonix` to `com.sonix.app`
+- [x] Changed bundle identifier from `com.xxx.sonix` to `com.sonix.app`
 - [x] Removed GitHub username from `README.md`
 - [x] Removed GitHub username from `SALES_PITCH.md`
 - [x] Removed hardcoded Cloudinary API credentials from `docker-entrypoint.sh`
