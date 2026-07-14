@@ -430,21 +430,26 @@ export default function ChatScreen({ route, navigation }) {
       await recordingRef.current.stop();
       try { const audio = require("expo-audio"); await audio.setAudioModeAsync({ allowsRecording: false }); } catch (_) {}
       const time = recordTimeRef.current;
-      if (!cancel && time > 0) {
-        const uri = recordingRef.current.uri;
-        if (uri) {
-          const formData = new FormData();
-          formData.append("receiver_id", String(userId));
-          formData.append("duration", String(time));
-          const filename = `voice_${Date.now()}.m4a`;
-          formData.append("voice", { uri, name: filename, type: "audio/m4a" });
-          setSending(true);
-          try {
-            await client.post("/messages", formData, { headers: { "Content-Type": "multipart/form-data" }, timeout: 120000 });
-            await load();
-          } catch (e) { console.warn("Send voice error", e); }
-          setSending(false);
+      const uri = recordingRef.current.uri;
+      if (!cancel && time > 0 && uri) {
+        const formData = new FormData();
+        formData.append("receiver_id", String(userId));
+        formData.append("duration", String(time));
+        const filename = `voice_${Date.now()}.m4a`;
+        formData.append("voice", { uri, name: filename, type: "audio/m4a" });
+        setSending(true);
+        try {
+          const res = await client.post("/messages", formData, { headers: { "Content-Type": "multipart/form-data" }, timeout: 120000 });
+          const newMsg = res.data;
+          if (newMsg && newMsg.id) {
+            setMessages((prev) => [...prev, { ...newMsg, key: String(newMsg.id) }]);
+          }
+          setTimeout(() => load(), 1500);
+        } catch (e) {
+          console.warn("Send voice error", e?.response?.data || e.message);
+          Alert.alert(t("error"), e?.response?.data?.message || t("failedToSend"));
         }
+        setSending(false);
       }
     } catch (e) { console.warn("Stop recording error", e); }
     recordingRef.current = null;
