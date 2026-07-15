@@ -5,7 +5,7 @@
 <h1 align="center">Sonix — Full-Stack Social Media Platform</h1>
 
 <p align="center">
-  A production-ready social media application built with <strong>Laravel 13</strong> (Backend API) and <strong>React Native / Expo SDK 57</strong> (Mobile App).
+  A full-featured social media application built with <strong>Laravel 13</strong> (Backend API) and <strong>React Native / Expo SDK 57</strong> (Mobile App).
 </p>
 
 <p align="center">
