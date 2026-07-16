@@ -42,6 +42,8 @@ import ReportProblemScreen from "../screens/ReportProblemScreen";
 import TermsScreen from "../screens/TermsScreen";
 import PrivacyScreen from "../screens/PrivacyScreen";
 import HashtagPostsScreen from "../screens/HashtagPostsScreen";
+import ReelsScreen from "../screens/ReelsScreen";
+import CreateReelScreen from "../screens/CreateReelScreen";
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -49,6 +51,7 @@ const Tab = createBottomTabNavigator();
 const TAB_ICONS = {
   Feed: { active: "🏠", inactive: "🏠" },
   Explore: { active: "🔍", inactive: "🔍" },
+  Reels: { active: "🎬", inactive: "🎬" },
   Messages: { active: "💬", inactive: "💬" },
   Profile: { active: "👤", inactive: "👤" },
 };
@@ -209,6 +212,7 @@ function HomeTabs() {
     >
       <Tab.Screen name="Feed" component={FeedScreen} />
       <Tab.Screen name="Explore" component={ExploreScreen} />
+      <Tab.Screen name="Reels" component={ReelsScreen} />
       <Tab.Screen name="Create" component={CreatePostScreen} />
       <Tab.Screen name="Messages" component={MessagesScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
@@ -265,6 +269,7 @@ export default function AppNavigator() {
           <Stack.Screen name="Terms" component={TermsScreen} />
           <Stack.Screen name="Privacy" component={PrivacyScreen} />
           <Stack.Screen name="HashtagPosts" component={HashtagPostsScreen} />
+          <Stack.Screen name="CreateReel" component={CreateReelScreen} />
         </>
       )}
     </Stack.Navigator>

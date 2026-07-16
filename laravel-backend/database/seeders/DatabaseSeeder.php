@@ -29,6 +29,7 @@ class DatabaseSeeder extends Seeder
             ['username' => 'nora', 'email' => 'nora@test.com', 'bio' => 'Travel ✈️ & Food 🍕', 'password' => Hash::make('password123')],
             ['username' => 'alex', 'email' => 'alex@test.com', 'bio' => 'Designer 🎨', 'password' => Hash::make('password123')],
             ['username' => 'lily', 'email' => 'lily@test.com', 'bio' => 'Music is life 🎶', 'password' => Hash::make('password123')],
+            ['username' => 'testuser', 'email' => 'test@test.com', 'bio' => 'مرحباً بكم في التطبيق 🌟', 'password' => Hash::make('password123')],
         ];
 
         $createdUsers = [];
@@ -92,6 +93,8 @@ class DatabaseSeeder extends Seeder
         Bookmark::create(['user_id' => $createdUsers[0]->id, 'post_id' => $createdPosts[1]->id]);
         Bookmark::create(['user_id' => $createdUsers[0]->id, 'post_id' => $createdPosts[4]->id]);
 
-        echo "✅ Seeded: 6 users, 10 posts, 10 likes, 5 comments, 3 stories, 2 bookmarks\n";
+        $this->call(ReelSeeder::class);
+
+        echo "✅ Seeded: 7 users, 10 posts, 10 likes, 5 comments, 3 stories, 2 bookmarks, 30 reels\n";
     }
 }

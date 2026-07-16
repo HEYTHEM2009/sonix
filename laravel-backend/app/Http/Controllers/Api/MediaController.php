@@ -13,12 +13,12 @@ class MediaController extends Controller
         $path = str_replace(['../', '..\\', '%2e%2e', '%2f', '%5c'], '', urldecode($path));
         $path = preg_replace('#/+#', '/', trim($path, '/'));
 
-        $fullPath = public_path('uploads/' . $path);
+        $fullPath = public_path($path);
 
-        $realUploads = realpath(public_path('uploads'));
+        $realBase = realpath(public_path());
         $realFile = realpath($fullPath);
 
-        if (!$realFile || !str_starts_with($realFile, $realUploads)) {
+        if (!$realFile || !str_starts_with($realFile, $realBase)) {
             abort(404);
         }
 

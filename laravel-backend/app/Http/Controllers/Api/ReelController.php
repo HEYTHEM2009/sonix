@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
+use App\Helpers\StorageHelper;
 
 class ReelController extends Controller
 {
@@ -32,11 +33,12 @@ class ReelController extends Controller
             'duration' => 'nullable|integer|max:300',
         ]);
 
-        $videoPath = $request->file('video')->store('reels', 'public');
+        $path = StorageHelper::upload($request->file('video'), 'reels');
+        $videoUrl = StorageHelper::getUrl($path);
 
         $reel = \App\Models\Reel::create([
             'user_id' => Auth::id(),
-            'video_url' => url('api/media/' . $videoPath),
+            'video_url' => $videoUrl,
             'caption' => $request->caption,
             'music_title' => $request->music_title,
             'duration' => $request->duration ?? 30,

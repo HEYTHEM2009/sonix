@@ -1,5 +1,5 @@
 import { useState, useEffect, useLayoutEffect, useCallback, useRef, memo } from "react";
-import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Image, Alert, ActivityIndicator, Dimensions, Animated, Keyboard, Modal, ScrollView, I18nManager } from "react-native";
+import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Image, Alert, ActivityIndicator, Dimensions, Animated, Keyboard, Modal, ScrollView, I18nManager, Share } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import { isExpoGo } from "../utils/audioHelper";
@@ -23,7 +23,7 @@ const VANISH_OPTIONS = [
   { label: "1h", seconds: 3600 },
 ];
 
-const MessageBubble = memo(({ item, isMine, onLongPress, onDoubleTap }) => {
+const MessageBubble = memo(({ item, isMine, onLongPress, onDoubleTap, onImagePress, onImageLongPress }) => {
   const { t } = useLanguage();
   const [showReactions, setShowReactions] = useState(false);
   const [playing, setPlaying] = useState(false);
@@ -102,7 +102,7 @@ const MessageBubble = memo(({ item, isMine, onLongPress, onDoubleTap }) => {
       )}
 
       {isImage ? (
-        <TouchableOpacity onLongPress={handleLongPress} onPress={handleTap} activeOpacity={0.8}>
+        <TouchableOpacity onLongPress={(e) => { onImageLongPress?.(item); handleLongPress(e); }} onPress={() => onImagePress?.(item)} activeOpacity={0.8}>
           <Image source={{ uri: resolveUrl(item.image) }} style={s.messageImage} resizeMode="cover" />
         </TouchableOpacity>
       ) : isVoice ? (
@@ -242,6 +242,7 @@ export default function ChatScreen({ route, navigation }) {
   const [recordTime, setRecordTime] = useState(0);
   const [recordCancel, setRecordCancel] = useState(false);
   const [reactAnim, setReactAnim] = useState(null);
+  const [viewImage, setViewImage] = useState(null);
 
   const flatListRef = useRef(null);
   const typingTimerRef = useRef(null);
@@ -528,9 +529,11 @@ export default function ChatScreen({ route, navigation }) {
               <Text style={s.backText}>←</Text>
             </TouchableOpacity>
             <View style={s.headerCenter}>
-              <View style={s.avatarSmall}>
-                <Text style={s.avatarText}>{username?.[0]?.toUpperCase() || "?"}</Text>
-              </View>
+              <TouchableOpacity onPress={() => navigation.navigate(userId === user?.id ? "Profile" : "UserProfile", { userId, username })}>
+                <View style={s.avatarSmall}>
+                  <Text style={s.avatarText}>{username?.[0]?.toUpperCase() || "?"}</Text>
+                </View>
+              </TouchableOpacity>
               <View>
                 <Text style={s.name}>{username}</Text>
                 <View style={s.statusRow}>
@@ -623,6 +626,16 @@ export default function ChatScreen({ route, navigation }) {
                     item={item}
                     isMine={mine}
                     onDoubleTap={handleDoubleTap}
+                    onImagePress={(msg) => setViewImage(msg.image)}
+                    onImageLongPress={(msg) => {
+                      Alert.alert(t("image"), null, [
+                        { text: t("downloadImage"), onPress: () => {
+                          if (Platform.OS === "web") window.open(resolveUrl(msg.image), "_blank");
+                          else Share.share({ url: resolveUrl(msg.image) });
+                        }},
+                        { text: t("cancel"), style: "cancel" },
+                      ]);
+                    }}
                     onLongPress={() => {
                       const opts = [
                         { text: t("reply"), onPress: () => setReplyTo(item) },
@@ -796,6 +809,15 @@ export default function ChatScreen({ route, navigation }) {
             </TouchableOpacity>
           </Modal>
 
+          {/* Image Viewer Modal */}
+          <Modal visible={!!viewImage} transparent animationType="fade" onRequestClose={() => setViewImage(null)}>
+            <TouchableOpacity style={s.imageViewerOverlay} activeOpacity={1} onPress={() => setViewImage(null)}>
+              {viewImage && (
+                <Image source={{ uri: resolveUrl(viewImage) }} style={s.imageViewerImage} resizeMode="contain" />
+              )}
+            </TouchableOpacity>
+          </Modal>
+
         </KeyboardAvoidingView>
       </Screen3D>
     </View>
@@ -954,4 +976,7 @@ const s = StyleSheet.create({
   infoValue: { fontSize: 13, color: COLORS.text, fontWeight: "500", flex: 1, textAlign: "right" },
   infoClose: { marginTop: 16, paddingVertical: 10, alignItems: "center", backgroundColor: COLORS.primary, borderRadius: 10 },
   infoCloseText: { fontSize: 14, color: "#fff", fontWeight: "700" },
+
+  imageViewerOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.95)", justifyContent: "center", alignItems: "center" },
+  imageViewerImage: { width: "100%", height: "80%" },
 });

@@ -7,7 +7,7 @@ import client, { resolveUrl } from "../api/client";
 import { COLORS, SIZES } from "../components/Theme";
 import Screen3D from "../components/3D/Screen3D";
 
-const ConversationItem = memo(({ item, onPress, onLongPress, onDelete, onMute, onPin, t, currentUser }) => {
+const ConversationItem = memo(({ item, onPress, onLongPress, onDelete, onMute, onPin, t, currentUser, onAvatarPress }) => {
   const translateX = useRef(new Animated.Value(0)).current;
   const lastX = useRef(0);
 
@@ -37,8 +37,8 @@ const ConversationItem = memo(({ item, onPress, onLongPress, onDelete, onMute, o
         </TouchableOpacity>
       </View>
       <Animated.View style={[s.row, { transform: [{ translateX }] }]}>
-        <TouchableOpacity style={s.rowInner} onPress={onPress} onLongPress={onLongPress} activeOpacity={0.7}>
-          <View style={s.avatarWrap}>
+        <View style={s.rowInner}>
+          <TouchableOpacity onPress={() => onAvatarPress?.(item.user)} activeOpacity={0.7}>
             {item.user.avatar ? (
               <Image source={{ uri: `${resolveUrl(item.user.avatar)}${item.user.id === currentUser?.id ? "?t=" + Date.now() : ""}` }} style={s.avatarImg} />
             ) : (
@@ -47,7 +47,8 @@ const ConversationItem = memo(({ item, onPress, onLongPress, onDelete, onMute, o
               </View>
             )}
             {item.user.is_online && <View style={s.onlineDot} />}
-          </View>
+          </TouchableOpacity>
+          <TouchableOpacity style={{ flex: 1 }} onPress={onPress} onLongPress={onLongPress} activeOpacity={0.7}>
           <View style={s.info}>
             <View style={s.nameRow}>
               <View style={s.nameLeft}>
@@ -73,6 +74,7 @@ const ConversationItem = memo(({ item, onPress, onLongPress, onDelete, onMute, o
             </View>
           </View>
         </TouchableOpacity>
+        </View>
       </Animated.View>
     </View>
   );
@@ -156,7 +158,7 @@ export default function MessagesScreen({ navigation }) {
           <TouchableOpacity style={s.headerBtn} onPress={() => navigation.navigate("CreateGroup")}>
             <Text style={s.headerBtnIcon}>👥</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={s.headerBtn} onPress={() => navigation.navigate("CreatePost")}>
+          <TouchableOpacity style={s.headerBtn} onPress={() => navigation.navigate("Users")}>
             <Text style={s.headerBtnIcon}>✏️</Text>
           </TouchableOpacity>
         </View>
@@ -216,6 +218,7 @@ export default function MessagesScreen({ navigation }) {
             <ConversationItem
               item={item}
               onPress={() => item.user && navigation.navigate("Chat", { userId: item.user.id, username: item.user.username })}
+              onAvatarPress={(u) => navigation.navigate("UserProfile", { userId: u.id, username: u.username })}
               onLongPress={() => {
                 if (!item.user) return;
                 Alert.alert(item.user.username, null, [

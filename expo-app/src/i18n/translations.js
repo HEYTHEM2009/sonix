@@ -125,6 +125,8 @@ const translations = {
     failedToCreateStory: "Failed to create story",
     failedToUploadVideoStory: "Failed to upload video story",
     cameraPermissionRequired: "Camera permission is required",
+    writeCaption: "Write a caption...",
+    musicTitle: "Music / Artist",
     grantPermission: "Grant Permission",
     videoSelected: "Video selected",
     addTextOverlay: "Add text overlay...",
@@ -243,6 +245,8 @@ const translations = {
     video: "Video",
     shareVideo: "Share Video",
     shareLocation: "Share Location",
+    downloadImage: "Download Image",
+    image: "Image",
     noResults: "No results",
 
     // Profile
@@ -558,6 +562,8 @@ const translations = {
     failedToCreateStory: "فشل إنشاء القصة",
     failedToUploadVideoStory: "فشل رفع فيديو القصة",
     cameraPermissionRequired: "يجب منح صلاحية الكاميرا",
+    writeCaption: "اكتب وصفاً...",
+    musicTitle: "الموسيقى / الفنان",
     grantPermission: "منح الصلاحية",
     videoSelected: "تم اختيار الفيديو",
     addTextOverlay: "أضف نصاً...",
@@ -676,6 +682,8 @@ const translations = {
     video: "فيديو",
     shareVideo: "مشاركة فيديو",
     shareLocation: "مشاركة الموقع",
+    downloadImage: "تحميل الصورة",
+    image: "صورة",
     noResults: "لا توجد نتائج",
 
     // Profile
