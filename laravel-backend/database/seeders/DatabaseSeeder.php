@@ -9,6 +9,7 @@ use App\Models\Comment;
 use App\Models\Like;
 use App\Models\Follow;
 use App\Models\Bookmark;
+use App\Models\Reel;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
@@ -16,7 +17,7 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        if (User::count() > 1) {
+        if (User::where('email', 'test@test.com')->exists() && Reel::count() > 0) {
             echo "⏭️ Already seeded, skipping\n";
             return;
         }
@@ -34,7 +35,7 @@ class DatabaseSeeder extends Seeder
 
         $createdUsers = [];
         foreach ($users as $u) {
-            $createdUsers[] = User::create($u);
+            $createdUsers[] = User::firstOrCreate(['email' => $u['email']], $u);
         }
 
         // ── Follows ──
