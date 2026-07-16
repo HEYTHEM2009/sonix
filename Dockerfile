@@ -18,11 +18,12 @@ COPY laravel-backend/ .
 
 RUN composer dump-autoload --optimize
 
-RUN mkdir -p public/uploads storage/framework/{cache,sessions,views} storage/logs bootstrap/cache /tmp/nginx-upload \
+RUN mkdir -p public/uploads public/reels storage/framework/{cache,sessions,views} storage/logs bootstrap/cache /tmp/nginx-upload \
     && chmod -R 777 storage \
     && chmod -R 777 bootstrap/cache \
     && chmod -R 777 /tmp/nginx-upload \
-    && chmod -R 777 public/uploads
+    && chmod -R 777 public/uploads \
+    && chmod -R 777 public/reels
 
 RUN echo "upload_max_filesize = 50M" >> /usr/local/etc/php/conf.d/uploads.ini \
     && echo "post_max_size = 55M" >> /usr/local/etc/php/conf.d/uploads.ini \

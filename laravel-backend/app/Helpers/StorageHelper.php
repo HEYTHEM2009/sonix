@@ -25,7 +25,11 @@ class StorageHelper
     {
         $ext = strtolower(pathinfo($file->getClientOriginalName(), PATHINFO_EXTENSION)) ?: 'jpg';
         $filename = 'file_' . time() . '_' . mt_rand(1000, 9999) . '.' . $ext;
-        $file->move(public_path($subfolder), $filename);
+        $destDir = public_path($subfolder);
+        if (!is_dir($destDir)) {
+            mkdir($destDir, 0777, true);
+        }
+        $file->move($destDir, $filename);
         return $subfolder . '/' . $filename;
     }
 
