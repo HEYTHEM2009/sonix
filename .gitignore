@@ -58,3 +58,9 @@ expo-app/.playwright-mcp/
 expo-app/expo-server*.log
 expo-app/expo-errors.txt
 expo-app/expo-output.txt
+
+# playwright test artifacts
+expo-app/playwright-*.png
+expo-app/playwright-check.js
+expo-app/playwright-login.js
+
