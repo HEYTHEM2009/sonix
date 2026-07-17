@@ -1,8 +1,8 @@
 {
   "expo": {
     "name": "Sonix",
-    "slug": "sonix-app",
-    "owner": "heythem.2009",
+    "slug": "sonix-app-new",
+    "owner": "heythem.00",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -78,7 +78,7 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "4922028c-e688-4c7b-bfc4-b778075f93c1"
+        "projectId": "6666b88b-b938-4994-ba0b-cf2b21cbecb0"
       }
     }
   }
