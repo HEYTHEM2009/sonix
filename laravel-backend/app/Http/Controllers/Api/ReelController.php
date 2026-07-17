@@ -26,7 +26,6 @@ class ReelController extends Controller
 
     public function store(Request $request)
     {
-        try {
         $request->validate([
             'video' => 'required|file|mimes:mp4,mov|max:102400',
             'caption' => 'nullable|string|max:2200',
@@ -46,13 +45,6 @@ class ReelController extends Controller
         ]);
 
         return response()->json($reel->load('user'), 201);
-        } catch (\Throwable $e) {
-            return response()->json([
-                'debug_error' => $e->getMessage(),
-                'debug_file' => $e->getFile() . ':' . $e->getLine(),
-                'debug_trace' => collect($e->getTrace())->take(5)->map(fn($t) => ($t['file'] ?? '') . ':' . ($t['line'] ?? ''))->all(),
-            ], 500);
-        }
     }
 
     public function show($id)
