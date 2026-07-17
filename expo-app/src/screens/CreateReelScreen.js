@@ -13,8 +13,7 @@ const { width: SCREEN_W } = Dimensions.get("window");
 
 export default function CreateReelScreen({ navigation }) {
   const [permission, requestPermission] = useCameraPermissions();
-  const [capturing, setCapturing] = useState(false);
-  const [mode, setMode] = useState("photo");
+  const [mode, setMode] = useState("picture");
   const [recording, setRecording] = useState(false);
   const [facing, setFacing] = useState("back");
   const [flash, setFlash] = useState("off");
@@ -60,21 +59,42 @@ export default function CreateReelScreen({ navigation }) {
     }
   };
 
-  const toggleRecord = async () => {
-    if (!cameraRef.current) return;
-    if (recording) {
-      setRecording(false);
-      try {
-        const video = await cameraRef.current.stopRecording();
+  const startRecording = async () => {
+    if (!cameraRef.current || recording) return;
+    setMode("video");
+    setRecording(true);
+    try {
+      const video = await cameraRef.current.recordAsync({ maxDuration: 60 });
+      if (video?.uri) {
         setVideoUri(video.uri);
         setStep("details");
-      } catch (e) {
-        Alert.alert(t("error"), t("failedToUploadVideoStory"));
       }
-    } else {
-      setRecording(true);
-      cameraRef.current.recordAsync({ maxDuration: 60 }).catch(() => setRecording(false));
+    } catch (e) {
+      Alert.alert(t("error"), t("failedToUploadVideoStory"));
     }
+    setRecording(false);
+  };
+
+  const stopRecording = () => {
+    if (cameraRef.current && recording) {
+      cameraRef.current.stopRecording();
+    }
+  };
+
+  const toggleRecord = () => {
+    if (recording) {
+      stopRecording();
+    } else {
+      startRecording();
+    }
+  };
+
+  const toggleFlash = () => {
+    setFlash((prev) => {
+      if (prev === "off") return "on";
+      if (prev === "on") return "auto";
+      return "off";
+    });
   };
 
   const submitReel = async () => {
@@ -108,6 +128,9 @@ export default function CreateReelScreen({ navigation }) {
   }
 
   const formatTime = (sec) => `${Math.floor(sec / 60).toString().padStart(2, "0")}:${(sec % 60).toString().padStart(2, "0")}`;
+
+  const flashIcon = flash === "off" ? "⚡" : flash === "on" ? "⚡🔥" : "⚡A";
+  const flashLabel = flash === "off" ? "Off" : flash === "on" ? "On" : "Auto";
 
   if (step === "details") {
     return (
@@ -151,7 +174,7 @@ export default function CreateReelScreen({ navigation }) {
         style={{ flex: 1 }}
         facing={facing}
         flash={flash}
-        mode="video"
+        mode={mode}
       />
 
       <View style={[s.topControls, { top: insets.top + 12 }]}>
@@ -159,8 +182,8 @@ export default function CreateReelScreen({ navigation }) {
           <Text style={s.controlIcon}>✕</Text>
         </TouchableOpacity>
         <View style={s.topRight}>
-          <TouchableOpacity style={s.controlBtn} onPress={() => setFlash(flash === "off" ? "on" : "off")}>
-            <Text style={s.controlIcon}>⚡</Text>
+          <TouchableOpacity style={[s.controlBtn, flash !== "off" && s.controlBtnActive]} onPress={toggleFlash}>
+            <Text style={s.controlIcon}>{flashIcon}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={s.controlBtn} onPress={() => setFacing(facing === "back" ? "front" : "back")}>
             <Text style={s.controlIcon}>🔄</Text>
@@ -208,6 +231,7 @@ const s = StyleSheet.create({
   inputMusic: { backgroundColor: COLORS.input, color: COLORS.text, borderRadius: 12, padding: 12, fontSize: 14 },
   topControls: { position: "absolute", left: 16, right: 16, flexDirection: "row", justifyContent: "space-between", zIndex: 10 },
   controlBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(0,0,0,0.5)", alignItems: "center", justifyContent: "center" },
+  controlBtnActive: { backgroundColor: "rgba(255,200,0,0.6)" },
   controlIcon: { color: "#fff", fontSize: 18 },
   recordIndicator: { position: "absolute", alignSelf: "center", flexDirection: "row", alignItems: "center", gap: 8, zIndex: 10, backgroundColor: "rgba(225,112,85,0.8)", paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20 },
   recordDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: "#fff" },
