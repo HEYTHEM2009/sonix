@@ -9,7 +9,7 @@ class Message extends Model
     protected $fillable = [
         'content', 'sender_id', 'receiver_id', 'is_read',
         'type', 'image', 'voice', 'reply_to', 'is_deleted', 'read_at',
-        'is_edited', 'original_content', 'is_disappearing', 'disappears_at',
+        'is_edited', 'original_content', 'is_disappearing', 'disappears_at', 'deleted_for',
     ];
 
     protected $casts = [

@@ -71,6 +71,7 @@ export default function CreateReelScreen({ navigation }) {
   const [timer, setTimer] = useState(0);
   const [filter, setFilter] = useState(0);
   const [countdown, setCountdown] = useState(null);
+  const [lastRecordTime, setLastRecordTime] = useState(0);
   const cameraRef = useRef(null);
   const recordTimer = useRef(null);
   const countdownTimer = useRef(null);
@@ -85,6 +86,7 @@ export default function CreateReelScreen({ navigation }) {
       recordTimer.current = setInterval(() => setRecordTime((tm) => tm + 1), 1000);
     } else {
       clearInterval(recordTimer.current);
+      if (recordTime > 0) setLastRecordTime(recordTime);
       setRecordTime(0);
     }
     return () => clearInterval(recordTimer.current);
@@ -114,16 +116,20 @@ export default function CreateReelScreen({ navigation }) {
 
   const startRecording = async () => {
     if (!cameraRef.current || recording) return;
-    setMode("video");
-    setRecording(true);
     try {
+      setRecording(true);
+      setMode("video");
+      await new Promise((r) => setTimeout(r, 300));
       const video = await cameraRef.current.recordAsync({ maxDuration: 60 });
-      if (video?.uri) {
+      if (video && video.uri) {
         setVideoUri(video.uri);
         setStep("preview");
+      } else {
+        Alert.alert(t("error"), t("failedToRecordVideo") || "Failed to record video. Please try again.");
       }
     } catch (e) {
-      Alert.alert(t("error"), t("failedToUploadVideoStory"));
+      console.warn("Reel record error", e);
+      Alert.alert(t("error"), t("failedToRecordVideo") || "Failed to record video. Please try again.");
     }
     setRecording(false);
   };
@@ -178,7 +184,7 @@ export default function CreateReelScreen({ navigation }) {
       form.append("video", { uri: videoUri, name: filename, type: mimeMap[ext] || "video/mp4" });
       if (caption.trim()) form.append("caption", caption.trim());
       if (musicTitle.trim()) form.append("music_title", musicTitle.trim());
-      form.append("duration", String(Math.max(recordTime, 30)));
+      form.append("duration", String(Math.max(lastRecordTime, 30)));
       if (speed !== 1) form.append("speed", String(speed));
       if (filter > 0) form.append("filter", FILTERS[filter].name);
       await client.post("/reels", form, { headers: { "Content-Type": "multipart/form-data" } });

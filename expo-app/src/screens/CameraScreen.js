@@ -54,16 +54,36 @@ export default function CameraScreen({ navigation }) {
       setRecording(false);
       try {
         const video = await cameraRef.current.stopRecording();
+        if (!video?.uri) {
+          Alert.alert(t("error"), t("failedToUploadVideoStory"));
+          return;
+        }
         const form = new FormData();
         form.append("video", { uri: video.uri, type: "video/mp4", name: "story.mp4" });
         await client.post("/stories", form, { headers: { "Content-Type": "multipart/form-data" } });
         navigation.goBack();
       } catch (e) {
-        Alert.alert(t("error"), t("failedToUploadVideoStory"));
+        console.warn("Video story upload error", e?.response?.data || e.message);
+        Alert.alert(t("error"), e?.response?.data?.message || t("failedToUploadVideoStory"));
       }
     } else {
       setRecording(true);
-      cameraRef.current.recordAsync({ maxDuration: 30 }).catch(() => setRecording(false));
+      try {
+        const video = await cameraRef.current.recordAsync({ maxDuration: 30 });
+        setRecording(false);
+        if (video && video.uri) {
+          const form = new FormData();
+          form.append("video", { uri: video.uri, type: "video/mp4", name: "story.mp4" });
+          await client.post("/stories", form, { headers: { "Content-Type": "multipart/form-data" } });
+          navigation.goBack();
+        } else {
+          Alert.alert(t("error"), t("failedToRecordVideo") || "Failed to record video.");
+        }
+      } catch (e) {
+        console.warn("Record error", e);
+        setRecording(false);
+        Alert.alert(t("error"), t("failedToRecordVideo") || "Failed to record video.");
+      }
     }
   };
 

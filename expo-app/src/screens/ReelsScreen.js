@@ -74,16 +74,16 @@ const ReelItem = memo(({ reel, isActive, currentUser, onLike, onComment, onShare
       ]).start();
     }
     try {
-      const res = await onLike(reel.id, newLiked);
-      if (res) {
-        setLiked(res.liked);
-        setLikesCount(res.likes_count);
+      const res = await client.post(`/reels/${reel.id}/like`);
+      if (res.data) {
+        setLiked(res.data.liked);
+        setLikesCount(res.data.likes_count);
       }
     } catch (e) {
       setLiked(!newLiked);
       setLikesCount((c) => newLiked ? c - 1 : c + 1);
     }
-  }, [liked, reel.id, onLike, heartAnim, pulseAnim]);
+  }, [reel.id, heartAnim, pulseAnim]);
 
   const doubleTapLike = useRef(null);
   const handleDoubleTap = useCallback(() => {

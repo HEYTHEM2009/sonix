@@ -105,7 +105,7 @@ export default function UserProfileScreen({ route, navigation }) {
             <Text style={s.name}>{profile?.username}</Text>
             {profile?.bio && <Text style={s.bio}>{profile.bio}</Text>}
 
-            {parseInt(userId) !== currentUser.id && (
+            {currentUser && parseInt(userId) !== currentUser.id && (
               <View style={s.btnRow}>
                 <TouchableOpacity onPress={toggleFollow} disabled={followLoading} style={[s.followBtn, { flex: 1, backgroundColor: followState === "none" ? COLORS.accent : COLORS.card }]}>
                   {followLoading ? <ActivityIndicator color="#fff" size="small" /> : (

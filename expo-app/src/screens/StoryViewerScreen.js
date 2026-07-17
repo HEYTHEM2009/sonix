@@ -358,6 +358,12 @@ export default function StoryViewerScreen({ route, navigation }) {
   const webViewRef = useRef(null);
   const [muted, setMuted] = useState(true);
 
+  const indexRef = useRef(0);
+  const advanceRef = useRef(null);
+  const goBackStoryRef = useRef(null);
+
+  useEffect(() => { indexRef.current = index; }, [index]);
+
   const goBack = useCallback(() => {
     webViewRef.current?.postMessage("mute");
     Animated.parallel([
@@ -391,6 +397,9 @@ export default function StoryViewerScreen({ route, navigation }) {
       setProgress(0);
     }
   }, [index, swipeOpacity]);
+
+  advanceRef.current = advance;
+  goBackStoryRef.current = goBackStory;
 
   const currentStory = stories?.[index];
   const dur = (currentStory?.duration || 5) * 1000;
@@ -462,15 +471,15 @@ export default function StoryViewerScreen({ route, navigation }) {
         return Math.abs(gestureState.dx) > 10 && Math.abs(gestureState.dx) > Math.abs(gestureState.dy);
       },
       onPanResponderMove: (_, gestureState) => {
-        if (gestureState.dx > 0 && index === 0) return;
+        if (gestureState.dx > 0 && indexRef.current === 0) return;
         swipeX.setValue(gestureState.dx);
       },
       onPanResponderRelease: (_, gestureState) => {
         const threshold = width * 0.25;
-        if (gestureState.dx < -threshold && index < (stories?.length || 1) - 1) {
-          advance();
-        } else if (gestureState.dx > threshold && index > 0) {
-          goBackStory();
+        if (gestureState.dx < -threshold && indexRef.current < (stories?.length || 1) - 1) {
+          advanceRef.current?.();
+        } else if (gestureState.dx > threshold && indexRef.current > 0) {
+          goBackStoryRef.current?.();
         } else {
           Animated.spring(swipeX, { toValue: 0, friction: 5, useNativeDriver: true }).start();
         }

@@ -21,7 +21,7 @@ export default function ExploreScreen({ navigation }) {
   const fetchExplore = useCallback(async () => {
     try {
       const res = await client.get("/explore");
-      setData(res.data);
+      setData(res.data || {});
     } catch (e) { console.warn(e); }
     setLoading(false);
   }, []);

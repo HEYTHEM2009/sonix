@@ -72,6 +72,9 @@ class MessageController extends Controller
         } elseif ($request->has('reaction')) {
             $data['type'] = 'reaction';
             $data['content'] = $request->input('reaction');
+        } elseif ($request->input('type') === 'sticker') {
+            $data['type'] = 'sticker';
+            $data['content'] = $request->input('content', '');
         }
 
         $message = Message::create($data);
@@ -204,7 +207,12 @@ class MessageController extends Controller
                 })->orWhere(function ($sub) use ($currentUserId, $userId) {
                     $sub->where('sender_id', $userId)->where('receiver_id', $currentUserId);
                 });
-            })            ->where('is_deleted', false)
+            })
+            ->where('is_deleted', false)
+            ->where(function ($q) use ($currentUserId) {
+                $q->whereNull('deleted_for')
+                  ->orWhereNot('deleted_for', 'LIKE', '%' . $currentUserId . '%');
+            })
             ->where(function ($q) {
                 $q->whereNull('disappears_at')->orWhere('disappears_at', '>', now());
             });
@@ -384,6 +392,24 @@ class MessageController extends Controller
 
         $message->update(['is_deleted' => true, 'content' => '']);
         return response()->json(['message' => 'Message deleted']);
+    }
+
+    public function deleteForMe(Request $request, $id)
+    {
+        $message = Message::find($id);
+        if (!$message) return response()->json(['message' => 'Not found'], 404);
+        if ($message->sender_id !== $request->user()->id && $message->receiver_id !== $request->user()->id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $userId = $request->user()->id;
+        $deletedFor = json_decode($message->deleted_for ?? '[]', true);
+        if (!in_array($userId, $deletedFor)) {
+            $deletedFor[] = $userId;
+            $message->update(['deleted_for' => json_encode($deletedFor)]);
+        }
+
+        return response()->json(['message' => 'Message deleted for you']);
     }
 
     public function toggleMute(Request $request, $userId)

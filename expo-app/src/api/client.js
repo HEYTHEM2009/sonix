@@ -32,7 +32,7 @@ client.interceptors.response.use(
     const url = err.config?.url;
     const reqToken = err.config?.headers?.Authorization?.replace("Bearer ", "");
 
-    if (status === 401 && !url.includes("/auth/")) {
+    if (status === 401 && !url?.includes("/auth/")) {
       if (reqToken && reqToken !== currentToken) return Promise.reject(err);
       const now = Date.now();
       if (now - last401 > 3000) {
