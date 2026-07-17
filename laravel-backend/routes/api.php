@@ -144,6 +144,9 @@ Route::get('/reels/{id}', [ReelController::class, 'show'])->middleware('auth:san
 Route::delete('/reels/{id}', [ReelController::class, 'destroy'])->middleware('auth:sanctum');
 Route::post('/reels/{id}/like', [ReelController::class, 'like'])->middleware(['auth:sanctum', 'throttle:30,1']);
 Route::post('/reels/{id}/comment', [ReelController::class, 'comment'])->middleware(['auth:sanctum', 'throttle:20,1']);
+Route::post('/reels/{id}/view', [ReelController::class, 'recordView'])->middleware('auth:sanctum');
+Route::post('/reel-comments/{commentId}/like', [ReelController::class, 'likeComment'])->middleware(['auth:sanctum', 'throttle:30,1']);
+Route::delete('/reel-comments/{id}', [ReelController::class, 'destroyComment'])->middleware(['auth:sanctum', 'throttle:20,1']);
 
 // Group Chat
 Route::get('/groups', [GroupController::class, 'index'])->middleware('auth:sanctum');

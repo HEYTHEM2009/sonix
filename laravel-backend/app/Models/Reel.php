@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Reel extends Model
 {
-    protected $fillable = ['user_id', 'video_url', 'thumbnail_url', 'caption', 'music_title', 'music_url', 'duration', 'comments_enabled'];
+    protected $fillable = ['user_id', 'video_url', 'thumbnail_url', 'caption', 'music_title', 'music_url', 'duration', 'comments_enabled', 'views_count'];
 
     public function user()
     {

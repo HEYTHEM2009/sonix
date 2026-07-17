@@ -529,7 +529,10 @@ export default function ChatScreen({ route, navigation }) {
               <Text style={s.backText}>←</Text>
             </TouchableOpacity>
             <View style={s.headerCenter}>
-              <TouchableOpacity onPress={() => navigation.navigate(userId === user?.id ? "Profile" : "UserProfile", { userId, username })}>
+              <TouchableOpacity onPress={() => {
+                if (userId === user?.id) navigation.navigate("Home", { screen: "Profile" });
+                else navigation.navigate("UserProfile", { userId, username });
+              }}>
                 <View style={s.avatarSmall}>
                   <Text style={s.avatarText}>{username?.[0]?.toUpperCase() || "?"}</Text>
                 </View>

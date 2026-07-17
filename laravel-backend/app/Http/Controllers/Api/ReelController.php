@@ -16,10 +16,20 @@ class ReelController extends Controller
             return response()->json(['data' => [], 'total' => 0, 'per_page' => 20]);
         }
 
+        $userId = Auth::id();
         $reels = \App\Models\Reel::with('user:id,username,avatar')
             ->withCount(['likes', 'comments'])
+            ->with(['likes' => function ($q) use ($userId) {
+                $q->where('user_id', $userId)->limit(1);
+            }])
             ->orderByDesc('created_at')
             ->paginate(20);
+
+        $reels->getCollection()->transform(function ($reel) use ($userId) {
+            $reel->liked = $reel->likes->count() > 0;
+            $reel->unset('likes');
+            return $reel;
+        });
 
         return response()->json($reels);
     }
@@ -51,9 +61,29 @@ class ReelController extends Controller
     {
         $reel = \App\Models\Reel::with('user:id,username,avatar')
             ->withCount(['likes', 'comments'])
+            ->with(['comments' => function ($q) {
+                $q->with(['user:id,username,avatar', 'replies' => function ($rq) {
+                    $rq->with('user:id,username,avatar')->withCount('likes')->orderBy('created_at');
+                }])->withCount('likes')
+                  ->whereNull('parent_id')
+                  ->orderByDesc('created_at')
+                  ->limit(50);
+            }])
             ->findOrFail($id);
 
         return response()->json($reel);
+    }
+
+    public function recordView($id)
+    {
+        try {
+            $reel = \App\Models\Reel::findOrFail($id);
+            $reel->increment('views_count');
+            $reel->refresh();
+            return response()->json(['views_count' => $reel->views_count]);
+        } catch (\Exception $e) {
+            return response()->json(['views_count' => 0]);
+        }
     }
 
     public function destroy($id)
@@ -71,23 +101,53 @@ class ReelController extends Controller
 
         if ($existing) {
             $existing->delete();
-            return response()->json(['liked' => false]);
+            $count = $reel->likes()->count();
+            return response()->json(['liked' => false, 'likes_count' => $count]);
         }
 
         $reel->likes()->create(['user_id' => Auth::id()]);
-        return response()->json(['liked' => true]);
+        $count = $reel->likes()->count();
+        return response()->json(['liked' => true, 'likes_count' => $count]);
     }
 
     public function comment(Request $request, $id)
     {
-        $request->validate(['content' => 'required|string|max:1000']);
+        $request->validate([
+            'content' => 'required|string|max:1000',
+            'parent_id' => 'nullable|integer|exists:reel_comments,id',
+        ]);
 
         $reel = \App\Models\Reel::findOrFail($id);
         $comment = $reel->comments()->create([
             'user_id' => Auth::id(),
             'content' => $request->content,
+            'parent_id' => $request->parent_id,
         ]);
 
         return response()->json($comment->load('user'), 201);
+    }
+
+    public function likeComment($commentId)
+    {
+        $comment = \App\Models\ReelComment::findOrFail($commentId);
+        $existing = $comment->likes()->where('user_id', Auth::id())->first();
+
+        if ($existing) {
+            $existing->delete();
+            $count = $comment->likes()->count();
+            return response()->json(['liked' => false, 'likes_count' => $count]);
+        }
+
+        $comment->likes()->create(['user_id' => Auth::id()]);
+        $count = $comment->likes()->count();
+        return response()->json(['liked' => true, 'likes_count' => $count]);
+    }
+
+    public function destroyComment($id)
+    {
+        $comment = \App\Models\ReelComment::where('user_id', Auth::id())->findOrFail($id);
+        $comment->delete();
+
+        return response()->json(['message' => 'Comment deleted']);
     }
 }

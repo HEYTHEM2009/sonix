@@ -270,6 +270,7 @@ export default function AppNavigator() {
           <Stack.Screen name="Privacy" component={PrivacyScreen} />
           <Stack.Screen name="HashtagPosts" component={HashtagPostsScreen} />
           <Stack.Screen name="CreateReel" component={CreateReelScreen} />
+          <Stack.Screen name="Users" component={UsersScreen} />
         </>
       )}
     </Stack.Navigator>

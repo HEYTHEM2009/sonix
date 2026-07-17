@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, memo } from "react";
-import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, Dimensions, Animated, Pressable, ActivityIndicator, Share } from "react-native";
+import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, Dimensions, Animated, Pressable, ActivityIndicator, Share, Alert, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { WebView } from "react-native-webview";
 import { LinearGradient } from "expo-linear-gradient";
@@ -7,16 +7,23 @@ import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import client, { resolveUrl } from "../api/client";
 import { COLORS } from "../components/Theme";
+import * as FileSystem from "expo-file-system";
+import * as MediaLibrary from "expo-media-library";
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
 const SPIN_INTERVAL = 8000;
 
-const ReelItem = memo(({ reel, isActive, currentUser, onLike, onComment, onShare, onUserPress, index, total }) => {
+const ReelItem = memo(({ reel, isActive, currentUser, onLike, onComment, onShare, onUserPress, onDelete, onDownload, onView, index, total }) => {
   const { t } = useLanguage();
   const [liked, setLiked] = useState(reel.liked > 0);
   const [likesCount, setLikesCount] = useState(reel.likes_count || 0);
   const [following, setFollowing] = useState(false);
-  const [soundOn, setSoundOn] = useState(false);
+
+  useEffect(() => {
+    setLiked(reel.liked > 0);
+    setLikesCount(reel.likes_count || 0);
+  }, [reel.liked, reel.likes_count]);
+  const [soundOn, setSoundOn] = useState(true);
   const [videoReady, setVideoReady] = useState(false);
   const [videoError, setVideoError] = useState(false);
   const heartAnim = useRef(new Animated.Value(0)).current;
@@ -25,6 +32,15 @@ const ReelItem = memo(({ reel, isActive, currentUser, onLike, onComment, onShare
   const webViewRef = useRef(null);
 
   const spin = useRef(null);
+  const hasViewed = useRef(false);
+  useEffect(() => {
+    if (isActive && !hasViewed.current) {
+      hasViewed.current = true;
+      onView(reel.id);
+    }
+    if (!isActive) hasViewed.current = false;
+  }, [isActive, reel.id, onView]);
+
   useEffect(() => {
     if (isActive) {
       spin.current = setInterval(() => {
@@ -42,11 +58,10 @@ const ReelItem = memo(({ reel, isActive, currentUser, onLike, onComment, onShare
     outputRange: ["0deg", "360deg"],
   });
 
-  const toggleLike = useCallback(() => {
+  const toggleLike = useCallback(async () => {
     const newLiked = !liked;
     setLiked(newLiked);
     setLikesCount((c) => newLiked ? c + 1 : c - 1);
-    onLike(reel.id, newLiked);
     if (newLiked) {
       heartAnim.setValue(0);
       Animated.sequence([
@@ -57,6 +72,16 @@ const ReelItem = memo(({ reel, isActive, currentUser, onLike, onComment, onShare
         Animated.timing(pulseAnim, { toValue: 1, duration: 150, useNativeDriver: true }),
         Animated.timing(pulseAnim, { toValue: 0, duration: 400, useNativeDriver: true }),
       ]).start();
+    }
+    try {
+      const res = await onLike(reel.id, newLiked);
+      if (res) {
+        setLiked(res.liked);
+        setLikesCount(res.likes_count);
+      }
+    } catch (e) {
+      setLiked(!newLiked);
+      setLikesCount((c) => newLiked ? c - 1 : c + 1);
     }
   }, [liked, reel.id, onLike, heartAnim, pulseAnim]);
 
@@ -81,11 +106,12 @@ const ReelItem = memo(({ reel, isActive, currentUser, onLike, onComment, onShare
   body{background:#000;display:flex;align-items:center;justify-content:center;height:100vh;overflow:hidden}
   video{width:100%;height:100%;object-fit:cover}
   </style></head><body>
-  <video id="v" playsinline webkit-playsinline ${isActive ? "autoplay muted" : "muted"}
+  <video id="v" playsinline webkit-playsinline ${isActive ? "autoplay" : "muted"}
    src="${resolveUrl(reel.video_url)}" type="video/mp4"
    style="width:100%;height:100%;object-fit:cover" preload="auto"></video>
   <script>
   var v=document.getElementById("v");
+  v.muted=false;
   v.addEventListener("canplaythrough",function(){
     window.ReactNativeWebView.postMessage("ready");
   });
@@ -96,12 +122,12 @@ const ReelItem = memo(({ reel, isActive, currentUser, onLike, onComment, onShare
     v.currentTime=0;v.play().catch(function(){});
   });
   document.addEventListener("message",function(e){
-    if(e.data==="play"){v.play().catch(function(){})}
+    if(e.data==="play"){v.muted=false;v.play().catch(function(){})}
     else if(e.data==="pause"){v.pause()}
     else if(e.data==="mute"){v.muted=true}
     else if(e.data==="unmute"){v.muted=false;v.play().catch(function(){})}
   });
-  ${isActive ? "v.play().catch(function(){})" : "v.pause()"}
+  ${isActive ? "v.muted=false;v.play().catch(function(){})" : "v.pause()"}
   </script></body></html>`;
 
   return (
@@ -211,6 +237,25 @@ const ReelItem = memo(({ reel, isActive, currentUser, onLike, onComment, onShare
           <Text style={styles.sidebarCount}></Text>
         </TouchableOpacity>
 
+        {/* Delete — only for owner */}
+        {reel.user?.id === currentUser?.id && (
+          <TouchableOpacity style={styles.sidebarAction} onPress={() => {
+            Alert.alert("Delete Reel", "Are you sure you want to delete this reel?", [
+              { text: "Cancel", style: "cancel" },
+              { text: "Delete", style: "destructive", onPress: () => onDelete(reel.id) },
+            ]);
+          }} activeOpacity={0.7}>
+            <Text style={styles.sidebarIcon}>🗑️</Text>
+            <Text style={styles.sidebarCount}></Text>
+          </TouchableOpacity>
+        )}
+
+        {/* Download */}
+        <TouchableOpacity style={styles.sidebarAction} onPress={() => onDownload(reel)} activeOpacity={0.7}>
+          <Text style={styles.sidebarIcon}>⬇️</Text>
+          <Text style={styles.sidebarCount}></Text>
+        </TouchableOpacity>
+
         {/* Sound toggle */}
         <TouchableOpacity
           style={styles.sidebarAction}
@@ -239,6 +284,9 @@ const ReelItem = memo(({ reel, isActive, currentUser, onLike, onComment, onShare
               <Text style={styles.musicText} numberOfLines={1}>{reel.music_title}</Text>
             </View>
           ) : null}
+          {reel.views_count > 0 && (
+            <Text style={styles.viewCount}>{formatCount(reel.views_count)} views</Text>
+          )}
         </View>
       </View>
     </View>
@@ -294,8 +342,13 @@ export default function ReelsScreen({ navigation }) {
   }, [hasMore, page, loadReels]);
 
   const likeReel = useCallback(async (reelId, liked) => {
-    try { await client.post(`/reels/${reelId}/like`); }
-    catch (e) { console.warn("Like error:", e?.message); }
+    try {
+      const res = await client.post(`/reels/${reelId}/like`);
+      return res.data;
+    } catch (e) {
+      console.warn("Like error:", e?.message);
+      return null;
+    }
   }, []);
 
   const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 70 }).current;
@@ -318,6 +371,33 @@ export default function ReelsScreen({ navigation }) {
     try {
       await Share.share({ message: reel.caption || "Check out this reel!", url: reel.video_url });
     } catch (e) { if (e.message !== "User did not share") console.warn("Share error:", e.message); }
+  }, []);
+
+  const handleDeleteReel = useCallback(async (reelId) => {
+    try {
+      await client.delete(`/reels/${reelId}`);
+      setReels((prev) => prev.filter((r) => r.id !== reelId));
+    } catch (e) {
+      console.warn("Delete reel error:", e?.message);
+    }
+  }, []);
+
+  const handleViewReel = useCallback(async (reelId) => {
+    try { await client.post(`/reels/${reelId}/view`); } catch (e) {}
+  }, []);
+
+  const handleDownload = useCallback(async (reel) => {
+    try {
+      const { status } = await MediaLibrary.requestPermissionsAsync();
+      if (status !== "granted") { Alert.alert("Permission needed", "Allow access to save videos."); return; }
+      const url = resolveUrl(reel.video_url);
+      const fileUri = FileSystem.documentDirectory + `reel_${reel.id}.mp4`;
+      const downloaded = await FileSystem.downloadAsync(url, fileUri);
+      await MediaLibrary.saveToLibraryAsync(downloaded.uri);
+      Alert.alert("Saved", "Video saved to your gallery.");
+    } catch (e) {
+      Alert.alert("Download failed", e?.message || "Could not download video.");
+    }
   }, []);
 
   if (loading && reels.length === 0) {
@@ -348,6 +428,9 @@ export default function ReelsScreen({ navigation }) {
             onComment={handleComment}
             onShare={handleShare}
             onUserPress={handleUserPress}
+            onDelete={handleDeleteReel}
+            onDownload={handleDownload}
+            onView={handleViewReel}
             index={index}
             total={reels.length}
           />
@@ -483,6 +566,7 @@ const styles = StyleSheet.create({
   musicRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 4 },
   musicIconSmall: { color: "#fff", fontSize: 12 },
   musicText: { color: "#ddd", fontSize: 12, flex: 1 },
+  viewCount: { color: "#aaa", fontSize: 11, marginTop: 4 },
 
   /* Empty / footer */
   emptyContainer: { flex: 1, alignItems: "center", justifyContent: "center", paddingBottom: 100 },
