@@ -17,17 +17,28 @@ class ReelController extends Controller
         }
 
         $userId = Auth::id();
-        $reels = \App\Models\Reel::with('user:id,username,avatar')
-            ->withCount(['likes', 'comments'])
-            ->with(['likes' => function ($q) use ($userId) {
-                $q->where('user_id', $userId)->limit(1);
-            }])
-            ->orderByDesc('created_at')
-            ->paginate(20);
+        $hasLikes = Schema::hasTable('reel_likes');
+        $hasComments = Schema::hasTable('reel_comments');
 
-        $reels->getCollection()->transform(function ($reel) use ($userId) {
-            $reel->liked = $reel->likes->count() > 0;
-            $reel->unset('likes');
+        $query = \App\Models\Reel::with('user:id,username,avatar');
+
+        if ($hasLikes) {
+            $query->withCount('likes')
+                  ->with(['likes' => function ($q) use ($userId) {
+                      $q->where('user_id', $userId)->limit(1);
+                  }]);
+        }
+        if ($hasComments) {
+            $query->withCount('comments');
+        }
+
+        $reels = $query->orderByDesc('created_at')->paginate(20);
+
+        $reels->getCollection()->transform(function ($reel) use ($hasLikes) {
+            $reel->liked = $hasLikes ? $reel->likes->count() > 0 : false;
+            if ($hasLikes) {
+                $reel->unset('likes');
+            }
             return $reel;
         });
 

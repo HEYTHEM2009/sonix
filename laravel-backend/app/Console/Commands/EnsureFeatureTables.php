@@ -145,6 +145,13 @@ class EnsureFeatureTables extends Command
             $this->info('Added disappears_at column to messages');
             $missingMessageColumns++;
         }
+        if (!Schema::hasColumn('messages', 'deleted_for')) {
+            Schema::table('messages', function (Blueprint $table) {
+                $table->text('deleted_for')->nullable();
+            });
+            $this->info('Added deleted_for column to messages');
+            $missingMessageColumns++;
+        }
 
         if ($missingMessageColumns > 0) {
             $this->info("Successfully added {$missingMessageColumns} missing column(s) to messages table");
@@ -176,6 +183,55 @@ class EnsureFeatureTables extends Command
 
         if ($missingUserColumns > 0) {
             $this->info("Successfully added {$missingUserColumns} missing column(s) to users table");
+        }
+
+        // Reel tables
+        if (!Schema::hasTable('reels')) {
+            Schema::create('reels', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('user_id')->constrained()->onDelete('cascade');
+                $table->string('video_url');
+                $table->string('thumbnail_url')->nullable();
+                $table->text('caption')->nullable();
+                $table->string('music_title')->nullable();
+                $table->string('music_url')->nullable();
+                $table->integer('duration')->default(30);
+                $table->boolean('comments_enabled')->default(true);
+                $table->integer('views_count')->default(0);
+                $table->timestamps();
+            });
+            $this->info('Created reels table');
+        }
+        if (!Schema::hasTable('reel_likes')) {
+            Schema::create('reel_likes', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('user_id')->constrained()->onDelete('cascade');
+                $table->foreignId('reel_id')->constrained()->onDelete('cascade');
+                $table->timestamps();
+                $table->unique(['user_id', 'reel_id']);
+            });
+            $this->info('Created reel_likes table');
+        }
+        if (!Schema::hasTable('reel_comments')) {
+            Schema::create('reel_comments', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('user_id')->constrained()->onDelete('cascade');
+                $table->foreignId('reel_id')->constrained()->onDelete('cascade');
+                $table->text('content');
+                $table->foreignId('parent_id')->nullable()->constrained('reel_comments')->onDelete('cascade');
+                $table->timestamps();
+            });
+            $this->info('Created reel_comments table');
+        }
+        if (!Schema::hasTable('reel_comment_likes')) {
+            Schema::create('reel_comment_likes', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('user_id')->constrained()->onDelete('cascade');
+                $table->foreignId('reel_comment_id')->constrained()->onDelete('cascade');
+                $table->timestamps();
+                $table->unique(['user_id', 'reel_comment_id']);
+            });
+            $this->info('Created reel_comment_likes table');
         }
 
         // Group chat tables
