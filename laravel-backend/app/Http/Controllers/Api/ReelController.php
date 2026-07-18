@@ -37,9 +37,9 @@ class ReelController extends Controller
 
             $reels->getCollection()->transform(function ($reel) use ($hasLikes) {
                 $reel->liked = $hasLikes ? $reel->likes->count() > 0 : false;
-                if ($hasLikes) {
-                    $reel->unset('likes');
-                }
+            if ($hasLikes) {
+                $reel->unsetRelation('likes');
+            }
                 return $reel;
             });
 
