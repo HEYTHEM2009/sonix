@@ -12,6 +12,7 @@ use App\Models\Notification;
 use App\Models\User;
 use App\Events\MessageSent;
 use App\Events\TypingIndicator;
+use App\Services\MessageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redis;
 
@@ -77,36 +78,7 @@ class MessageController extends Controller
             $data['content'] = $request->input('content', '');
         }
 
-        $message = Message::create($data);
-
-        Notification::create([
-            'user_id' => $receiverId,
-            'sender_id' => $request->user()->id,
-            'type' => 'message',
-            'message' => 'sent you a message',
-        ]);
-
-        $notification = Notification::where('user_id', $receiverId)
-            ->where('sender_id', $request->user()->id)
-            ->where('type', 'message')
-            ->latest()
-            ->first();
-
-        if ($notification) {
-            try {
-                broadcast(new \App\Events\NotificationCreated($notification));
-            } catch (\Exception $e) {
-                \Log::warning('Notification broadcast failed: ' . $e->getMessage());
-            }
-        }
-
-        $message->load('sender:id,username,avatar', 'replyMessage.sender:id,username');
-
-        try {
-            broadcast(new MessageSent($message));
-        } catch (\Exception $e) {
-            \Log::warning('Message broadcast failed: ' . $e->getMessage());
-        }
+        $message = app(MessageService::class)->send($request->user(), $data);
 
         return response()->json($message, 201);
     }
@@ -356,12 +328,7 @@ class MessageController extends Controller
 
         $request->validate(['content' => 'required|string|max:5000']);
 
-        if (!$message->is_edited) {
-            $message->original_content = $message->content;
-        }
-        $message->content = Sanitize::text($request->input('content'));
-        $message->is_edited = true;
-        $message->save();
+        $message = app(MessageService::class)->edit((int) $id, $request->user()->id, $request->input('content'));
 
         return response()->json($message);
     }
@@ -390,7 +357,7 @@ class MessageController extends Controller
         if (!$message) return response()->json(['message' => 'Not found'], 404);
         if ($message->sender_id !== $request->user()->id) return response()->json(['message' => 'Unauthorized'], 403);
 
-        $message->update(['is_deleted' => true, 'content' => '']);
+        app(MessageService::class)->deleteForEveryone((int) $id, $request->user()->id);
         return response()->json(['message' => 'Message deleted']);
     }
 
@@ -402,13 +369,7 @@ class MessageController extends Controller
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        $userId = $request->user()->id;
-        $deletedFor = json_decode($message->deleted_for ?? '[]', true);
-        if (!in_array($userId, $deletedFor)) {
-            $deletedFor[] = $userId;
-            $message->update(['deleted_for' => json_encode($deletedFor)]);
-        }
-
+        app(MessageService::class)->deleteForMe((int) $id, $request->user()->id);
         return response()->json(['message' => 'Message deleted for you']);
     }
 
@@ -458,23 +419,63 @@ class MessageController extends Controller
 
         $request->validate(['receiver_id' => 'required|exists:users,id']);
 
-        $receiverId = (int) $request->input('receiver_id');
-
-        $data = [
-            'sender_id' => $request->user()->id,
-            'receiver_id' => $receiverId,
-            'content' => $message->content,
-            'type' => $message->type,
-            'image' => $message->image,
-            'voice' => $message->voice,
-            'is_read' => false,
-        ];
-
-        $forwarded = Message::create($data);
-        $forwarded->load('sender:id,username,avatar');
-
-        try { broadcast(new MessageSent($forwarded)); } catch (\Exception $e) {}
+        $forwarded = app(MessageService::class)->forward((int) $id, $request->user()->id, (int) $request->input('receiver_id'));
 
         return response()->json($forwarded, 201);
+    }
+
+    public function deliver(Request $request, $id)
+    {
+        app(MessageService::class)->markDelivered((int) $id, $request->user()->id);
+
+        return response()->json(['delivered' => true]);
+    }
+
+    public function search(Request $request, $userId)
+    {
+        $result = app(MessageService::class)->search((int) $userId, (string) $request->input('q', ''), (int) $request->input('per_page', 30));
+
+        return response()->json($result);
+    }
+
+    public function saveDraft(Request $request, $userId)
+    {
+        app(MessageService::class)->saveDraft($request->user()->id, (int) $userId, $request->input('content'));
+
+        return response()->json(['saved' => true]);
+    }
+
+    public function getDraft(Request $request, $userId)
+    {
+        return response()->json(app(MessageService::class)->getDraft($request->user()->id, (int) $userId));
+    }
+
+    public function toggleStar(Request $request, $id)
+    {
+        return response()->json(['is_starred' => app(MessageService::class)->toggleStar((int) $id, $request->user()->id)]);
+    }
+
+    public function toggleSave(Request $request, $id)
+    {
+        return response()->json(['is_saved' => app(MessageService::class)->toggleSave((int) $id, $request->user()->id)]);
+    }
+
+    public function toggleMessagePin(Request $request, $id)
+    {
+        return response()->json(['is_pinned' => app(MessageService::class)->togglePin((int) $id, $request->user()->id)]);
+    }
+
+    public function blockUser(Request $request, $userId)
+    {
+        app(MessageService::class)->block($request->user()->id, (int) $userId);
+
+        return response()->json(['blocked' => true]);
+    }
+
+    public function unblockUser(Request $request, $userId)
+    {
+        app(MessageService::class)->unblock($request->user()->id, (int) $userId);
+
+        return response()->json(['blocked' => false]);
     }
 }

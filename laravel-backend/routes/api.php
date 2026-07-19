@@ -21,6 +21,8 @@ use App\Http\Controllers\Api\TwoFactorController;
 use App\Http\Controllers\Api\BadWordController;
 use App\Http\Controllers\Api\SupportController;
 use App\Http\Controllers\Api\GroupController;
+use App\Http\Controllers\Api\SearchController;
+use App\Http\Controllers\Api\AdminController;
 
 Route::post('/auth/register', [AuthController::class, 'register'])->middleware('throttle:5,1');
 Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
@@ -101,6 +103,15 @@ Route::post('/messages/{id}/forward', [MessageController::class, 'forward'])->mi
 Route::post('/messages/mute/{userId}', [MessageController::class, 'toggleMute'])->middleware('auth:sanctum');
 Route::post('/messages/pin/{userId}', [MessageController::class, 'togglePin'])->middleware('auth:sanctum');
 Route::delete('/messages/conversation/{userId}', [MessageController::class, 'deleteConversation'])->middleware('auth:sanctum');
+Route::post('/messages/{id}/deliver', [MessageController::class, 'deliver'])->middleware(['auth:sanctum', 'throttle:30,1']);
+Route::get('/messages/{userId}/search', [MessageController::class, 'search'])->middleware(['auth:sanctum', 'throttle:20,1']);
+Route::post('/messages/{userId}/draft', [MessageController::class, 'saveDraft'])->middleware('auth:sanctum');
+Route::get('/messages/{userId}/draft', [MessageController::class, 'getDraft'])->middleware('auth:sanctum');
+Route::post('/messages/{id}/star', [MessageController::class, 'toggleStar'])->middleware('auth:sanctum');
+Route::post('/messages/{id}/save', [MessageController::class, 'toggleSave'])->middleware('auth:sanctum');
+Route::post('/messages/{id}/pin', [MessageController::class, 'toggleMessagePin'])->middleware('auth:sanctum');
+Route::post('/users/{userId}/block', [MessageController::class, 'blockUser'])->middleware('auth:sanctum');
+Route::post('/users/{userId}/unblock', [MessageController::class, 'unblockUser'])->middleware('auth:sanctum');
 
 Route::get('/stories', [StoryController::class, 'index'])->middleware('auth:sanctum');
 Route::post('/stories', [StoryController::class, 'store'])->middleware(['auth:sanctum', 'throttle:10,1']);
@@ -134,20 +145,47 @@ Route::post('/reports', [ReportController::class, 'store'])->middleware(['auth:s
 Route::post('/support/feedback', [SupportController::class, 'feedback'])->middleware(['auth:sanctum', 'throttle:5,1']);
 
 // Media routes with signed URLs
-Route::get('/media/{path}', [App\Http\Controllers\Api\MediaController::class, 'serve'])->where('path', '.*');
+Route::get('/media/{path}', [App\Http\Controllers\Api\MediaController::class, 'serve'])
+    ->middleware(['auth:sanctum', 'media.security'])
+    ->where('path', '.*');
 Route::post('/media/sign', [App\Http\Controllers\Api\MediaController::class, 'sign'])->middleware('auth:sanctum');
 Route::post('/media/sign-batch', [App\Http\Controllers\Api\MediaController::class, 'signBatch'])->middleware('auth:sanctum');
 
 // Reels
 Route::get('/reels', [ReelController::class, 'index'])->middleware('auth:sanctum');
+Route::get('/reels/foryou', [ReelController::class, 'forYou'])->middleware('auth:sanctum');
+Route::get('/reels/trending', [ReelController::class, 'trending'])->middleware('auth:sanctum');
+Route::get('/reels/search', [ReelController::class, 'search'])->middleware('auth:sanctum');
+Route::get('/reels/saved', [ReelController::class, 'saved'])->middleware('auth:sanctum');
+Route::get('/reels/hashtags/popular', [ReelController::class, 'popularHashtags'])->middleware('auth:sanctum');
+Route::get('/reels/drafts', [ReelController::class, 'drafts'])->middleware('auth:sanctum');
+Route::get('/reels/scheduled', [ReelController::class, 'scheduled'])->middleware('auth:sanctum');
+Route::get('/reels/featured', [ReelController::class, 'featured'])->middleware('auth:sanctum');
+Route::get('/reels/music', [ReelController::class, 'musicLibrary'])->middleware('auth:sanctum');
+Route::post('/reels/pro', [ReelController::class, 'togglePro'])->middleware('auth:sanctum');
+Route::get('/reels/hashtag/{tag}', [ReelController::class, 'byHashtag'])->middleware('auth:sanctum');
+Route::get('/reels/insights', [ReelController::class, 'insights'])->middleware('auth:sanctum');
 Route::post('/reels', [ReelController::class, 'store'])->middleware(['auth:sanctum', 'throttle:10,1']);
 Route::get('/reels/{id}', [ReelController::class, 'show'])->middleware('auth:sanctum');
+Route::put('/reels/{id}', [ReelController::class, 'update'])->middleware('auth:sanctum');
 Route::delete('/reels/{id}', [ReelController::class, 'destroy'])->middleware('auth:sanctum');
 Route::post('/reels/{id}/like', [ReelController::class, 'like'])->middleware(['auth:sanctum', 'throttle:30,1']);
 Route::post('/reels/{id}/comment', [ReelController::class, 'comment'])->middleware(['auth:sanctum', 'throttle:20,1']);
 Route::post('/reels/{id}/view', [ReelController::class, 'recordView'])->middleware('auth:sanctum');
+Route::post('/reels/{id}/save', [ReelController::class, 'toggleSave'])->middleware('auth:sanctum');
+Route::post('/reels/{id}/share', [ReelController::class, 'share'])->middleware('auth:sanctum');
 Route::post('/reel-comments/{commentId}/like', [ReelController::class, 'likeComment'])->middleware(['auth:sanctum', 'throttle:30,1']);
 Route::delete('/reel-comments/{id}', [ReelController::class, 'destroyComment'])->middleware(['auth:sanctum', 'throttle:20,1']);
+
+// Search
+Route::get('/search/suggestions', [SearchController::class, 'suggestions'])->middleware('auth:sanctum');
+Route::get('/search/users', [SearchController::class, 'users'])->middleware('auth:sanctum');
+Route::get('/search/reels', [SearchController::class, 'reels'])->middleware('auth:sanctum');
+Route::get('/search/posts', [SearchController::class, 'posts'])->middleware('auth:sanctum');
+Route::get('/search/stories', [SearchController::class, 'stories'])->middleware('auth:sanctum');
+Route::get('/search/hashtags', [SearchController::class, 'hashtags'])->middleware('auth:sanctum');
+Route::get('/search/audio', [SearchController::class, 'audio'])->middleware('auth:sanctum');
+Route::get('/search/trending', [SearchController::class, 'trending'])->middleware('auth:sanctum');
 
 // Group Chat
 Route::get('/groups', [GroupController::class, 'index'])->middleware('auth:sanctum');
@@ -181,4 +219,30 @@ Route::post('/bad-words/check', [BadWordController::class, 'check'])->middleware
 Route::get('/bad-words', [BadWordController::class, 'index'])->middleware('auth:sanctum');
 Route::post('/bad-words', [BadWordController::class, 'store'])->middleware('auth:sanctum');
 Route::delete('/bad-words/{id}', [BadWordController::class, 'destroy'])->middleware('auth:sanctum');
+
+// Admin Panel
+Route::prefix('admin')->middleware(['auth:sanctum'])->group(function () {
+    Route::get('/dashboard', [AdminController::class, 'dashboard']);
+    Route::get('/users', [AdminController::class, 'users']);
+    Route::get('/users/{id}', [AdminController::class, 'showUser']);
+    Route::post('/users/{id}/ban', [AdminController::class, 'banUser']);
+    Route::post('/users/{id}/unban', [AdminController::class, 'unbanUser']);
+    Route::get('/reels', [AdminController::class, 'reels']);
+    Route::get('/posts', [AdminController::class, 'posts']);
+    Route::get('/stories', [AdminController::class, 'stories']);
+    Route::get('/reports', [AdminController::class, 'reports']);
+    Route::put('/reports/{id}', [AdminController::class, 'resolveReport']);
+    Route::delete('/content/{type}/{id}', [AdminController::class, 'removeContent']);
+    Route::get('/analytics', [AdminController::class, 'analytics']);
+    Route::post('/notifications', [AdminController::class, 'notifications']);
+    Route::get('/roles', [AdminController::class, 'roles']);
+    Route::get('/permissions', [AdminController::class, 'permissions']);
+    Route::get('/settings', [AdminController::class, 'settings']);
+    Route::put('/settings', [AdminController::class, 'settings']);
+    Route::get('/logs', [AdminController::class, 'logs']);
+    Route::get('/bad-words', [AdminController::class, 'badWords']);
+    Route::post('/bad-words', [AdminController::class, 'addBadWord']);
+    Route::delete('/bad-words/{id}', [AdminController::class, 'deleteBadWord']);
+});
+
 

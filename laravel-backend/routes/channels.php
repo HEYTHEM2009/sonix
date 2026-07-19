@@ -3,7 +3,14 @@
 use Illuminate\Support\Facades\Broadcast;
 
 Broadcast::channel('messages.{userId}', function ($user, $userId) {
-    return (int) $user->id === (int) $userId;
+    if ((int) $user->id !== (int) $userId) {
+        return false;
+    }
+    return [
+        'id' => $user->id,
+        'username' => $user->username,
+        'avatar' => $user->avatar,
+    ];
 });
 
 Broadcast::channel('typing.{userId}', function ($user, $userId) {
