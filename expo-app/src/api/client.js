@@ -59,4 +59,12 @@ export const resolveUrl = (path) => {
   return `${IMAGE_BASE}${path}`;
 };
 
+export const uploadWithProgress = (url, form, onProgress) =>
+  client.post(url, form, {
+    headers: { "Content-Type": "multipart/form-data" },
+    onUploadProgress: (e) => {
+      if (onProgress && e.total) onProgress(e.loaded / e.total);
+    },
+  });
+
 export default client;

@@ -2,12 +2,12 @@ import { useState, useEffect, useLayoutEffect, useCallback, useRef, memo } from 
 import {
   View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet,
   KeyboardAvoidingView, Platform, Image, Alert, ActivityIndicator,
-  Dimensions, Animated, Keyboard, Modal, ScrollView, I18nManager, Share,
+  Dimensions, Animated, Keyboard, Modal, ScrollView, I18nManager, Share, Linking,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import { isExpoGo } from "../utils/audioHelper";
-import client, { resolveUrl } from "../api/client";
+import client, { resolveUrl, uploadWithProgress } from "../api/client";
 import { getEcho } from "../api/websocket";
 import { cacheMessages, getCachedMessages, addToOfflineQueue, getOfflineQueue, removeFromOfflineQueue } from "../api/cache";
 import { useAuth } from "../context/AuthContext";
@@ -15,6 +15,9 @@ import { useLanguage } from "../context/LanguageContext";
 import { COLORS, SIZES } from "../components/Theme";
 import Screen3D from "../components/3D/Screen3D";
 import AudioWaveform from "../components/AudioWaveform";
+import VideoBubble from "../components/chat/VideoBubble";
+import MediaProgress from "../components/chat/MediaProgress";
+import { pickDocument, isDocument, formatBytes } from "../utils/media";
 
 const { width: SCREEN_W } = Dimensions.get("window");
 const EMOJI_LIST = ["❤️", "😂", "😮", "😢", "😡", "👍"];
@@ -172,6 +175,7 @@ const MessageBubble = memo(({
   const isImage = item.type === "image" && item.image;
   const isVoice = item.type === "voice" && item.voice;
   const isVideo = item.type === "video" && item.video;
+  const isDocument = item.type === "document" && (item.document || item.file_url);
   const isSticker = item.type === "sticker";
 
   return (
@@ -204,12 +208,20 @@ const MessageBubble = memo(({
           <Text style={[s.voiceDuration, isMine && { color: "#ffffffaa" }]}>{formatMs(playing ? position : duration)}</Text>
         </TouchableOpacity>
       ) : isVideo ? (
-        <TouchableOpacity onLongPress={handleLongPress} onPress={handleTap} activeOpacity={0.8} style={[s.bubble, isMine ? s.mine : s.theirs, { padding: 0, overflow: "hidden" }]}>
-          <View style={s.videoWrap}>
-            <Image source={{ uri: resolveUrl(item.video) }} style={s.videoThumb} resizeMode="cover" />
-            <View style={s.playOverlay}>
-              <Text style={s.playOverlayIcon}>▶</Text>
+        <View style={[s.bubble, isMine ? s.mine : s.theirs, { padding: 0, overflow: "hidden" }]}>
+          <VideoBubble uri={resolveUrl(item.video)} isMine={isMine} />
+        </View>
+       ) : isDocument ? (
+        <TouchableOpacity onLongPress={handleLongPress} onPress={() => { const url = resolveUrl(item.document || item.file_url); if (url) Linking.openURL(url).catch(() => {}); }} activeOpacity={0.8} style={[s.bubble, isMine ? s.mine : s.theirs, s.docBubble]}>
+          <View style={s.docRow}>
+            <View style={s.docIconWrap}>
+              <Text style={s.docIcon}>📎</Text>
             </View>
+            <View style={s.docInfo}>
+              <Text style={[s.docName, isMine && { color: "#fff" }]} numberOfLines={1}>{item.file_name || t("document")}</Text>
+              {item.file_size ? <Text style={[s.docSize, isMine && { color: "#ffffffaa" }]}>{formatBytes(item.file_size)}</Text> : null}
+            </View>
+            <Text style={[s.docOpen, isMine && { color: "#fff" }]}>↗</Text>
           </View>
         </TouchableOpacity>
       ) : (
@@ -295,6 +307,8 @@ export default function ChatScreen({ route, navigation }) {
   const [showStickerPicker, setShowStickerPicker] = useState(false);
   const [stickerCategory, setStickerCategory] = useState("popular");
   const [stickerTargetMsg, setStickerTargetMsg] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const flatListRef = useRef(null);
   const typingTimerRef = useRef(null);
@@ -435,6 +449,7 @@ export default function ChatScreen({ route, navigation }) {
       });
       if (!result.canceled && result.assets?.[0]) {
         setSending(true);
+        setUploading(true); setUploadProgress(0);
         try {
           const formData = new FormData();
           formData.append("receiver_id", String(userId));
@@ -444,9 +459,10 @@ export default function ChatScreen({ route, navigation }) {
           const mimeMap = { mp4: "video/mp4", mov: "video/quicktime", webm: "video/webm", jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png" };
           const mimeType = mimeMap[ext] || (type === "video" ? "video/mp4" : "image/jpeg");
           formData.append(type === "video" ? "video" : "image", { uri, name: filename, type: mimeType });
-          await client.post("/messages", formData, { headers: { "Content-Type": "multipart/form-data" }, timeout: 120000 });
+          await uploadWithProgress("/messages", formData, setUploadProgress);
           await load();
         } catch (_) { Alert.alert(t("error"), t(type === "video" ? "failedToSendVideo" : "failedToSendImage")); }
+        setUploading(false); setUploadProgress(0);
         setSending(false);
       }
     } catch (_) { Alert.alert(t("error"), t("failedToSendImage")); }
@@ -484,11 +500,13 @@ export default function ChatScreen({ route, navigation }) {
         const filename = `voice_${Date.now()}.m4a`;
         formData.append("voice", { uri, name: filename, type: "audio/mp4" });
         setSending(true);
+        setUploading(true); setUploadProgress(0);
         try {
-          const res = await client.post("/messages", formData, { headers: { "Content-Type": "multipart/form-data" }, timeout: 120000 });
+          const res = await uploadWithProgress("/messages", formData, setUploadProgress);
           if (res.data?.id) setMessages((prev) => [...prev, { ...res.data, key: String(res.data.id) }]);
           setTimeout(() => load(), 1500);
         } catch (e) { Alert.alert(t("error"), e?.response?.data?.message || t("failedToSend")); }
+        setUploading(false); setUploadProgress(0);
         setSending(false);
       }
     } catch (e) { console.warn("Stop recording error", e); }
@@ -496,6 +514,47 @@ export default function ChatScreen({ route, navigation }) {
   };
 
   const cancelRecording = () => { setRecordCancel(true); stopRecording(true); };
+
+  /* ─── Send document / zip / pdf ─────────────────────── */
+  // Backend MessageController@send accepts a `document` multipart field
+  // (type "document") and persists it via StorageHelper. The message renders
+  // locally optimistically and is reconciled with the server response.
+  const sendDocument = async () => {
+    let doc = null;
+    try {
+      doc = await pickDocument();
+    } catch (_) {
+      Alert.alert(t("error"), t("failedToSend"));
+      return;
+    }
+    if (!doc) return;
+    setUploading(true); setUploadProgress(0);
+    const tempId = `temp_${Date.now()}`;
+    const optimistic = {
+      id: tempId, type: "document", sender_id: user?.id,
+      receiver_id: parseInt(userId), created_at: new Date().toISOString(),
+      is_read: false, document: doc.uri, file_name: doc.name, file_size: doc.size,
+      sender: { id: user?.id, username: user?.username, avatar: user?.avatar },
+      reactions: [], pending: true,
+    };
+    setMessages((prev) => [...prev, optimistic]);
+    try {
+      const formData = new FormData();
+      formData.append("receiver_id", String(userId));
+      formData.append("type", "document");
+      formData.append("document", { uri: doc.uri, name: doc.name, type: doc.mimeType });
+      const res = await uploadWithProgress("/messages", formData, setUploadProgress);
+      if (res.data?.id) {
+        setMessages((prev) => prev.map((m) => m.id === tempId ? { ...res.data, pending: false } : m));
+      } else {
+        setMessages((prev) => prev.map((m) => m.id === tempId ? { ...m, pending: false } : m));
+      }
+      await load();
+    } catch (_) {
+      setMessages((prev) => prev.map((m) => m.id === tempId ? { ...m, pending: false } : m));
+    }
+    setUploading(false); setUploadProgress(0);
+  };
 
   /* ─── Context menu actions ──────────────────────────── */
   const handleContextMenu = (key, item) => {
@@ -767,10 +826,12 @@ export default function ChatScreen({ route, navigation }) {
                 Alert.alert("", t("attach"), [
                   { text: t("photo") || "Photo", onPress: () => sendMedia("image") },
                   { text: t("video") || "Video", onPress: () => sendMedia("video") },
+                  { text: t("document") || "Document", onPress: () => sendDocument() },
                   { text: t("cancel"), style: "cancel" },
                 ]);
               }}>
                 <Text style={s.inputActionIcon}>📷</Text>
+                <MediaProgress progress={uploadProgress} visible={uploading} />
               </TouchableOpacity>
 
               <TextInput
@@ -1037,6 +1098,15 @@ const s = StyleSheet.create({
   videoThumb: { width: "100%", height: "100%", borderRadius: 18 },
   playOverlay: { position: "absolute", inset: 0, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(0,0,0,0.35)", borderRadius: 18 },
   playOverlayIcon: { fontSize: 44, color: "#fff" },
+
+  docBubble: { minWidth: 200 },
+  docRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 4 },
+  docIconWrap: { width: 38, height: 38, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center" },
+  docIcon: { fontSize: 18 },
+  docInfo: { flex: 1 },
+  docName: { fontSize: 14, fontWeight: "600", color: COLORS.text },
+  docSize: { fontSize: 11, color: COLORS.muted, marginTop: 2 },
+  docOpen: { fontSize: 18, color: COLORS.text, fontWeight: "700" },
 
   voiceBubble: { flexDirection: "row", alignItems: "center", gap: 10, minWidth: 180 },
   playBtn: { width: 34, height: 34, borderRadius: 17, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },
