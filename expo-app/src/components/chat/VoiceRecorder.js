@@ -51,14 +51,14 @@ const VoiceRecorder = ({ onSend, onCancel, onRecordingStateChange }) => {
     try {
       if (isExpoGo()) {
         Alert.alert(t("error"), t("voiceMessagesRequireDevBuild"));
-        onCancel?.();
+        if (onCancel) onCancel();
         return;
       }
       const { AudioModule, setAudioModeAsync, RecordingPresets, requestRecordingPermissionsAsync } = require("expo-audio");
       const { status } = await requestRecordingPermissionsAsync();
       if (status !== "granted") {
         Alert.alert(t("error"), t("failedToRecord"));
-        onCancel?.();
+        if (onCancel) onCancel();
         return;
       }
       await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
@@ -69,7 +69,7 @@ const VoiceRecorder = ({ onSend, onCancel, onRecordingStateChange }) => {
       setRecording(true);
       setPaused(false);
       pausedRef.current = false;
-      onRecordingStateChange?.(recorder);
+      if (onRecordingStateChange) onRecordingStateChange(recorder);
       timerRef.current = setInterval(() => {
         elapsedRef.current += 1;
         setElapsed(elapsedRef.current);
@@ -80,7 +80,7 @@ const VoiceRecorder = ({ onSend, onCancel, onRecordingStateChange }) => {
       }, 1000);
     } catch (e) {
       console.warn("VoiceRecorder start error", e);
-      onCancel?.();
+      if (onCancel) onCancel();
     }
   }, [onCancel, onRecordingStateChange, t]);
 
@@ -110,7 +110,7 @@ const VoiceRecorder = ({ onSend, onCancel, onRecordingStateChange }) => {
         setPaused(true);
         pausedRef.current = true;
       }
-      onRecordingStateChange?.(rec);
+      if (onRecordingStateChange) onRecordingStateChange(rec);
     } catch (e) {
       console.warn("VoiceRecorder pause/resume not supported", e);
     }
@@ -131,7 +131,7 @@ const VoiceRecorder = ({ onSend, onCancel, onRecordingStateChange }) => {
     recorderRef.current = null;
     await releaseMic();
     if (cancelledRef.current || duration <= 0 || !uri) return;
-    onSend?.(uri, duration);
+    if (onSend) onSend(uri, duration);
   }, [onSend, releaseMic]);
 
   const cancel = useCallback(async () => {
@@ -145,7 +145,7 @@ const VoiceRecorder = ({ onSend, onCancel, onRecordingStateChange }) => {
     } catch (_) {}
     recorderRef.current = null;
     await releaseMic();
-    onCancel?.();
+    if (onCancel) onCancel();
   }, [onCancel, releaseMic]);
 
   return (
