@@ -10,6 +10,7 @@ class Message extends Model
         'content', 'sender_id', 'receiver_id', 'is_read', 'delivered', 'delivered_at',
         'type', 'image', 'voice', 'reply_to', 'is_deleted', 'read_at',
         'is_edited', 'original_content', 'is_disappearing', 'disappears_at', 'deleted_for',
+        'is_starred', 'is_saved', 'is_pinned',
     ];
 
     protected $casts = [
@@ -21,6 +22,9 @@ class Message extends Model
         'read_at' => 'datetime',
         'delivered_at' => 'datetime',
         'disappears_at' => 'datetime',
+        'is_starred' => 'boolean',
+        'is_saved' => 'boolean',
+        'is_pinned' => 'boolean',
     ];
 
     public function sender()
@@ -41,5 +45,15 @@ class Message extends Model
     public function reactions()
     {
         return $this->hasMany(MessageReaction::class);
+    }
+
+    public function drafts()
+    {
+        return $this->hasMany(MessageDraft::class, 'partner_id', 'receiver_id');
+    }
+
+    public function auditLogs()
+    {
+        return $this->hasMany(MessageAuditLog::class);
     }
 }

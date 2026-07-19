@@ -3,17 +3,21 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class BlockedUser extends Model
 {
-    protected $fillable = ['user_id', 'blocked_id'];
+    protected $fillable = [
+        'blocker_id',
+        'blocked_id',
+    ];
 
-    public function user()
+    public function blocker(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'blocker_id');
     }
 
-    public function blocked()
+    public function blocked(): BelongsTo
     {
         return $this->belongsTo(User::class, 'blocked_id');
     }
