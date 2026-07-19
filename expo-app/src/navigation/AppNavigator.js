@@ -11,6 +11,7 @@ import LoginScreen from "../screens/LoginScreen";
 import RegisterScreen from "../screens/RegisterScreen";
 import ForgotPasswordScreen from "../screens/ForgotPasswordScreen";
 import ResetPasswordScreen from "../screens/ResetPasswordScreen";
+import OnboardingScreen from "../screens/OnboardingScreen";
 import FeedScreen from "../screens/FeedScreen";
 import CreatePostScreen from "../screens/CreatePostScreen";
 import ProfileScreen from "../screens/ProfileScreen";
@@ -37,6 +38,8 @@ import VideoPostScreen from "../screens/VideoPostScreen";
 import HighlightsScreen from "../screens/HighlightsScreen";
 import BlockedUsersScreen from "../screens/BlockedUsersScreen";
 import ExploreScreen from "../screens/ExploreScreen";
+import SearchScreen from "../screens/SearchScreen";
+import AdminScreen from "../screens/AdminScreen";
 import HelpCenterScreen from "../screens/HelpCenterScreen";
 import ReportProblemScreen from "../screens/ReportProblemScreen";
 import TermsScreen from "../screens/TermsScreen";
@@ -221,7 +224,7 @@ function HomeTabs() {
 }
 
 export default function AppNavigator() {
-  const { user, loading } = useAuth();
+  const { user, loading, onboarded } = useAuth();
 
   if (loading) return null;
 
@@ -235,12 +238,22 @@ export default function AppNavigator() {
       }}
     >
       {!user ? (
-        <>
-          <Stack.Screen name="Login" component={LoginScreen} />
-          <Stack.Screen name="Register" component={RegisterScreen} />
-          <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
-          <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
-        </>
+        onboarded ? (
+          <>
+            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="Register" component={RegisterScreen} />
+            <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+            <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
+          </>
+        ) : (
+          <>
+            <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="Register" component={RegisterScreen} />
+            <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+            <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
+          </>
+        )
       ) : (
         <>
           <Stack.Screen name="Home" component={HomeTabs} />
@@ -270,6 +283,8 @@ export default function AppNavigator() {
           <Stack.Screen name="Privacy" component={PrivacyScreen} />
           <Stack.Screen name="HashtagPosts" component={HashtagPostsScreen} />
           <Stack.Screen name="CreateReel" component={CreateReelScreen} />
+          <Stack.Screen name="Search" component={SearchScreen} />
+          <Stack.Screen name="Admin" component={AdminScreen} />
           <Stack.Screen name="Users" component={UsersScreen} />
         </>
       )}

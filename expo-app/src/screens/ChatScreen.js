@@ -19,6 +19,12 @@ import VideoBubble from "../components/chat/VideoBubble";
 import VoiceRecorder from "../components/chat/VoiceRecorder";
 import MediaProgress from "../components/chat/MediaProgress";
 import { pickDocument, isDocument, formatBytes } from "../utils/media";
+import { validateMessage, floodGuard } from "../utils/validation";
+import { cacheDraft, getDraft } from "../api/cache";
+import ConnectionBanner from "../components/chat/ConnectionBanner";
+import MessageSearchBar from "../components/chat/MessageSearchBar";
+import DraftIndicator from "../components/chat/DraftIndicator";
+import BulkActionBar from "../components/chat/BulkActionBar";
 
 const { width: SCREEN_W } = Dimensions.get("window");
 const EMOJI_LIST = ["❤️", "😂", "😮", "😢", "😡", "👍"];
@@ -63,7 +69,7 @@ const STICKER_PACKS = [
 ];
 
 /* ─── Date Separator ────────────────────────────────── */
-function DateSeparator({ date }) {
+const DateSeparator = memo(function DateSeparator({ date }) {
   const { t } = useLanguage();
   const d = new Date(date);
   const now = new Date();
@@ -80,10 +86,10 @@ function DateSeparator({ date }) {
       <View style={s.dateSepLine} />
     </View>
   );
-}
+});
 
 /* ─── Typing Indicator ──────────────────────────────── */
-function TypingIndicator({ username }) {
+const TypingIndicator = memo(function TypingIndicator({ username }) {
   const { t } = useLanguage();
   const dot1 = useRef(new Animated.Value(0.3)).current;
   const dot2 = useRef(new Animated.Value(0.3)).current;
@@ -109,11 +115,11 @@ function TypingIndicator({ username }) {
       </View>
     </View>
   );
-}
+});
 
 /* ─── Message Bubble ─────────────────────────────────── */
 const MessageBubble = memo(({
-  item, isMine, onLongPress, onDoubleTap, onImagePress, onImageLongPress, currentUserId,
+  item, isMine, onLongPress, onDoubleTap, onImagePress, onImageLongPress, currentUserId, selected,
 }) => {
   const { t } = useLanguage();
   const [showReactions, setShowReactions] = useState(false);
@@ -128,7 +134,7 @@ const MessageBubble = memo(({
     const now = Date.now();
     if (now - lastTap.current < 300) {
       clearTimeout(doubleTapTimer.current);
-      onDoubleTap?.(item);
+      if (onDoubleTap) onDoubleTap(item);
     } else {
       doubleTapTimer.current = setTimeout(() => setShowReactions((p) => !p), 300);
     }
@@ -137,7 +143,7 @@ const MessageBubble = memo(({
 
   const handleLongPress = () => {
     if (item.pending) return;
-    onLongPress?.(item);
+    if (onLongPress) onLongPress(item);
   };
 
   const handleReaction = async (emoji) => {
@@ -180,7 +186,7 @@ const MessageBubble = memo(({
   const isSticker = item.type === "sticker";
 
   return (
-    <View style={[s.bubbleWrap, isMine ? s.bubbleWrapMine : s.bubbleWrapTheirs, item.pending && s.bubblePending]}>
+    <View style={[s.bubbleWrap, isMine ? s.bubbleWrapMine : s.bubbleWrapTheirs, item.pending && s.bubblePending, selected && s.bubbleSelected]}>
       {item.reply_message && (
         <View style={[s.replyPreview, isMine ? s.replyPreviewMine : s.replyPreviewTheirs]}>
           <Text style={s.replyName}>{replyName || t("message")}</Text>
@@ -194,8 +200,8 @@ const MessageBubble = memo(({
         </TouchableOpacity>
       ) : isImage ? (
         <TouchableOpacity
-          onLongPress={() => { onImageLongPress?.(item); }}
-          onPress={() => onImagePress?.(item)}
+          onLongPress={() => { if (onImageLongPress) onImageLongPress(item); }}
+          onPress={() => { if (onImagePress) onImagePress(item); }}
           activeOpacity={0.8}
         >
           <Image source={{ uri: resolveUrl(item.image) }} style={s.messageImage} resizeMode="cover" />
@@ -237,7 +243,9 @@ const MessageBubble = memo(({
           {new Date(item.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
         </Text>
         {isMine && !item.pending && (
-          <Text style={[s.readIcon, item.read_at && s.readIconBlue]}>{item.read_at ? "✓✓" : "✓"}</Text>
+          <Text style={[s.readIcon, item.is_read ? s.readIconBlue : null]}>
+            {item.is_read ? "✓✓" : item.delivered ? "✓" : "✓"}
+          </Text>
         )}
         {item.pending && <ActivityIndicator size={8} color={COLORS.muted} style={{ marginLeft: 4 }} />}
       </View>
@@ -309,6 +317,19 @@ export default function ChatScreen({ route, navigation }) {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
 
+  // ─── Task 9: search / draft / bulk ───────────────
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [searching, setSearching] = useState(false);
+  const [draftSaved, setDraftSaved] = useState(false);
+  const [bulkMode, setBulkMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState(() => new Set());
+  const draftSavedTimer = useRef(null);
+  const searchDebounce = useRef(null);
+  const draftSaveDebounce = useRef(null);
+  const lastSentTs = useRef(null);
+
   const flatListRef = useRef(null);
   const typingTimerRef = useRef(null);
 
@@ -350,6 +371,97 @@ export default function ChatScreen({ route, navigation }) {
     setLoadingMore(true);
     await load(messages[0]?.id);
     setLoadingMore(false);
+  };
+
+  /* ─── Task 9: draft load on mount ──────────────────── */
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const res = await client.get(`/messages/${userId}/draft`);
+        const content = res.data?.content;
+        if (active && content) setText(content);
+      } catch (_) {
+        try { const cached = await getDraft(userId); if (active && cached) setText(cached); } catch (_) {}
+      }
+    })();
+    return () => { active = false; };
+  }, [userId]);
+
+  /* ─── Task 9: in-conversation search ─────────────── */
+  const runSearch = useCallback(async (q) => {
+    if (!q || !q.trim()) {
+      setSearchResults([]);
+      setSearching(false);
+      return;
+    }
+    setSearching(true);
+    try {
+      const res = await client.get(`/messages/${userId}/search`, { params: { q: q.trim(), per_page: 30 } });
+      setSearchResults(res.data?.data || []);
+    } catch (_) {
+      const all = messages.filter((m) => (m.content || "").toLowerCase().includes(q.trim().toLowerCase()));
+      setSearchResults(all);
+    } finally {
+      setSearching(false);
+    }
+  }, [userId, messages]);
+
+  const onSearchChange = (val) => {
+    setSearchQuery(val);
+    if (searchDebounce.current) clearTimeout(searchDebounce.current);
+    if (!val.trim()) { setSearchResults([]); return; }
+    searchDebounce.current = setTimeout(() => runSearch(val), 350);
+  };
+
+  const closeSearch = () => {
+    setSearchOpen(false);
+    setSearchQuery("");
+    setSearchResults([]);
+  };
+
+  /* ─── Task 9: draft autosave ─────────────────────── */
+  const saveDraftNow = useCallback(async (val) => {
+    try {
+      await client.post(`/messages/${userId}/draft`, { content: val || "" });
+    } catch (_) {
+      try { await cacheDraft(userId, val || ""); } catch (_) {}
+    }
+    setDraftSaved(true);
+    if (draftSavedTimer.current) clearTimeout(draftSavedTimer.current);
+    draftSavedTimer.current = setTimeout(() => setDraftSaved(false), 1500);
+  }, [userId]);
+
+  /* ─── Task 9: bulk selection ─────────────────────── */
+  const toggleSelect = (item) => {
+    if (item.pending) return;
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(item.id)) next.delete(item.id);
+      else next.add(item.id);
+      return next;
+    });
+  };
+
+  const exitBulk = () => {
+    setBulkMode(false);
+    setSelectedIds(new Set());
+  };
+
+  const bulkDelete = async () => {
+    const ids = Array.from(selectedIds);
+    for (const id of ids) {
+      try { await client.delete(`/messages/${id}/for-me`); } catch (_) {}
+    }
+    setMessages((prev) => prev.filter((m) => !selectedIds.has(m.id)));
+    exitBulk();
+  };
+
+  const bulkForward = () => {
+    if (selectedIds.size === 0) { exitBulk(); return; }
+    setForwardMsg({ id: Array.from(selectedIds)[0], _bulk: Array.from(selectedIds) });
+    setShowForward(true);
+    loadConversations();
   };
 
   /* ─── WebSocket ─────────────────────────────────────── */
@@ -410,8 +522,13 @@ export default function ChatScreen({ route, navigation }) {
       return;
     }
     if (!text.trim() && !replyTo) return;
+    const validationError = validateMessage(text);
+    if (validationError) { Alert.alert(t("error"), t(validationError)); return; }
+    if (!floodGuard(lastSentTs.current, 300)) return;
+    lastSentTs.current = Date.now();
     const msg = text.trim();
     setText(""); setSending(true); setReplyTo(null);
+    try { await saveDraftNow(""); } catch (_) {}
     const tempId = `temp_${Date.now()}`;
     const optimistic = {
       id: tempId, content: msg, type: "text", sender_id: user?.id,
@@ -580,9 +697,13 @@ export default function ChatScreen({ route, navigation }) {
 
   const handleForward = async (targetId) => {
     if (!forwardMsg) return;
+    const ids = forwardMsg._bulk && forwardMsg._bulk.length ? forwardMsg._bulk : [forwardMsg.id];
     try {
-      await client.post(`/messages/${forwardMsg.id}/forward`, { receiver_id: targetId });
+      for (const id of ids) {
+        await client.post(`/messages/${id}/forward`, { receiver_id: targetId });
+      }
       setShowForward(false); setForwardMsg(null);
+      if (bulkMode) exitBulk();
       Alert.alert(t("success"), t("forward"));
     } catch (_) {}
   };
@@ -609,6 +730,8 @@ export default function ChatScreen({ route, navigation }) {
       client.post("/messages/typing", { receiver_id: userId, typing: false }).catch(() => {});
       typingTimerRef.current = null;
     }, 2000);
+    if (draftSaveDebounce.current) clearTimeout(draftSaveDebounce.current);
+    draftSaveDebounce.current = setTimeout(() => saveDraftNow(val), 800);
   };
 
   const cancelEdit = () => { setEditingMsg(null); setText(""); };
@@ -623,6 +746,11 @@ export default function ChatScreen({ route, navigation }) {
   });
 
   const hasText = text.trim().length > 0;
+
+  /* ─── Task 9: list data (search overrides normal grouping) ─── */
+  const listData = (searchOpen && searchQuery.trim())
+    ? searchResults.map((m) => ({ ...m, key: String(m.id) }))
+    : groupedMessages;
 
   return (
     <View style={s.outerContainer}>
@@ -661,8 +789,22 @@ export default function ChatScreen({ route, navigation }) {
               <TouchableOpacity style={s.headerActionBtn} onPress={() => setShowMenu(!showMenu)}>
                 <Text style={s.headerActionIcon}>ℹ️</Text>
               </TouchableOpacity>
+              <TouchableOpacity style={s.headerActionBtn} onPress={() => setSearchOpen((p) => !p)}>
+                <Text style={s.headerActionIcon}>🔍</Text>
+              </TouchableOpacity>
             </View>
           </View>
+
+          <ConnectionBanner />
+
+          {searchOpen && (
+            <MessageSearchBar
+              value={searchQuery}
+              onChangeText={onSearchChange}
+              onClose={closeSearch}
+              placeholder={t("searchInConversation")}
+            />
+          )}
 
           {/* ─── Menu ────────────────────────────────────── */}
           {showMenu && (
@@ -719,42 +861,55 @@ export default function ChatScreen({ route, navigation }) {
           {/* ─── Messages ────────────────────────────────── */}
           <FlatList
             ref={flatListRef}
-            data={groupedMessages}
+            data={listData}
             keyExtractor={(m) => m.key}
             contentContainerStyle={{ padding: 12, paddingBottom: Math.max(insets.bottom + 60, 70) }}
             onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
             onEndReached={loadMore}
             onEndReachedThreshold={0.5}
-            ListFooterComponent={loadingMore ? <ActivityIndicator size="small" color={COLORS.primary} style={{ marginVertical: 10 }} /> : null}
+            ListFooterComponent={searching ? <ActivityIndicator size="small" color={COLORS.primary} style={{ marginVertical: 10 }} /> : (loadingMore ? <ActivityIndicator size="small" color={COLORS.primary} style={{ marginVertical: 10 }} /> : null)}
             ListEmptyComponent={
               <View style={s.emptyWrap}>
                 <Text style={s.emptyIcon}>💬</Text>
-                <Text style={s.emptyText}>{t("startConvWith").replace("{username}", username)}</Text>
+                <Text style={s.emptyText}>{searchOpen && searchQuery.trim() ? t("noResults") : t("startConvWith").replace("{username}", username)}</Text>
               </View>
             }
             renderItem={({ item }) => {
               if (item.type === "date") return <DateSeparator date={item.date} />;
               const mine = item.sender_id === user?.id;
+              const selected = selectedIds.has(item.id);
               return (
                 <View>
-                  <MessageBubble
-                    item={item}
-                    isMine={mine}
-                    currentUserId={user?.id}
-                    onDoubleTap={handleDoubleTap}
-                    onImagePress={(msg) => setViewImage(msg.image)}
-                    onImageLongPress={(msg) => {
-                      Alert.alert(t("image"), null, [
-                        { text: t("downloadImage"), onPress: () => {
-                          if (Platform.OS === "web") window.open(resolveUrl(msg.image), "_blank");
-                          else Share.share({ url: resolveUrl(msg.image) });
-                        }},
-                        { text: t("cancel"), style: "cancel" },
-                      ]);
+                  <TouchableOpacity
+                    activeOpacity={bulkMode ? 1 : 0.9}
+                    onLongPress={() => {
+                      if (!bulkMode) { setBulkMode(true); toggleSelect(item); }
+                      else toggleSelect(item);
                     }}
-                    onLongPress={(msg) => setContextMenu(msg)}
-                  />
-                  {reactAnim?.id === item.id && (
+                    onPress={() => { if (bulkMode) toggleSelect(item); }}
+                    disabled={bulkMode && item.pending}
+                  >
+                    <MessageBubble
+                      item={item}
+                      isMine={mine}
+                      currentUserId={user?.id}
+                      selected={selected}
+                      onDoubleTap={bulkMode ? undefined : handleDoubleTap}
+                      onImagePress={(msg) => bulkMode ? toggleSelect(msg) : setViewImage(msg.image)}
+                      onImageLongPress={(msg) => {
+                        if (bulkMode) return;
+                        Alert.alert(t("image"), null, [
+                          { text: t("downloadImage"), onPress: () => {
+                            if (Platform.OS === "web") window.open(resolveUrl(msg.image), "_blank");
+                            else Share.share({ url: resolveUrl(msg.image) });
+                          }},
+                          { text: t("cancel"), style: "cancel" },
+                        ]);
+                      }}
+                      onLongPress={(msg) => { if (!bulkMode) setContextMenu(msg); else toggleSelect(msg); }}
+                    />
+                  </TouchableOpacity>
+                  {reactAnim?.id === item.id && !bulkMode && (
                     <View style={[s.reactAnimWrap, mine ? { right: 20 } : { left: 20 }]}>
                       <Text style={s.reactAnimText}>{reactAnim.emoji}</Text>
                     </View>
@@ -778,7 +933,7 @@ export default function ChatScreen({ route, navigation }) {
           )}
 
           {/* ─── Recording UI ────────────────────────────── */}
-          {showVoiceRecorder ? (
+          {showVoiceRecorder && (
             <View style={[s.recordingBarOuter, { paddingBottom: Math.max(insets.bottom + 12, 20) }]}>
               <VoiceRecorder
                 onSend={handleSendVoice}
@@ -788,7 +943,7 @@ export default function ChatScreen({ route, navigation }) {
           )}
 
           {/* ─── Input Bar ───────────────────────────────── */}
-          {!showVoiceRecorder && (
+          {!showVoiceRecorder && !bulkMode && (
             <View style={[s.inputRow, { paddingBottom: Math.max(insets.bottom + 6, 12) }]}>
               <TouchableOpacity style={s.inputActionBtn} onPress={() => {
                 Alert.alert("", t("attach"), [
@@ -812,7 +967,9 @@ export default function ChatScreen({ route, navigation }) {
                 onSubmitEditing={send}
                 multiline
                 maxLength={5000}
+                editable={!bulkMode}
               />
+              {!bulkMode && <DraftIndicator visible={draftSaved} />}
 
               {hasText || editingMsg ? (
                 <TouchableOpacity style={[s.sendBtn, s.sendBtnActive]} onPress={send} disabled={sending}>
@@ -829,6 +986,15 @@ export default function ChatScreen({ route, navigation }) {
                 </View>
               )}
             </View>
+          )}
+
+          {bulkMode && (
+            <BulkActionBar
+              count={selectedIds.size}
+              onDelete={bulkDelete}
+              onForward={bulkForward}
+              onCancel={exitBulk}
+            />
           )}
 
           {/* ─── Context Menu Modal ──────────────────────── */}
@@ -1045,6 +1211,7 @@ const s = StyleSheet.create({
   bubbleWrapMine: { alignSelf: "flex-end" },
   bubbleWrapTheirs: { alignSelf: "flex-start" },
   bubblePending: { opacity: 0.6 },
+  bubbleSelected: { backgroundColor: COLORS.primary + "22", borderRadius: 16, padding: 2 },
 
   replyPreview: { backgroundColor: "#1e1e30", borderRadius: 14, paddingHorizontal: 12, paddingVertical: 8, marginBottom: 3, borderLeftWidth: 3, borderLeftColor: COLORS.primary },
   replyPreviewMine: { borderLeftColor: COLORS.accent },

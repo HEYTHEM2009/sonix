@@ -3,11 +3,13 @@ import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, RefreshContr
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
+import { useRealtimeContext } from "../context/RealtimeContext";
+import { blockUser } from "../utils/security";
 import client, { resolveUrl } from "../api/client";
 import { COLORS, SIZES } from "../components/Theme";
 import Screen3D from "../components/3D/Screen3D";
 
-const ConversationItem = memo(({ item, onPress, onLongPress, onDelete, onMute, onPin, t, currentUser, onAvatarPress }) => {
+const ConversationItem = memo(({ item, onPress, onLongPress, onDelete, onMute, onPin, onBlock, t, currentUser, onAvatarPress }) => {
   const translateX = useRef(new Animated.Value(0)).current;
   const lastX = useRef(0);
 
@@ -34,6 +36,9 @@ const ConversationItem = memo(({ item, onPress, onLongPress, onDelete, onMute, o
         </TouchableOpacity>
         <TouchableOpacity style={[s.swipeAction, { backgroundColor: COLORS.danger }]} onPress={() => { resetSwipe(); onDelete(item.user.id, item.user.username); }}>
           <Text style={s.swipeText}>🗑️</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[s.swipeAction, { backgroundColor: "#8E44EC" }]} onPress={() => { resetSwipe(); onBlock && onBlock(item.user.id, item.user.username); }}>
+          <Text style={s.swipeText}>🚫</Text>
         </TouchableOpacity>
       </View>
       <Animated.View style={[s.row, { transform: [{ translateX }] }]}>
@@ -102,6 +107,8 @@ export default function MessagesScreen({ navigation }) {
   const [search, setSearch] = useState("");
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
+  const { realtime } = useRealtimeContext();
+  const [unread, setUnread] = useState(0);
 
   const load = useCallback(async () => {
     try { const res = await client.get("/messages/conversations"); setConversations(res.data || []); } catch (e) { console.warn("Conversations error", e?.response?.status); }
@@ -115,6 +122,54 @@ export default function MessagesScreen({ navigation }) {
   }, [navigation, load]);
 
   const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false); };
+
+  const fetchUnread = useCallback(async () => {
+    try { const res = await client.get("/messages/unread"); setUnread(res.data?.unread || 0); } catch (e) {}
+  }, []);
+
+  useEffect(() => { fetchUnread(); }, [fetchUnread]);
+
+  /* ─── Realtime: new incoming messages bump conversations ─── */
+  useEffect(() => {
+    let mounted = true;
+    if (!user?.id) return undefined;
+    const myChannel = `messages.${user.id}`;
+    const onSent = (event) => {
+      if (!mounted) return;
+      const partnerId = event.sender_id === parseInt(user.id, 10)
+        ? event.receiver_id
+        : event.sender_id;
+      if (partnerId == null) return;
+      setConversations((prev) => {
+        const idx = prev.findIndex((c) => c.user && c.user.id === partnerId);
+        if (idx < 0) return prev;
+        const updated = prev.slice();
+        const conv = { ...updated[idx] };
+        conv.last_message = {
+          id: event.id,
+          content: event.content,
+          type: event.type,
+          sender_id: event.sender_id,
+          created_at: event.created_at,
+          is_mine: event.sender_id === parseInt(user.id, 10),
+        };
+        if (event.sender_id !== parseInt(user.id, 10)) conv.unread_count = (conv.unread_count || 0) + 1;
+        conv.is_pinned = conv.is_pinned || false;
+        conv.is_muted = conv.is_muted || false;
+        updated.splice(idx, 1);
+        updated.unshift(conv);
+        return updated;
+      });
+      if (event.sender_id !== parseInt(user.id, 10)) fetchUnread();
+    };
+    (async () => {
+      try {
+        await realtime.init();
+        if (mounted) realtime.listen(myChannel, "message.sent", onSent);
+      } catch (e) {}
+    })();
+    return () => { mounted = false; };
+  }, [user?.id, realtime, fetchUnread]);
 
   const deleteConversation = (userId, username) => {
     Alert.alert(t("deleteConversation"), t("deleteConvConfirm").replace("{username}", username), [
@@ -131,6 +186,18 @@ export default function MessagesScreen({ navigation }) {
 
   const togglePin = async (userId) => {
     try { await client.post(`/messages/pin/${userId}`); load(); } catch (e) {}
+  };
+
+  const blockConversation = async (userId, username) => {
+    Alert.alert(t("blockUser"), t("blockConfirm").replace("{username}", username), [
+      { text: t("cancel"), style: "cancel" },
+      { text: t("block"), style: "destructive", onPress: async () => {
+        const res = await blockUser(userId);
+        if (!res || res.error) return;
+        setConversations((prev) => prev.filter((c) => c.user?.id !== userId));
+        setUnread(0);
+      }},
+    ]);
   };
 
   const groupFiltered = search
@@ -224,6 +291,7 @@ export default function MessagesScreen({ navigation }) {
                 Alert.alert(item.user.username, null, [
                   { text: item.is_pinned ? t("unpin") : t("pin"), onPress: () => togglePin(item.user.id) },
                   { text: item.is_muted ? t("unmute") : t("mute"), onPress: () => toggleMute(item.user.id) },
+                  { text: t("blockUser"), style: "destructive", onPress: () => blockConversation(item.user.id, item.user.username) },
                   { text: t("delete"), style: "destructive", onPress: () => deleteConversation(item.user.id, item.user.username) },
                   { text: t("cancel"), style: "cancel" },
                 ]);
@@ -231,6 +299,7 @@ export default function MessagesScreen({ navigation }) {
               onDelete={deleteConversation}
               onMute={toggleMute}
               onPin={togglePin}
+              onBlock={blockConversation}
               t={t}
               currentUser={user}
             />
@@ -259,7 +328,7 @@ const s = StyleSheet.create({
   memberCount: { fontSize: SIZES.xs, color: COLORS.muted },
   rowWrap: { overflow: "hidden" },
   swipeActions: { position: "absolute", right: 0, top: 0, bottom: 0, flexDirection: "row", alignItems: "center" },
-  swipeAction: { width: 40, height: 70, alignItems: "center", justifyContent: "center", marginLeft: 2 },
+  swipeAction: { width: 32, height: 70, alignItems: "center", justifyContent: "center", marginLeft: 2 },
   swipeText: { fontSize: 18 },
   row: { backgroundColor: COLORS.bg },
   rowInner: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 12, gap: 12 },
