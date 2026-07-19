@@ -244,7 +244,7 @@ const MessageBubble = memo(({
         </Text>
         {isMine && !item.pending && (
           <Text style={[s.readIcon, item.is_read ? s.readIconBlue : null]}>
-            {item.is_read ? "✓✓" : item.delivered ? "✓" : "✓"}
+            {item.is_read ? "✓✓" : "✓"}
           </Text>
         )}
         {item.pending && <ActivityIndicator size={8} color={COLORS.muted} style={{ marginLeft: 4 }} />}

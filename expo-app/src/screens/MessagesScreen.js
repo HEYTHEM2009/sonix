@@ -43,7 +43,7 @@ const ConversationItem = memo(({ item, onPress, onLongPress, onDelete, onMute, o
       </View>
       <Animated.View style={[s.row, { transform: [{ translateX }] }]}>
         <View style={s.rowInner}>
-          <TouchableOpacity onPress={() => onAvatarPress?.(item.user)} activeOpacity={0.7}>
+          <TouchableOpacity onPress={() => { if (onAvatarPress) onAvatarPress(item.user); }} activeOpacity={0.7}>
             {item.user.avatar ? (
               <Image source={{ uri: `${resolveUrl(item.user.avatar)}${item.user.id === currentUser?.id ? "?t=" + Date.now() : ""}` }} style={s.avatarImg} />
             ) : (
@@ -117,7 +117,7 @@ export default function MessagesScreen({ navigation }) {
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => {
-    const unsub = navigation?.addListener?.("focus", () => load());
+    const unsub = navigation.addListener("focus", () => load());
     return unsub;
   }, [navigation, load]);
 
@@ -168,7 +168,10 @@ export default function MessagesScreen({ navigation }) {
         if (mounted) realtime.listen(myChannel, "message.sent", onSent);
       } catch (e) {}
     })();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+      try { realtime.leave(myChannel); } catch (e) {}
+    };
   }, [user?.id, realtime, fetchUnread]);
 
   const deleteConversation = (userId, username) => {
