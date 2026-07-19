@@ -33,7 +33,7 @@ class RealtimeManager {
     this.manualDisconnect = false;
     this.netInfoUnsub = null;
     this.appStateUnsub = null;
-    this.subscriptions = new Set();
+    this.subscriptions = new Map();
     this.initialized = false;
   }
 
@@ -45,17 +45,6 @@ class RealtimeManager {
         cb(status);
       } catch (e) {
         // Ignore listener errors to avoid breaking the state machine.
-      }
-    });
-  }
-
-  _emit(status) {
-    this.status = status;
-    this.subscribers.forEach((cb) => {
-      try {
-        cb(status);
-      } catch (e) {
-        // Ignore listener errors.
       }
     });
   }
@@ -77,30 +66,30 @@ class RealtimeManager {
   _handleConnectionEvent(evt) {
     switch (evt) {
       case "connecting":
-        this._emit(STATUS.CONNECTING);
+        this._setStatus(STATUS.CONNECTING);
         break;
       case "connected":
         this.reconnectAttempts = 0;
-        this._emit(STATUS.CONNECTED);
+        this._setStatus(STATUS.CONNECTED);
         break;
       case "unavailable":
-        this._emit(STATUS.RECONNECTING);
+        this._setStatus(STATUS.RECONNECTING);
         this._scheduleReconnect();
         break;
       case "failed":
-        this._emit(STATUS.ERROR);
+        this._setStatus(STATUS.ERROR);
         this._scheduleReconnect();
         break;
       case "disconnected":
         if (this.manualDisconnect) {
-          this._emit(STATUS.DISCONNECTED);
+          this._setStatus(STATUS.DISCONNECTED);
         } else {
-          this._emit(STATUS.RECONNECTING);
+          this._setStatus(STATUS.RECONNECTING);
           this._scheduleReconnect();
         }
         break;
       case "error":
-        this._emit(STATUS.ERROR);
+        this._setStatus(STATUS.ERROR);
         this._scheduleReconnect();
         break;
       default:
@@ -211,9 +200,12 @@ class RealtimeManager {
 
   subscribePresence(channelName, userId, callbacks = {}) {
     if (!this.echo) return null;
+    if (this.subscriptions.has(channelName)) {
+      return this.subscriptions.get(channelName);
+    }
     try {
       const channel = this.echo.join(channelName);
-      this.subscriptions.add(channelName);
+      this.subscriptions.set(channelName, channel);
       if (callbacks.onHere) channel.here((users) => callbacks.onHere(users));
       if (callbacks.onJoining) channel.joining((user) => callbacks.onJoining(user));
       if (callbacks.onLeaving) channel.leaving((user) => callbacks.onLeaving(user));
@@ -225,10 +217,13 @@ class RealtimeManager {
 
   listen(channelName, event, cb) {
     if (!this.echo) return null;
+    if (this.subscriptions.has(channelName)) {
+      return this.subscriptions.get(channelName);
+    }
     try {
       const channel = this.echo.private(channelName);
       channel.listen(event, cb);
-      this.subscriptions.add(channelName);
+      this.subscriptions.set(channelName, channel);
       return channel;
     } catch (e) {
       return null;
@@ -269,7 +264,7 @@ class RealtimeManager {
     }
     if (this.echo) {
       try {
-        Array.from(this.subscriptions).forEach((ch) => {
+        Array.from(this.subscriptions.keys()).forEach((ch) => {
           try {
             this.echo.leave(ch);
           } catch (e) {
@@ -289,20 +284,10 @@ class RealtimeManager {
 
   reconnect() {
     if (this.manualDisconnect) return;
-    if (this.reconnectTimer) {
-      clearTimeout(this.reconnectTimer);
-      this.reconnectTimer = null;
-    }
-    this.disconnect();
     this.manualDisconnect = false;
-    this._scheduleReconnect();
-    // Kick an immediate attempt in addition to the scheduled one.
-    this.reconnectAttempts = Math.max(1, this.reconnectAttempts);
-    this.init().then((echo) => {
-      if (!echo) {
-        this._scheduleReconnect();
-      }
-    });
+    this.reconnectAttempts = 0;
+    this.disconnect();
+    this.init();
   }
 }
 
