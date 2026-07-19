@@ -8,7 +8,7 @@ class Message extends Model
 {
     protected $fillable = [
         'content', 'sender_id', 'receiver_id', 'is_read', 'delivered', 'delivered_at',
-        'type', 'image', 'voice', 'reply_to', 'is_deleted', 'read_at',
+        'type', 'image', 'voice', 'duration', 'reply_to', 'is_deleted', 'read_at',
         'is_edited', 'original_content', 'is_disappearing', 'disappears_at', 'deleted_for',
         'is_starred', 'is_saved', 'is_pinned',
     ];

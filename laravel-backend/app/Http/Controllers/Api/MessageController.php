@@ -8,7 +8,6 @@ use App\Helpers\StorageHelper;
 use App\Models\Message;
 use App\Models\MessageReaction;
 use App\Models\ConversationSetting;
-use App\Models\Notification;
 use App\Models\User;
 use App\Events\MessageSent;
 use App\Events\TypingIndicator;
@@ -42,6 +41,7 @@ class MessageController extends Controller
             'type' => 'text',
             'is_read' => false,
             'reply_to' => $request->input('reply_to'),
+            'duration' => $request->input('duration'),
         ];
 
         if ($request->hasFile('image')) {
