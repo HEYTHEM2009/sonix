@@ -7,17 +7,19 @@ use Illuminate\Database\Eloquent\Model;
 class Message extends Model
 {
     protected $fillable = [
-        'content', 'sender_id', 'receiver_id', 'is_read',
+        'content', 'sender_id', 'receiver_id', 'is_read', 'delivered', 'delivered_at',
         'type', 'image', 'voice', 'reply_to', 'is_deleted', 'read_at',
         'is_edited', 'original_content', 'is_disappearing', 'disappears_at', 'deleted_for',
     ];
 
     protected $casts = [
         'is_read' => 'boolean',
+        'delivered' => 'boolean',
         'is_deleted' => 'boolean',
         'is_edited' => 'boolean',
         'is_disappearing' => 'boolean',
         'read_at' => 'datetime',
+        'delivered_at' => 'datetime',
         'disappears_at' => 'datetime',
     ];
 
