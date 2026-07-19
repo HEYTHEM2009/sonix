@@ -299,9 +299,6 @@ export default function ChatScreen({ route, navigation }) {
   const [forwardMsg, setForwardMsg] = useState(null);
   const [conversations, setConversations] = useState([]);
   const [showInfo, setShowInfo] = useState(null);
-  const [isRecording, setIsRecording] = useState(false);
-  const [recordTime, setRecordTime] = useState(0);
-  const [recordCancel, setRecordCancel] = useState(false);
   const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
   const [reactAnim, setReactAnim] = useState(null);
   const [viewImage, setViewImage] = useState(null);
@@ -314,9 +311,6 @@ export default function ChatScreen({ route, navigation }) {
 
   const flatListRef = useRef(null);
   const typingTimerRef = useRef(null);
-  const recordTimerRef = useRef(null);
-  const recordTimeRef = useRef(0);
-  const recordingRef = useRef(null);
 
   /* ─── Load messages ─────────────────────────────────── */
   const load = useCallback(async (cursor = null) => {
@@ -470,57 +464,9 @@ export default function ChatScreen({ route, navigation }) {
     } catch (_) { Alert.alert(t("error"), t("failedToSendImage")); }
   };
 
-  /* ─── Recording ─────────────────────────────────────── */
-  const startRecording = async () => {
-    if (isExpoGo()) { Alert.alert(t("error"), t("voiceMessagesRequireDevBuild")); return; }
-    try {
-      const { AudioModule, setAudioModeAsync, RecordingPresets, requestRecordingPermissionsAsync } = require("expo-audio");
-      const { status } = await requestRecordingPermissionsAsync();
-      if (status !== "granted") { Alert.alert(t("error"), t("failedToRecord")); return; }
-      await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
-      const recorder = new AudioModule.AudioRecorder(RecordingPresets.HIGH_QUALITY);
-      await recorder.prepareToRecordAsync(RecordingPresets.HIGH_QUALITY);
-      recorder.record();
-      recordingRef.current = recorder;
-      setIsRecording(true); recordTimeRef.current = 0; setRecordTime(0); setRecordCancel(false);
-      recordTimerRef.current = setInterval(() => { setRecordTime((p) => { recordTimeRef.current = p + 1; return p + 1; }); }, 1000);
-    } catch (e) { console.warn("Record error", e); }
-  };
-
-  const stopRecording = async (cancel = false) => {
-    if (!recordingRef.current) return;
-    clearInterval(recordTimerRef.current);
-    try {
-      await recordingRef.current.stop();
-      try { const audio = require("expo-audio"); await audio.setAudioModeAsync({ allowsRecording: false }); } catch (_) {}
-      const time = recordTimeRef.current;
-      const uri = recordingRef.current.uri;
-      if (!cancel && time > 0 && uri) {
-        const formData = new FormData();
-        formData.append("receiver_id", String(userId));
-        formData.append("duration", String(time));
-        const filename = `voice_${Date.now()}.m4a`;
-        formData.append("voice", { uri, name: filename, type: "audio/mp4" });
-        setSending(true);
-        setUploading(true); setUploadProgress(0);
-        try {
-          const res = await uploadWithProgress("/messages", formData, setUploadProgress);
-          if (res.data?.id) setMessages((prev) => [...prev, { ...res.data, key: String(res.data.id) }]);
-          setTimeout(() => load(), 1500);
-        } catch (e) { Alert.alert(t("error"), e?.response?.data?.message || t("failedToSend")); }
-        setUploading(false); setUploadProgress(0);
-        setSending(false);
-      }
-    } catch (e) { console.warn("Stop recording error", e); }
-    recordingRef.current = null; setIsRecording(false); recordTimeRef.current = 0; setRecordTime(0);
-  };
-
-  const cancelRecording = () => { setRecordCancel(true); stopRecording(true); };
-
   /* ─── VoiceRecorder integration ────────────────────── */
   const handleSendVoice = async (uri, duration) => {
     setShowVoiceRecorder(false);
-    setIsRecording(false);
     if (!uri || duration <= 0) return;
     const formData = new FormData();
     formData.append("receiver_id", String(userId));
@@ -836,27 +782,13 @@ export default function ChatScreen({ route, navigation }) {
             <View style={[s.recordingBarOuter, { paddingBottom: Math.max(insets.bottom + 12, 20) }]}>
               <VoiceRecorder
                 onSend={handleSendVoice}
-                onCancel={() => { setShowVoiceRecorder(false); setIsRecording(false); }}
-                onRecordingStateChange={() => setIsRecording(true)}
+                onCancel={() => setShowVoiceRecorder(false)}
               />
-            </View>
-          ) : isRecording && (
-            <View style={[s.recordingBarOuter, { paddingBottom: Math.max(insets.bottom + 12, 20) }]}>
-              <View style={s.recordingBar}>
-                <TouchableOpacity onPress={cancelRecording} style={s.recDeleteBtn}>
-                  <Text style={s.recDeleteIcon}>✕</Text>
-                </TouchableOpacity>
-                <AudioWaveform playing={isRecording} width={120} height={24} color="#fff" />
-                <Text style={s.recTimer}>{formatMs(recordTime * 1000)}</Text>
-                <TouchableOpacity onPress={() => stopRecording(false)} style={s.recSendBtn}>
-                  <Text style={s.recSendIcon}>⬆</Text>
-                </TouchableOpacity>
-              </View>
             </View>
           )}
 
           {/* ─── Input Bar ───────────────────────────────── */}
-          {!isRecording && !showVoiceRecorder && (
+          {!showVoiceRecorder && (
             <View style={[s.inputRow, { paddingBottom: Math.max(insets.bottom + 6, 12) }]}>
               <TouchableOpacity style={s.inputActionBtn} onPress={() => {
                 Alert.alert("", t("attach"), [
