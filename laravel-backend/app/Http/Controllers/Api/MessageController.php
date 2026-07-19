@@ -32,6 +32,9 @@ class MessageController extends Controller
         if ($request->hasFile('voice')) {
             $rules['voice'] = 'mimes:mp3,wav,m4a,mp4,ogg,webm|max:10240';
         }
+        if ($request->hasFile('document')) {
+            $rules['document'] = 'file|max:51200';
+        }
         $request->validate($rules);
 
         $data = [
@@ -69,6 +72,19 @@ class MessageController extends Controller
             } catch (\Exception $e) {
                 \Log::error('Voice upload failed', ['error' => $e->getMessage()]);
                 return response()->json(['message' => 'Failed to upload voice'], 422);
+            }
+        } elseif ($request->hasFile('document')) {
+            try {
+                $path = StorageHelper::upload($request->file('document'), 'uploads');
+                if ($path) {
+                    $data['document'] = StorageHelper::getUrl($path);
+                    $data['type'] = 'document';
+                } else {
+                    return response()->json(['message' => 'Failed to upload document'], 422);
+                }
+            } catch (\Exception $e) {
+                \Log::error('Document upload failed', ['error' => $e->getMessage()]);
+                return response()->json(['message' => 'Failed to upload document'], 422);
             }
         } elseif ($request->has('reaction')) {
             $data['type'] = 'reaction';

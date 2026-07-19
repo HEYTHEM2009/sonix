@@ -45,6 +45,7 @@ class MessageService
         $message->type = $data['type'] ?? 'text';
         $message->image = $data['image'] ?? null;
         $message->voice = $data['voice'] ?? null;
+        $message->document = $data['document'] ?? null;
         $message->reply_to = $data['reply_to'] ?? null;
         $message->duration = $data['duration'] ?? null;
         $message->is_read = false;
