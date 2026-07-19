@@ -216,6 +216,11 @@ class MessageService
             ->where('is_deleted', false)
             ->firstOrFail();
 
+        // Flood protection also applies to forwards.
+        if (! $this->flood->allow("fwd:{$userId}", 20, 60)) {
+            throw new TooManyRequestsHttpException(60, 'Too many forwards sent. Please slow down.');
+        }
+
         // Cannot forward to a user who blocks the forwarder, or whom the forwarder has blocked.
         if ($this->isBlocked($userId, $toUserId)) {
             throw new \InvalidArgumentException('You cannot forward to this user.');
@@ -249,10 +254,13 @@ class MessageService
 
     public function search(int $userId, string $query, int $perPage = 30)
     {
+        // Escape LIKE wildcards so user input cannot alter the pattern.
+        $escaped = addcslashes($query, '%_\\');
+
         return Message::where(function ($q) use ($userId) {
                 $q->where('sender_id', $userId)->orWhere('receiver_id', $userId);
             })
-            ->where('content', 'LIKE', '%' . $query . '%')
+            ->where('content', 'LIKE', '%' . $escaped . '%')
             ->where('is_deleted', false)
             ->whereJsonDoesntContain('deleted_for', $userId)
             ->orderBy('created_at', 'desc')
@@ -289,32 +297,35 @@ class MessageService
 
     public function toggleStar(int $messageId, int $userId): bool
     {
-        $message = $this->participantMessage($messageId, $userId);
-
-        $message->is_starred = ! $message->is_starred;
-        $message->saveQuietly();
-
-        return (bool) $message->is_starred;
+        return $this->toggleFlag($messageId, $userId, 'is_starred');
     }
 
     public function toggleSave(int $messageId, int $userId): bool
     {
-        $message = $this->participantMessage($messageId, $userId);
-
-        $message->is_saved = ! $message->is_saved;
-        $message->saveQuietly();
-
-        return (bool) $message->is_saved;
+        return $this->toggleFlag($messageId, $userId, 'is_saved');
     }
 
     public function togglePin(int $messageId, int $userId): bool
     {
-        $message = $this->participantMessage($messageId, $userId);
+        return $this->toggleFlag($messageId, $userId, 'is_pinned');
+    }
 
-        $message->is_pinned = ! $message->is_pinned;
-        $message->saveQuietly();
+    private function toggleFlag(int $messageId, int $userId, string $column): bool
+    {
+        // Lock the row to avoid a lost update race on concurrent toggles.
+        return DB::transaction(function () use ($messageId, $userId, $column) {
+            $message = Message::where('id', $messageId)
+                ->where(function ($q) use ($userId) {
+                    $q->where('sender_id', $userId)->orWhere('receiver_id', $userId);
+                })
+                ->lockForUpdate()
+                ->firstOrFail();
 
-        return (bool) $message->is_pinned;
+            $message->{$column} = ! $message->{$column};
+            $message->saveQuietly();
+
+            return (bool) $message->{$column};
+        });
     }
 
     public function block(int $userId, int $blockedId): void
@@ -340,15 +351,6 @@ class MessageService
             || BlockedUser::where('user_id', $a)
                 ->where('blocked_id', $b)
                 ->exists();
-    }
-
-    private function participantMessage(int $messageId, int $userId): Message
-    {
-        return Message::where('id', $messageId)
-            ->where(function ($q) use ($userId) {
-                $q->where('sender_id', $userId)->orWhere('receiver_id', $userId);
-            })
-            ->firstOrFail();
     }
 
     private function audit(int $messageId, int $actorId, string $action, array $meta): void
