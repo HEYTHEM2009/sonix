@@ -16,6 +16,7 @@ import { COLORS, SIZES } from "../components/Theme";
 import Screen3D from "../components/3D/Screen3D";
 import AudioWaveform from "../components/AudioWaveform";
 import VideoBubble from "../components/chat/VideoBubble";
+import VoiceRecorder from "../components/chat/VoiceRecorder";
 import MediaProgress from "../components/chat/MediaProgress";
 import { pickDocument, isDocument, formatBytes } from "../utils/media";
 
@@ -301,6 +302,7 @@ export default function ChatScreen({ route, navigation }) {
   const [isRecording, setIsRecording] = useState(false);
   const [recordTime, setRecordTime] = useState(0);
   const [recordCancel, setRecordCancel] = useState(false);
+  const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
   const [reactAnim, setReactAnim] = useState(null);
   const [viewImage, setViewImage] = useState(null);
   const [contextMenu, setContextMenu] = useState(null);
@@ -514,6 +516,32 @@ export default function ChatScreen({ route, navigation }) {
   };
 
   const cancelRecording = () => { setRecordCancel(true); stopRecording(true); };
+
+  /* ─── VoiceRecorder integration ────────────────────── */
+  const handleSendVoice = async (uri, duration) => {
+    setShowVoiceRecorder(false);
+    setIsRecording(false);
+    if (!uri || duration <= 0) return;
+    const formData = new FormData();
+    formData.append("receiver_id", String(userId));
+    formData.append("duration", String(duration));
+    const filename = `voice_${Date.now()}.m4a`;
+    formData.append("voice", { uri, name: filename, type: "audio/mp4" });
+    setSending(true);
+    setUploading(true); setUploadProgress(0);
+    try {
+      const res = await uploadWithProgress("/messages", formData, setUploadProgress);
+      if (res.data?.id) setMessages((prev) => [...prev, { ...res.data, key: String(res.data.id) }]);
+      setTimeout(() => load(), 1500);
+    } catch (e) { Alert.alert(t("error"), e?.response?.data?.message || t("failedToSend")); }
+    setUploading(false); setUploadProgress(0);
+    setSending(false);
+  };
+
+  const openVoiceRecorder = () => {
+    if (isExpoGo()) { Alert.alert(t("error"), t("voiceMessagesRequireDevBuild")); return; }
+    setShowVoiceRecorder(true);
+  };
 
   /* ─── Send document / zip / pdf ─────────────────────── */
   // Backend MessageController@send accepts a `document` multipart field
@@ -804,7 +832,15 @@ export default function ChatScreen({ route, navigation }) {
           )}
 
           {/* ─── Recording UI ────────────────────────────── */}
-          {isRecording && (
+          {showVoiceRecorder ? (
+            <View style={[s.recordingBarOuter, { paddingBottom: Math.max(insets.bottom + 12, 20) }]}>
+              <VoiceRecorder
+                onSend={handleSendVoice}
+                onCancel={() => { setShowVoiceRecorder(false); setIsRecording(false); }}
+                onRecordingStateChange={() => setIsRecording(true)}
+              />
+            </View>
+          ) : isRecording && (
             <View style={[s.recordingBarOuter, { paddingBottom: Math.max(insets.bottom + 12, 20) }]}>
               <View style={s.recordingBar}>
                 <TouchableOpacity onPress={cancelRecording} style={s.recDeleteBtn}>
@@ -820,7 +856,7 @@ export default function ChatScreen({ route, navigation }) {
           )}
 
           {/* ─── Input Bar ───────────────────────────────── */}
-          {!isRecording && (
+          {!isRecording && !showVoiceRecorder && (
             <View style={[s.inputRow, { paddingBottom: Math.max(insets.bottom + 6, 12) }]}>
               <TouchableOpacity style={s.inputActionBtn} onPress={() => {
                 Alert.alert("", t("attach"), [
@@ -855,7 +891,7 @@ export default function ChatScreen({ route, navigation }) {
                   <TouchableOpacity style={s.inputActionBtn} onPress={() => setShowEmojiPicker((p) => !p)}>
                     <Text style={s.inputActionIcon}>😊</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={s.inputActionBtn} onPressIn={startRecording}>
+                  <TouchableOpacity style={s.inputActionBtn} onPressIn={openVoiceRecorder}>
                     <Text style={s.inputActionIcon}>🎤</Text>
                   </TouchableOpacity>
                 </View>

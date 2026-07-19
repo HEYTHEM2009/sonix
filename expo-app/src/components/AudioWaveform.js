@@ -1,9 +1,38 @@
 import React, { useEffect, useRef, memo } from "react";
 import { View, StyleSheet, Animated } from "react-native";
 
-const AudioWaveform = memo(({ playing, width = 120, height = 30, color = "#fff" }) => {
+const AudioWaveform = memo(({ playing, live = false, amplitudes = null, width = 120, height = 30, color = "#fff" }) => {
   const animatedValues = useRef(Array.from({ length: 28 }, () => new Animated.Value(0.3))).current;
   const loopRef = useRef(null);
+
+  if (live) {
+    const values = Array.isArray(amplitudes) && amplitudes.length > 0
+      ? amplitudes
+      : Array.from({ length: 28 }, () => 0);
+    const count = values.length;
+    const barWidth = width / Math.max(count, 1);
+    return (
+      <View style={[styles.container, { width, height }]}>
+        {values.map((v, i) => {
+          const a = Math.min(Math.max(typeof v === "number" ? v : 0, 0), 1);
+          return (
+            <View
+              key={i}
+              style={[
+                styles.bar,
+                {
+                  width: Math.max(barWidth - 2, 2),
+                  backgroundColor: color,
+                  height: Math.max(a * height, 2),
+                  opacity: 0.85,
+                },
+              ]}
+            />
+          );
+        })}
+      </View>
+    );
+  }
 
   useEffect(() => {
     if (playing) {
