@@ -104,7 +104,7 @@ class AuthController extends Controller
     {
         $request->validate(['email' => 'required|email|exists:users,email']);
 
-        $token = Str::random(6);
+        $token = Str::random(8);
         $hashed = Hash::make($token);
 
         DB::table('password_reset_tokens')->updateOrInsert(

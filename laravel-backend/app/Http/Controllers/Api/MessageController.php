@@ -211,7 +211,7 @@ class MessageController extends Controller
             ->where('is_deleted', false)
             ->where(function ($q) use ($currentUserId) {
                 $q->whereNull('deleted_for')
-                  ->orWhereNot('deleted_for', 'LIKE', '%' . $currentUserId . '%');
+                  ->orWhereJsonDoesntContain('deleted_for', $currentUserId);
             })
             ->where(function ($q) {
                 $q->whereNull('disappears_at')->orWhere('disappears_at', '>', now());

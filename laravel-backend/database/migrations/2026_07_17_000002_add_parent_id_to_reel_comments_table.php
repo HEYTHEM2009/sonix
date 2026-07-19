@@ -10,6 +10,7 @@ return new class extends Migration
     {
         Schema::table('reel_comments', function (Blueprint $table) {
             $table->foreignId('parent_id')->nullable()->after('reel_id')->constrained('reel_comments')->nullOnDelete();
+            $table->index('parent_id');
         });
     }
 
