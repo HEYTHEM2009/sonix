@@ -1,0 +1,16 @@
+{
+  "_comment": "PLACEHOLDER — DO NOT USE IN PRODUCTION. Replace with your own Firebase project's google-services.json for Android FCM push notifications. Download it from the Firebase console (Project Settings > Your apps > Android app) and save as google-services.json in this expo-app/ directory. Required for EAS Android production builds; the app builds and runs without it but push notifications will be disabled.",
+  "project_info": {
+    "project_number": "REPLACE_WITH_YOUR_PROJECT_NUMBER",
+    "project_id": "REPLACE_WITH_YOUR_PROJECT_ID",
+    "storage_bucket": "REPLACE_WITH_YOUR_BUCKET"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "REPLACE",
+        "android_client_info": { "package_name": "com.sonix.app" }
+      }
+    }
+  ]
+}
