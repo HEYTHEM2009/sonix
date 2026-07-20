@@ -8,8 +8,8 @@ receives via `git clone` / archive.
 ## Result: PASS — package is buyer-ready
 
 ### Personal information
-- [x] No `HEYTHEM` / `heythem` / `HEYTHEM2009` in any tracked file.
-- [x] Git remote removed (`origin` → github.com/HEYTHEM2009/sonix.git gone).
+- [x] No developer username / personal handle in any tracked file.
+- [x] Git remote removed (the original author's GitHub remote is gone).
 - [x] Expo `app.json` `owner` → `YOUR_EXPO_USERNAME`, `eas.projectId` → `YOUR_EAS_PROJECT_ID`.
 - [x] No real LAN IPs (`192.168.1.x`) in tracked files. Only generic examples
       (`192.168.x.x`, `192.168.1.20`) remain, which are documentation placeholders.
