@@ -20,24 +20,29 @@ class User extends Authenticatable
         'bio',
         'avatar',
         'is_private',
+        'activity_status',
         'typing_at',
         'typing_to_user_id',
         'push_token',
         'online_at',
         'notification_prefs',
-        'role',
         'two_factor_enabled',
         'two_factor_secret',
+        'is_pro',
+        'pro_until',
     ];
 
     protected function casts(): array
     {
         return [
             'is_private' => 'boolean',
+            'activity_status' => 'boolean',
             'email_verified_at' => 'datetime',
             'online_at' => 'datetime',
             'password' => 'hashed',
             'notification_prefs' => 'object',
+            'is_pro' => 'boolean',
+            'pro_until' => 'datetime',
         ];
     }
 
@@ -49,6 +54,11 @@ class User extends Authenticatable
     public function posts()
     {
         return $this->hasMany(Post::class);
+    }
+
+    public function reels()
+    {
+        return $this->hasMany(Reel::class);
     }
 
     public function likes()

@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use App\Models\PinnedPost;
+use App\Models\Post;
+use App\Models\PostView;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
 
@@ -12,7 +14,7 @@ class PostStatsController extends Controller
     public function show($postId)
     {
         try {
-            $post = \App\Models\Post::findOrFail($postId);
+            $post = Post::findOrFail($postId);
 
             $hasViewsCount = $this->columnExists('posts', 'views_count');
             $stats = [
@@ -36,14 +38,14 @@ class PostStatsController extends Controller
     public function recordView($postId)
     {
         try {
-            $post = \App\Models\Post::findOrFail($postId);
+            $post = Post::findOrFail($postId);
 
             if ($this->columnExists('posts', 'views_count')) {
                 $post->increment('views_count');
             }
 
             try {
-                \App\Models\PostView::create([
+                PostView::create([
                     'post_id' => $postId,
                     'user_id' => Auth::id(),
                     'ip_address' => request()->ip(),
@@ -61,11 +63,11 @@ class PostStatsController extends Controller
     public function pin($postId)
     {
         try {
-            $post = \App\Models\Post::where('user_id', Auth::id())->findOrFail($postId);
+            $post = Post::where('user_id', Auth::id())->findOrFail($postId);
 
-            \App\Models\PinnedPost::where('user_id', Auth::id())->delete();
+            PinnedPost::where('user_id', Auth::id())->delete();
 
-            \App\Models\PinnedPost::create([
+            PinnedPost::create([
                 'user_id' => Auth::id(),
                 'post_id' => $postId,
             ]);
@@ -83,10 +85,10 @@ class PostStatsController extends Controller
     public function unpin($postId)
     {
         try {
-            \App\Models\PinnedPost::where('user_id', Auth::id())->where('post_id', $postId)->delete();
+            PinnedPost::where('user_id', Auth::id())->where('post_id', $postId)->delete();
 
             if ($this->columnExists('posts', 'is_pinned')) {
-                \App\Models\Post::where('id', $postId)->update(['is_pinned' => false]);
+                Post::where('id', $postId)->update(['is_pinned' => false]);
             }
 
             return response()->json(['message' => 'Post unpinned']);

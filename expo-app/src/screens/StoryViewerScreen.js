@@ -54,6 +54,10 @@ function StoryMedia({ story, onEnd, isScreenFocused, webViewRef }) {
     }
     v.addEventListener('ended', function() { window.ReactNativeWebView.postMessage('ended'); });
     v.addEventListener('error', function(e) { window.ReactNativeWebView.postMessage('error:' + (e.target.error?.message || 'unknown')); });
+    v.load();
+    // Muted autoplay is permitted without a user gesture; trigger it explicitly
+    // because some WebViews ignore the autoplay attribute until play() is called.
+    v.play().catch(function() {});
     window.addEventListener('message', function(e) {
       var d = e.data;
       if (d === 'toggleSound') setMuted(!muted);
@@ -66,7 +70,6 @@ function StoryMedia({ story, onEnd, isScreenFocused, webViewRef }) {
       else if (d === 'unmute') setMuted(false);
       else if (d === 'mute') setMuted(true);
     });
-    v.load();
   </script>
 </body>
 </html>`;

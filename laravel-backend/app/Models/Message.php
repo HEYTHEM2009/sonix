@@ -25,6 +25,7 @@ class Message extends Model
         'is_starred' => 'boolean',
         'is_saved' => 'boolean',
         'is_pinned' => 'boolean',
+        'deleted_for' => 'array',
     ];
 
     public function sender()

@@ -1,5 +1,5 @@
-import { useRef, useEffect, useMemo } from "react";
-import { View, Animated, Dimensions, StyleSheet, TouchableOpacity } from "react-native";
+import { useRef, useEffect, useMemo, useState } from "react";
+import { View, Animated, Dimensions, StyleSheet, TouchableOpacity, AccessibilityInfo } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { COLORS } from "../Theme";
 
@@ -94,11 +94,12 @@ function Constellation({ group, delayBase }) {
 }
 
 /* ───── Golden Crown Geometry ───── */
-function GoldenCrown() {
+function GoldenCrown({ animate = true }) {
   const pulse = useRef(new Animated.Value(0)).current;
   useEffect(() => {
+    if (!animate) { pulse.setValue(0.5); return; }
     Animated.loop(Animated.sequence([Animated.timing(pulse, { toValue: 1, duration: 3000, useNativeDriver: true }), Animated.timing(pulse, { toValue: 0, duration: 3000, useNativeDriver: true })])).start();
-  }, []);
+  }, [animate]);
   const cw = W * 0.5;
   const ch = cw * 0.4;
   const cx = W / 2;
@@ -165,9 +166,12 @@ function WaveParticle() {
 }
 
 /* ───── Geometric Border Frame ───── */
-function GeometricFrame() {
+function GeometricFrame({ animate = true }) {
   const r = useRef(new Animated.Value(0)).current;
-  useEffect(() => { Animated.loop(Animated.timing(r, { toValue: 1, duration: 30000, useNativeDriver: true })).start(); }, []);
+  useEffect(() => {
+    if (!animate) { r.setValue(0); return; }
+    Animated.loop(Animated.timing(r, { toValue: 1, duration: 30000, useNativeDriver: true })).start();
+  }, [animate]);
   const inset = 12;
   const fw = W - inset * 2;
   const fh = H - inset * 2;
@@ -188,22 +192,35 @@ export default function Screen3D({ children, style, noParticles = false, noFadeI
   const slideAnim = useRef(new Animated.Value(60)).current;
   const scaleAnim = useRef(new Animated.Value(0.88)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
+  const [reducedMotion, setReducedMotion] = useState(false);
 
   useEffect(() => {
-    if (!noFadeIn) {
-      Animated.parallel([
-        Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
-        Animated.spring(slideAnim, { toValue: 0, tension: 50, friction: 11, useNativeDriver: true }),
-        Animated.spring(scaleAnim, { toValue: 1, tension: 50, friction: 11, useNativeDriver: true }),
-        Animated.spring(rotateAnim, { toValue: 0, tension: 50, friction: 11, useNativeDriver: true }),
-      ]).start();
-    } else {
+    let mounted = true;
+    AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
+      if (mounted) setReducedMotion(enabled);
+    }).catch(() => {});
+    return () => { mounted = false; };
+  }, []);
+
+  useEffect(() => {
+    if (reducedMotion || noFadeIn) {
       fadeAnim.setValue(1);
       slideAnim.setValue(0);
       scaleAnim.setValue(1);
       rotateAnim.setValue(0);
+      return;
     }
-  }, []);
+    Animated.parallel([
+      Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
+      Animated.spring(slideAnim, { toValue: 0, tension: 50, friction: 11, useNativeDriver: true }),
+      Animated.spring(scaleAnim, { toValue: 1, tension: 50, friction: 11, useNativeDriver: true }),
+      Animated.spring(rotateAnim, { toValue: 0, tension: 50, friction: 11, useNativeDriver: true }),
+    ]).start();
+  }, [reducedMotion, noFadeIn]);
+
+  // When the user prefers reduced motion, skip all looping/particle animations
+  // for performance and accessibility (battery, motion-sensitivity).
+  const animate = !reducedMotion;
 
   return (
     <View style={{ flex: 1, backgroundColor: "#0d0d1a" }}>
@@ -217,33 +234,37 @@ export default function Screen3D({ children, style, noParticles = false, noFadeI
       <View style={{ position: "absolute", width: 250, height: 250, borderRadius: 125, backgroundColor: COLORS.primaryLight, opacity: 0.015, top: H * 0.6, left: W * 0.6 }} />
 
       {/* ── Light Spears from edges ── */}
-      <LightSpear width={W * 0.5} color={COLORS.accent} top={H * 0.1} left={-W * 0.05} rotate="-15deg" delay={0} />
-      <LightSpear width={W * 0.4} color={COLORS.accentLight} top={H * 0.2} left={W * 0.8} rotate="20deg" delay={2000} />
-      <LightSpear width={W * 0.35} color={COLORS.accent} top={H * 0.5} left={-W * 0.02} rotate="-30deg" delay={4000} />
-      <LightSpear width={W * 0.3} color={COLORS.accentDark} top={H * 0.7} left={W * 0.75} rotate="25deg" delay={1000} />
+      {animate && <>
+        <LightSpear width={W * 0.5} color={COLORS.accent} top={H * 0.1} left={-W * 0.05} rotate="-15deg" delay={0} />
+        <LightSpear width={W * 0.4} color={COLORS.accentLight} top={H * 0.2} left={W * 0.8} rotate="20deg" delay={2000} />
+        <LightSpear width={W * 0.35} color={COLORS.accent} top={H * 0.5} left={-W * 0.02} rotate="-30deg" delay={4000} />
+        <LightSpear width={W * 0.3} color={COLORS.accentDark} top={H * 0.7} left={W * 0.75} rotate="25deg" delay={1000} />
+      </>}
 
       {/* ── Golden Crown at top ── */}
-      <GoldenCrown />
+      <GoldenCrown animate={animate} />
 
       {/* ── Central Mandala ── */}
-      <Mandala />
+      {animate && <Mandala />}
 
       {/* ── Constellations ── */}
-      {CONSTELLATIONS.map((g, i) => <Constellation key={i} group={g} delayBase={i * 2} />)}
+      {animate && CONSTELLATIONS.map((g, i) => <Constellation key={i} group={g} delayBase={i * 2} />)}
 
       {/* ── Sunbursts ── */}
-      <Sunburst cx={W * 0.08} cy={H * 0.2} count={10} baseSize={50} color={COLORS.accentDark} speed={0.6} delay={0} />
-      <Sunburst cx={W * 0.92} cy={H * 0.35} count={8} baseSize={40} color={COLORS.accentLight} speed={0.8} delay={1500} />
-      <Sunburst cx={W * 0.5} cy={H * 0.75} count={6} baseSize={35} color={COLORS.accentLight} speed={0.5} delay={3000} />
+      {animate && <>
+        <Sunburst cx={W * 0.08} cy={H * 0.2} count={10} baseSize={50} color={COLORS.accentDark} speed={0.6} delay={0} />
+        <Sunburst cx={W * 0.92} cy={H * 0.35} count={8} baseSize={40} color={COLORS.accentLight} speed={0.8} delay={1500} />
+        <Sunburst cx={W * 0.5} cy={H * 0.75} count={6} baseSize={35} color={COLORS.accentLight} speed={0.5} delay={3000} />
+      </>}
 
       {/* ── Geometric Frame ── */}
-      <GeometricFrame />
+      <GeometricFrame animate={animate} />
 
       {/* ── Diamond Rain ── */}
-      {!noParticles && Array.from({ length: 15 }).map((_, i) => <FallingDiamond key={i} />)}
+      {animate && !noParticles && Array.from({ length: 15 }).map((_, i) => <FallingDiamond key={i} />)}
 
       {/* ── Wave Particles ── */}
-      {!noParticles && Array.from({ length: 20 }).map((_, i) => <WaveParticle key={`w${i}`} />)}
+      {animate && !noParticles && Array.from({ length: 20 }).map((_, i) => <WaveParticle key={`w${i}`} />)}
 
       {/* ── Content ── */}
       <Animated.View style={[{ flex: 1, paddingTop: insets.top, paddingBottom: insets.bottom, opacity: noFadeIn ? 1 : fadeAnim, transform: [{ translateY: noFadeIn ? 0 : slideAnim }, { scale: noFadeIn ? 1 : scaleAnim }, { perspective: 1000 }, { rotateX: noFadeIn ? "0deg" : rotateAnim.interpolate({ inputRange: [0, 0.5], outputRange: ["4deg", "0deg"] }) }] }, style]}>

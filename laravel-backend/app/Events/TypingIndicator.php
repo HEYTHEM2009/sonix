@@ -2,8 +2,8 @@
 
 namespace App\Events;
 
-use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Broadcasting\InteractsWithSockets;
+use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
@@ -13,7 +13,9 @@ class TypingIndicator implements ShouldBroadcast
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public int $senderId;
+
     public int $receiverId;
+
     public bool $isTyping;
 
     public function __construct(int $senderId, int $receiverId, bool $isTyping)
@@ -26,7 +28,7 @@ class TypingIndicator implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel('typing.' . $this->receiverId),
+            new PrivateChannel('typing.'.$this->receiverId),
         ];
     }
 

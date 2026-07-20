@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Helpers\Sanitize;
+use App\Http\Controllers\Controller;
 use App\Models\Comment;
+use App\Models\Notification;
 use App\Models\Post;
 use Illuminate\Http\Request;
 
@@ -14,11 +15,11 @@ class CommentController extends Controller
     {
         $parentId = $request->input('parent_id') ?? $request->input('parentId');
 
-        if (!Post::where('id', $postId)->exists()) {
+        if (! Post::where('id', $postId)->exists()) {
             return response()->json(['message' => 'Post not found'], 404);
         }
 
-        if ($parentId && !Comment::where('id', $parentId)->where('post_id', $postId)->exists()) {
+        if ($parentId && ! Comment::where('id', $parentId)->where('post_id', $postId)->exists()) {
             return response()->json(['message' => 'Parent comment not found'], 404);
         }
 
@@ -37,7 +38,7 @@ class CommentController extends Controller
 
         $postUserId = Post::where('id', $postId)->value('user_id');
         if ($postUserId && $postUserId !== $request->user()->id) {
-            \App\Models\Notification::create([
+            Notification::create([
                 'user_id' => $postUserId,
                 'sender_id' => $request->user()->id,
                 'type' => 'comment',
@@ -64,8 +65,12 @@ class CommentController extends Controller
     public function destroy($id, Request $request)
     {
         $comment = Comment::find($id);
-        if (!$comment) return response()->json(['message' => 'Not found'], 404);
-        if ($comment->user_id !== $request->user()->id) return response()->json(['message' => 'Unauthorized'], 403);
+        if (! $comment) {
+            return response()->json(['message' => 'Not found'], 404);
+        }
+        if ($comment->user_id !== $request->user()->id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
 
         Comment::where('parent_id', $id)->update(['parent_id' => null]);
         $comment->delete();

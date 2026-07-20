@@ -4,18 +4,20 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Redis;
 
 class AntiScraping
 {
     /**
-     * Known bot/scraping user agents
+     * Known malicious bot/scraping user agents.
+     * Note: common HTTP clients (curl, python-requests) are intentionally NOT
+     * blocked so legitimate integrations and API consumers keep working.
      */
     protected array $blockedPatterns = [
-        '/bot/i', '/crawler/i', '/spider/i', '/scraper/i',
-        '/curl/i', '/wget/i', '/python-requests/i', '/httpclient/i',
-        '/headlesschrome/i', '/phantomjs/i', '/selenium/i',
+        '/scraper/i', '/scrapingbot/i', '/dataminr/i',
+        '/semrushbot/i', '/ahrefsbot/i', '/mj12bot/i', '/dotbot/i',
+        '/phantomjs/i', '/headlesschrome/i', '/python-requests\/0/i',
     ];
 
     /**
@@ -43,6 +45,7 @@ class AntiScraping
                     'ip' => $ip,
                     'path' => $path,
                 ]);
+
                 return response()->json(['message' => 'Access denied'], 403);
             }
         }
@@ -107,20 +110,33 @@ class AntiScraping
 
     protected function getRateLimitCategory(string $path): string
     {
-        if (str_contains($path, 'stories')) return 'stories';
-        if (str_contains($path, 'posts')) return 'posts';
-        if (str_contains($path, 'uploads') || str_contains($path, 'media')) return 'media';
-        if (str_contains($path, 'auth')) return 'auth';
+        if (str_contains($path, 'stories')) {
+            return 'stories';
+        }
+        if (str_contains($path, 'posts')) {
+            return 'posts';
+        }
+        if (str_contains($path, 'uploads') || str_contains($path, 'media')) {
+            return 'media';
+        }
+        if (str_contains($path, 'auth')) {
+            return 'auth';
+        }
+
         return 'default';
     }
 
     protected function isSuspicious(Request $request): bool
     {
         // No user agent
-        if (empty($request->userAgent())) return true;
+        if (empty($request->userAgent())) {
+            return true;
+        }
 
         // Missing Referer on POST requests
-        if ($request->isMethod('POST') && !$request->headers->has('Referer')) return true;
+        if ($request->isMethod('POST') && ! $request->headers->has('Referer')) {
+            return true;
+        }
 
         // Unusually fast sequential requests from same IP
         $ip = $request->ip();
@@ -131,7 +147,9 @@ class AntiScraping
             if ($count === 1) {
                 Redis::expire($key, 10); // 10 second window
             }
-            if ($count > 20) return true; // More than 20 requests in 10 seconds
+            if ($count > 20) {
+                return true;
+            } // More than 20 requests in 10 seconds
         } catch (\Throwable $e) {
         }
 

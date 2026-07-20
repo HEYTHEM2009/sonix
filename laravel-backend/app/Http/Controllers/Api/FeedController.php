@@ -25,9 +25,9 @@ class FeedController extends Controller
             ->with(['comments' => function ($q) {
                 $q->with('user:id,username,avatar')->latest()->limit(2);
             }])
-            ->withCount(['likes', 'likes as liked' => fn($q) => $q->where('user_id', $userId)])
+            ->withCount(['likes', 'likes as liked' => fn ($q) => $q->where('user_id', $userId)])
             ->withCount('comments as comments_count')
-            ->withExists(['bookmarks as bookmarked' => fn($q) => $q->where('user_id', $userId)])
+            ->withExists(['bookmarks as bookmarked' => fn ($q) => $q->where('user_id', $userId)])
             ->whereIn('user_id', $followingIds)
             ->latest()
             ->paginate($perPage);

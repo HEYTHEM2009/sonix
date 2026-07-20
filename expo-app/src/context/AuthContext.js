@@ -7,6 +7,7 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
+  const [onboarded, setOnboarded] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => { loadAuth(); }, []);
@@ -20,7 +21,8 @@ export function AuthProvider({ children }) {
 
   const loadAuth = async () => {
     try {
-      const [t, u] = await AsyncStorage.multiGet(["token", "user"]);
+      const [t, u, ob] = await AsyncStorage.multiGet(["token", "user", "onboarded"]);
+      if (ob[1] === "1") setOnboarded(true);
       if (t[1]) {
         try {
           setAuthToken(t[1]);
@@ -40,11 +42,27 @@ export function AuthProvider({ children }) {
 
   const login = useCallback(async (email, password) => {
     const res = await client.post("/auth/login", { email, password });
+    // If 2FA is required the backend returns { two_factor_required: true }
+    // WITHOUT a token — do not persist/corrupt the session.
+    if (res.data && res.data.two_factor_required) {
+      return res.data;
+    }
     const { token: t, user: u } = res.data;
     await AsyncStorage.multiSet([["token", t], ["user", JSON.stringify(u)]]);
     setAuthToken(t);
     setToken(t);
     setUser(u);
+    return res.data;
+  }, []);
+
+  const twoFactorLogin = useCallback(async (email, code) => {
+    const res = await client.post("/auth/2fa-login", { email, code });
+    const { token: t, user: u } = res.data;
+    await AsyncStorage.multiSet([["token", t], ["user", JSON.stringify(u)]]);
+    setAuthToken(t);
+    setToken(t);
+    setUser(u);
+    return res.data;
   }, []);
 
   const register = useCallback(async (username, email, password) => {
@@ -71,7 +89,12 @@ export function AuthProvider({ children }) {
     });
   }, []);
 
-  const value = useMemo(() => ({ user, token, loading, login, register, logout, updateUser }), [user, token, loading, login, register, logout, updateUser]);
+  const finishOnboarding = useCallback(async () => {
+    await AsyncStorage.setItem("onboarded", "1");
+    setOnboarded(true);
+  }, []);
+
+  const value = useMemo(() => ({ user, token, onboarded, loading, login, twoFactorLogin, register, logout, updateUser, finishOnboarding }), [user, token, onboarded, loading, login, twoFactorLogin, register, logout, updateUser, finishOnboarding]);
 
   return (
     <AuthContext.Provider value={value}>

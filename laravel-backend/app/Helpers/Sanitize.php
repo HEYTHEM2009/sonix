@@ -6,7 +6,9 @@ class Sanitize
 {
     public static function text(?string $input): ?string
     {
-        if ($input === null) return null;
+        if ($input === null) {
+            return null;
+        }
 
         $input = strip_tags($input);
         $input = htmlspecialchars($input, ENT_QUOTES, 'UTF-8');
@@ -17,7 +19,9 @@ class Sanitize
 
     public static function content(?string $input): ?string
     {
-        if ($input === null) return null;
+        if ($input === null) {
+            return null;
+        }
 
         $allowed = '<b><i><u><em><strong><br><p>';
         $input = strip_tags($input, $allowed);
@@ -31,6 +35,7 @@ class Sanitize
                     return $tag;
                 }
             }
+
             return htmlspecialchars($tag, ENT_QUOTES, 'UTF-8');
         }, $input);
 

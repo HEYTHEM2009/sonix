@@ -7,11 +7,11 @@ import client from "../api/client";
 import { COLORS, SIZES } from "../components/Theme";
 import Screen3D from "../components/3D/Screen3D";
 
-export default function FollowersScreen({ navigation }) {
+export default function FollowersScreen({ navigation, route }) {
   const { t } = useLanguage();
   const [followers, setFollowers] = useState([]);
   const [following, setFollowing] = useState([]);
-  const [tab, setTab] = useState("followers");
+  const [tab, setTab] = useState(route.params?.tab === "following" ? "following" : "followers");
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
@@ -60,18 +60,25 @@ export default function FollowersScreen({ navigation }) {
               <Text style={s.empty}>{tab === "followers" ? t("noFollowers") : t("noFollowing")}</Text>
             </View>
           }
-          renderItem={({ item: f }) => (
-            <View style={s.row}>
-              <View style={s.avatar}>
-                <Text style={s.avatarText}>
-                  {tab === "followers" ? (f.follower?.username?.[0]?.toUpperCase() || "?") : (f.following?.username?.[0]?.toUpperCase() || "?")}
+          renderItem={({ item: f }) => {
+            const profile = tab === "followers" ? f.follower : f.following;
+            return (
+              <TouchableOpacity
+                style={s.row}
+                activeOpacity={0.8}
+                onPress={() => { if (profile?.id) navigation.navigate("UserProfile", { userId: profile.id }); }}
+              >
+                <View style={s.avatar}>
+                  <Text style={s.avatarText}>
+                    {profile?.username?.[0]?.toUpperCase() || "?"}
+                  </Text>
+                </View>
+                <Text style={s.name}>
+                  {profile?.username || t("unknown")}
                 </Text>
-              </View>
-              <Text style={s.name}>
-                {tab === "followers" ? (f.follower?.username || t("unknown")) : (f.following?.username || t("unknown"))}
-              </Text>
-            </View>
-          )}
+              </TouchableOpacity>
+            );
+          }}
         />
       )}
     </Screen3D>

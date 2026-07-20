@@ -2,24 +2,25 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
 use App\Models\Story;
-use App\Models\StoryView;
-use App\Models\StoryReaction;
 use App\Models\StoryHighlightItem;
+use App\Models\StoryReaction;
+use App\Models\StoryView;
 use App\Services\CdnService;
 use App\Services\StoryCacheService;
 use Carbon\Carbon;
+use Illuminate\Console\Command;
 
 class DeleteExpiredStories extends Command
 {
     protected $signature = 'app:delete-expired-stories';
+
     protected $description = 'Delete stories older than 12 hours';
 
     public function handle()
     {
         $cutoff = Carbon::now()->subHours(12);
-        $cdn = new CdnService();
+        $cdn = new CdnService;
         $deleted = 0;
         $cdnUrls = [];
 
@@ -28,7 +29,8 @@ class DeleteExpiredStories extends Command
             ->pluck('id');
 
         if ($expired->isEmpty()) {
-            $this->info("No expired stories found.");
+            $this->info('No expired stories found.');
+
             return 0;
         }
 
@@ -38,13 +40,17 @@ class DeleteExpiredStories extends Command
             foreach ($stories as $story) {
                 if ($story->image) {
                     $file = public_path(ltrim($story->image, '/'));
-                    if (file_exists($file)) @unlink($file);
-                    $cdnUrls[] = config('app.url') . $story->image;
+                    if (file_exists($file)) {
+                        @unlink($file);
+                    }
+                    $cdnUrls[] = config('app.url').$story->image;
                 }
                 if ($story->video) {
                     $file = public_path(ltrim($story->video, '/'));
-                    if (file_exists($file)) @unlink($file);
-                    $cdnUrls[] = config('app.url') . $story->video;
+                    if (file_exists($file)) {
+                        @unlink($file);
+                    }
+                    $cdnUrls[] = config('app.url').$story->video;
                 }
 
                 StoryView::where('story_id', $story->id)->delete();
@@ -54,18 +60,19 @@ class DeleteExpiredStories extends Command
                 $deleted++;
             }
 
-            if ($cdn->isEnabled() && !empty($cdnUrls)) {
+            if ($cdn->isEnabled() && ! empty($cdnUrls)) {
                 $cdn->purgeFiles($cdnUrls);
                 $cdnUrls = [];
             }
         }
 
         if ($deleted > 0) {
-            $cache = new StoryCacheService();
+            $cache = new StoryCacheService;
             $cache->onStoryExpired();
         }
 
         $this->info("Deleted $deleted expired stories.");
+
         return 0;
     }
 }

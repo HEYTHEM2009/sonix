@@ -320,29 +320,27 @@ export default function CreateStoryScreen({ navigation }) {
           <Text style={s.closeText}>✕</Text>
         </TouchableOpacity>
         <Text style={s.headerTitle}>{t("addToStory")}</Text>
-        <TouchableOpacity style={s.settingsBtn}>
-          <Text style={s.settingsIcon}>⚙️</Text>
-        </TouchableOpacity>
+        <View style={s.settingsBtn} />
       </View>
 
       <View style={s.optionsRow}>
         <TouchableOpacity style={s.optionCard} onPress={pickImage} activeOpacity={0.7}>
           <View style={[s.optionIconWrap, { backgroundColor: "#FF6B6B20" }]}>
-            <Text style={s.optionEmoji}>🎨</Text>
+            <Text style={s.optionEmoji}>🖼️</Text>
           </View>
-          <Text style={s.optionLabel}>{t("templates")}</Text>
+          <Text style={s.optionLabel}>{t("photo")}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={s.optionCard} onPress={pickVideo} activeOpacity={0.7}>
           <View style={[s.optionIconWrap, { backgroundColor: "#A855F720" }]}>
-            <Text style={s.optionEmoji}>🎵</Text>
+            <Text style={s.optionEmoji}>🎬</Text>
           </View>
-          <Text style={s.optionLabel}>{t("music")}</Text>
+          <Text style={s.optionLabel}>{t("video")}</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={s.optionCard} onPress={pickImage} activeOpacity={0.7}>
+        <TouchableOpacity style={s.optionCard} onPress={capture} activeOpacity={0.7}>
           <View style={[s.optionIconWrap, { backgroundColor: "#F59E0B20" }]}>
-            <Text style={s.optionEmoji}>🖼️</Text>
+            <Text style={s.optionEmoji}>📷</Text>
           </View>
-          <Text style={s.optionLabel}>{t("collage")}</Text>
+          <Text style={s.optionLabel}>{t("camera")}</Text>
         </TouchableOpacity>
       </View>
 

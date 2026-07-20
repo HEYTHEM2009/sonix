@@ -30,9 +30,9 @@ function Logo3D() {
   );
 }
 
-export default function ResetPasswordScreen({ navigation }) {
+export default function ResetPasswordScreen({ navigation, route }) {
   const { t, isRTL } = useLanguage();
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(route.params?.email || "");
   const [token, setToken] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirmation, setPasswordConfirmation] = useState("");

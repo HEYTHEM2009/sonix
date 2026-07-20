@@ -12,6 +12,7 @@ class ReelSeeder extends Seeder
     {
         if (Reel::count() > 0) {
             echo "⏭️ Reels already exist, skipping\n";
+
             return;
         }
 
@@ -43,6 +44,6 @@ class ReelSeeder extends Seeder
             }
         }
 
-        echo "✅ Seeded: " . (count($videos) * 3) . " reels\n";
+        echo '✅ Seeded: '.(count($videos) * 3)." reels\n";
     }
 }

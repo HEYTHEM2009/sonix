@@ -15,6 +15,9 @@ export default function ReportProblemScreen({ navigation }) {
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
+  const [reportType, setReportType] = useState("post");
+  const [reportTargetId, setReportTargetId] = useState("");
+  const [reportReason, setReportReason] = useState("");
 
   const handleSendFeedback = async () => {
     if (!subject.trim() || !message.trim()) return Alert.alert(t("error"), t("fillAllFields"));
@@ -26,6 +29,25 @@ export default function ReportProblemScreen({ navigation }) {
       setMessage("");
     } catch {
       Alert.alert(t("error"), t("feedbackFailed"));
+    }
+    setSending(false);
+  };
+
+  const handleSendReport = async () => {
+    if (!reportTargetId.trim() || !reportReason.trim()) return Alert.alert(t("error"), t("fillAllFields"));
+    setSending(true);
+    try {
+      await client.post("/reports", {
+        type: reportType,
+        id: parseInt(reportTargetId.trim(), 10),
+        reason: reportReason.trim(),
+      });
+      Alert.alert(t("success"), t("reportSubmitted") || "Report submitted");
+      setReportTargetId("");
+      setReportReason("");
+    } catch (e) {
+      const msg = e?.response?.data?.message;
+      Alert.alert(t("error"), msg || t("reportFailed") || "Could not submit report");
     }
     setSending(false);
   };
@@ -99,6 +121,46 @@ export default function ReportProblemScreen({ navigation }) {
                 <Text style={s.reportItemDesc}>{t("reportExample" + i + "Desc")}</Text>
               </View>
             ))}
+
+            <Text style={s.label}>{t("reportType") || "Content type"}</Text>
+            <View style={s.typeRow}>
+              {["post", "user"].map((ty) => (
+                <TouchableOpacity
+                  key={ty}
+                  style={[s.typeBtn, reportType === ty && s.typeBtnActive]}
+                  onPress={() => setReportType(ty)}
+                >
+                  <Text style={[s.typeBtnText, reportType === ty && s.typeBtnTextActive]}>{t(ty + "Label") || ty}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text style={s.label}>{t("targetId") || "Content ID"}</Text>
+            <TextInput
+              style={s.input}
+              value={reportTargetId}
+              onChangeText={setReportTargetId}
+              placeholder={t("targetIdPlaceholder") || "e.g. 123"}
+              placeholderTextColor={COLORS.muted}
+              keyboardType="numeric"
+              maxLength={20}
+            />
+
+            <Text style={s.label}>{t("reason")}</Text>
+            <TextInput
+              style={[s.input, s.textArea]}
+              value={reportReason}
+              onChangeText={setReportReason}
+              placeholder={t("reportReasonPlaceholder") || "Describe the issue"}
+              placeholderTextColor={COLORS.muted}
+              multiline
+              textAlignVertical="top"
+              maxLength={255}
+            />
+
+            <TouchableOpacity style={s.sendBtn} onPress={handleSendReport} disabled={sending}>
+              {sending ? <ActivityIndicator color={COLORS.text} /> : <Text style={s.sendBtnText}>{t("submitReport") || t("send")}</Text>}
+            </TouchableOpacity>
             <Text style={s.reportNote}>{t("reportNote")}</Text>
           </View>
         )}
@@ -125,5 +187,10 @@ const s = StyleSheet.create({
   reportItem: { backgroundColor: COLORS.card, borderRadius: SIZES.radius, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: COLORS.border },
   reportItemTitle: { fontSize: 14, ...FONTS.semiBold, color: COLORS.text, marginBottom: 4 },
   reportItemDesc: { fontSize: 13, color: COLORS.muted, lineHeight: 18 },
+  typeRow: { flexDirection: "row", gap: 8, marginBottom: 8 },
+  typeBtn: { flex: 1, paddingVertical: 10, alignItems: "center", borderRadius: SIZES.radius, backgroundColor: COLORS.input, borderWidth: 1, borderColor: COLORS.border },
+  typeBtnActive: { backgroundColor: COLORS.card, borderColor: COLORS.accent },
+  typeBtnText: { fontSize: 13, ...FONTS.medium, color: COLORS.muted },
+  typeBtnTextActive: { color: COLORS.accent, ...FONTS.semiBold },
   reportNote: { fontSize: 12, color: COLORS.muted, textAlign: "center", marginTop: 12, fontStyle: "italic" },
 });

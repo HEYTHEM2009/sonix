@@ -9,7 +9,7 @@ import Screen3D from "../components/3D/Screen3D";
 
 export default function SettingsScreen({ navigation }) {
   const insets = useSafeAreaInsets();
-  const { logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
   const { lang, changeLanguage, t, isRTL, rtlRow } = useLanguage();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -49,6 +49,40 @@ export default function SettingsScreen({ navigation }) {
       Alert.alert(t("error"), t("failedToTogglePrivacy"));
     }
     setPrivacyLoading(false);
+  };
+
+  const [isPro, setIsPro] = useState(false);
+  const [proLoading, setProLoading] = useState(false);
+  useEffect(() => { setIsPro(!!user?.is_pro); }, [user]);
+
+  const togglePro = async (val) => {
+    setProLoading(true);
+    try {
+      const res = await client.post("/reels/pro", { enabled: val });
+      setIsPro(res.data.is_pro);
+    } catch (e) {
+      Alert.alert(t("error"), t("failedToTogglePro") || "Could not change Pro status.");
+    }
+    setProLoading(false);
+  };
+
+  const [activityStatus, setActivityStatus] = useState(true);
+  const [activityLoading, setActivityLoading] = useState(false);
+  useEffect(() => { setActivityStatus(user?.activity_status !== false); }, [user]);
+
+  const toggleActivity = async (val) => {
+    setActivityStatus(val);
+    setActivityLoading(true);
+    try {
+      const res = await client.post("/users/toggle-activity-status");
+      const next = res.data.activity_status;
+      setActivityStatus(next);
+      updateUser({ activity_status: next });
+    } catch (e) {
+      setActivityStatus(!val);
+      Alert.alert(t("error"), t("failedToSave"));
+    }
+    setActivityLoading(false);
   };
 
   const deleteAccount = () => {
@@ -197,6 +231,21 @@ export default function SettingsScreen({ navigation }) {
               disabled={privacyLoading}
             />
           </View>
+
+          <View style={[s.row, isRTL && s.rowRtl]}>
+            <Text style={s.rowIcon}>⭐</Text>
+            <View style={s.rowContent}>
+              <Text style={s.rowLabel}>{t("proAccount") || "Pro Creator"}</Text>
+              <Text style={s.rowHint}>{isPro ? (t("proActive") || "Pro badge active") : (t("proHint") || "Unlock the Pro badge")}</Text>
+            </View>
+            <Switch
+              value={isPro}
+              onValueChange={togglePro}
+              trackColor={{ false: COLORS.input, true: "#FFD60A" }}
+              thumbColor={COLORS.text}
+              disabled={proLoading}
+            />
+          </View>
         </View>
 
         {/* NOTIFICATIONS */}
@@ -323,7 +372,9 @@ export default function SettingsScreen({ navigation }) {
               <Text style={s.rowHint}>{t("activityStatusHint")}</Text>
             </View>
             <Switch
-              value={true}
+              value={activityStatus}
+              onValueChange={toggleActivity}
+              disabled={activityLoading}
               trackColor={{ false: COLORS.input, true: COLORS.accent }}
               thumbColor={COLORS.text}
             />
@@ -367,6 +418,17 @@ export default function SettingsScreen({ navigation }) {
             </View>
             <Text style={s.rowArrow}>›</Text>
           </TouchableOpacity>
+
+          {user?.role === "admin" && (
+            <TouchableOpacity style={[s.row, isRTL && s.rowRtl]} onPress={() => navigation.navigate("Admin")}>
+              <Text style={s.rowIcon}>🛡️</Text>
+              <View style={s.rowContent}>
+                <Text style={s.rowLabel}>{t("adminPanel")}</Text>
+                <Text style={s.rowHint}>{t("adminOnly")}</Text>
+              </View>
+              <Text style={s.rowArrow}>›</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* ABOUT */}

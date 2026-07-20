@@ -14,11 +14,11 @@ class MessagePolicy
 
     public function edit(User $user, Message $message): bool
     {
-        return $message->sender_id === $user->id && !$message->is_deleted;
+        return $message->sender_id === $user->id && ! $message->is_deleted;
     }
 
     public function forward(User $user, Message $message): bool
     {
-        return !$message->is_deleted;
+        return ! $message->is_deleted;
     }
 }

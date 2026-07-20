@@ -2,6 +2,7 @@ import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Image, Alert, ActivityIndicator, Keyboard } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import client, { resolveUrl } from "../api/client";
+import { getEcho } from "../api/websocket";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import { COLORS, SIZES } from "../components/Theme";
@@ -47,6 +48,29 @@ export default function GroupChatScreen({ navigation, route }) {
   }, [navigation, groupName, t]);
 
   useEffect(() => { loadMessages(); }, []);
+
+  useEffect(() => {
+    let channel;
+    const setupRealtime = async () => {
+      try {
+        const echo = await getEcho();
+        if (!echo || !groupId) return;
+        channel = echo.private(`groups.${groupId}`);
+        channel.listen("group.message.sent", (event) => {
+          if (!event || event.id == null) return;
+          // Skip echoes of our own optimistic send.
+          if (event.user_id === user?.id) return;
+          setMessages((prev) => {
+            if (prev.find((m) => m.id === event.id)) return prev;
+            return [...prev, event];
+          });
+          setTimeout(() => flatRef.current?.scrollToEnd({ animated: true }), 100);
+        });
+      } catch (_) {}
+    };
+    setupRealtime();
+    return () => { if (channel) channel.leave(); };
+  }, [groupId, user?.id]);
 
   const loadMessages = async (isLoadMore = false) => {
     try {

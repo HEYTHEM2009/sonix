@@ -39,6 +39,7 @@ export default function LoginScreen({ navigation }) {
   const [focusedField, setFocusedField] = useState(null);
   const { login } = useAuth();
   const insets = useSafeAreaInsets();
+  const [twoFactorEmail, setTwoFactorEmail] = useState(null);
 
   const cardAnim = useRef(new Animated.Value(0)).current;
   const btnScale = useRef(new Animated.Value(1)).current;
@@ -54,7 +55,14 @@ export default function LoginScreen({ navigation }) {
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) return Alert.alert(t("error"), t("allFieldsRequired"));
     setLoading(true);
-    try { await login(email.trim(), password); }
+    try {
+      const res = await login(email.trim(), password);
+      if (res && res.two_factor_required) {
+        // Hand off to the 2FA code screen; do NOT persist/corrupt the session.
+        navigation.navigate("TwoFactor", { email: email.trim() });
+        return;
+      }
+    }
     catch (e) { Alert.alert(t("loginFailed"), e.response?.data?.message || t("invalidCredentials")); }
     setLoading(false);
   };

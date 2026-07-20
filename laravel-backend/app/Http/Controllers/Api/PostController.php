@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Helpers\Sanitize;
 use App\Helpers\StorageHelper;
-use App\Models\Post;
+use App\Http\Controllers\Controller;
 use App\Models\Follow;
+use App\Models\Post;
 use App\Models\User;
 use Illuminate\Http\Request;
 
@@ -18,12 +18,12 @@ class PostController extends Controller
         $perPage = (int) ($request->input('per_page', 20));
 
         $posts = Post::with('user:id,username,avatar')
-            ->withCount(['likes', 'likes as liked' => fn($q) => $q->where('user_id', $currentUser?->id ?? 0)])
+            ->withCount(['likes', 'likes as liked' => fn ($q) => $q->where('user_id', $currentUser?->id ?? 0)])
             ->withCount('comments as comments_count')
             ->where(function ($q) use ($currentUser) {
-                $q->whereHas('user', fn($sub) => $sub->where('is_private', false));
+                $q->whereHas('user', fn ($sub) => $sub->where('is_private', false));
                 if ($currentUser) {
-                    $q->orWhereExists(fn($sub) => $sub->selectRaw(1)->from('follows')
+                    $q->orWhereExists(fn ($sub) => $sub->selectRaw(1)->from('follows')
                         ->whereColumn('follows.following_id', 'posts.user_id')
                         ->where('follows.follower_id', $currentUser->id)
                         ->where('follows.status', 'accepted'));
@@ -40,11 +40,13 @@ class PostController extends Controller
     {
         $currentUser = $request->user();
         $post = Post::with('user:id,username,avatar')
-            ->withCount(['likes', 'likes as liked' => fn($q) => $q->where('user_id', $currentUser?->id ?? 0)])
+            ->withCount(['likes', 'likes as liked' => fn ($q) => $q->where('user_id', $currentUser?->id ?? 0)])
             ->withCount('comments as comments_count')
             ->find($id);
 
-        if (!$post) return response()->json(['message' => 'Not found'], 404);
+        if (! $post) {
+            return response()->json(['message' => 'Not found'], 404);
+        }
 
         return response()->json($post);
     }
@@ -55,22 +57,22 @@ class PostController extends Controller
         $perPage = (int) ($request->input('per_page', 20));
 
         $targetUser = User::select('id', 'is_private', 'username')->find($userId);
-        if (!$targetUser) {
+        if (! $targetUser) {
             return response()->json(['message' => 'User not found'], 404);
         }
 
-        if ($targetUser->is_private && (!$currentUser || $currentUser->id !== $targetUser->id)) {
+        if ($targetUser->is_private && (! $currentUser || $currentUser->id !== $targetUser->id)) {
             $isFollowing = $currentUser && Follow::where('follower_id', $currentUser->id)
                 ->where('following_id', $targetUser->id)
                 ->where('status', 'accepted')
                 ->exists();
-            if (!$isFollowing) {
+            if (! $isFollowing) {
                 return response()->json(['data' => [], 'user' => $targetUser, 'private' => true]);
             }
         }
 
         $posts = Post::with('user:id,username,avatar')
-            ->withCount(['likes', 'likes as liked' => fn($q) => $q->where('user_id', $currentUser?->id ?? 0)])
+            ->withCount(['likes', 'likes as liked' => fn ($q) => $q->where('user_id', $currentUser?->id ?? 0)])
             ->withCount('comments as comments_count')
             ->where('user_id', $userId)
             ->latest()
@@ -82,17 +84,26 @@ class PostController extends Controller
     public function destroy($id)
     {
         $post = Post::find($id);
-        if (!$post) return response()->json(['message' => 'Not found'], 404);
-        if ($post->user_id !== request()->user()->id) return response()->json(['message' => 'Unauthorized'], 403);
+        if (! $post) {
+            return response()->json(['message' => 'Not found'], 404);
+        }
+        if ($post->user_id !== request()->user()->id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
         $post->delete();
+
         return response()->json(['message' => 'Post deleted']);
     }
 
     public function update($id, Request $request)
     {
         $post = Post::find($id);
-        if (!$post) return response()->json(['message' => 'Not found'], 404);
-        if ($post->user_id !== $request->user()->id) return response()->json(['message' => 'Unauthorized'], 403);
+        if (! $post) {
+            return response()->json(['message' => 'Not found'], 404);
+        }
+        if ($post->user_id !== $request->user()->id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
 
         $request->validate(['content' => 'required|string|max:5000']);
 
@@ -100,6 +111,7 @@ class PostController extends Controller
         $post->save();
 
         $post->load('user:id,username,avatar');
+
         return response()->json($post);
     }
 
@@ -107,16 +119,16 @@ class PostController extends Controller
     {
         $currentUser = $request->user();
         $perPage = (int) ($request->input('per_page', 20));
-        $pattern = '#' . $tag;
+        $pattern = '#'.$tag;
 
         $posts = Post::with('user:id,username,avatar')
-            ->withCount(['likes', 'likes as liked' => fn($q) => $q->where('user_id', $currentUser?->id ?? 0)])
+            ->withCount(['likes', 'likes as liked' => fn ($q) => $q->where('user_id', $currentUser?->id ?? 0)])
             ->withCount('comments as comments_count')
             ->where('content', 'ILIKE', "%{$pattern}%")
             ->where(function ($q) use ($currentUser) {
-                $q->whereHas('user', fn($sub) => $sub->where('is_private', false));
+                $q->whereHas('user', fn ($sub) => $sub->where('is_private', false));
                 if ($currentUser) {
-                    $q->orWhereExists(fn($sub) => $sub->selectRaw(1)->from('follows')
+                    $q->orWhereExists(fn ($sub) => $sub->selectRaw(1)->from('follows')
                         ->whereColumn('follows.following_id', 'posts.user_id')
                         ->where('follows.follower_id', $currentUser->id)
                         ->where('follows.status', 'accepted'));
@@ -143,7 +155,7 @@ class PostController extends Controller
         $hasImage = $request->hasFile('image');
         $hasVideo = $request->hasFile('video');
 
-        if (!$hasContent && !$hasImage && !$hasVideo) {
+        if (! $hasContent && ! $hasImage && ! $hasVideo) {
             return response()->json(['message' => 'Content, image, or video is required'], 400);
         }
 
@@ -165,6 +177,7 @@ class PostController extends Controller
         $post = Post::create($data);
 
         $post->load('user:id,username,avatar');
+
         return response()->json($post);
     }
 }

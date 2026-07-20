@@ -18,11 +18,11 @@ class MediaController extends Controller
         $realBase = realpath(public_path());
         $realFile = realpath($fullPath);
 
-        if (!$realFile || !str_starts_with($realFile, $realBase)) {
+        if (! $realFile || ! str_starts_with($realFile, $realBase)) {
             abort(404);
         }
 
-        if (!file_exists($fullPath) || !is_file($fullPath)) {
+        if (! file_exists($fullPath) || ! is_file($fullPath)) {
             abort(404);
         }
 
@@ -82,7 +82,7 @@ class MediaController extends Controller
             'path' => 'required|string',
         ]);
 
-        $service = new MediaSecurityService();
+        $service = new MediaSecurityService;
         $signedUrl = $service->signUrl($request->input('path'));
 
         return response()->json([
@@ -101,14 +101,14 @@ class MediaController extends Controller
             'paths.*' => 'string',
         ]);
 
-        $service = new MediaSecurityService();
+        $service = new MediaSecurityService;
         $paths = $request->input('paths');
 
         $urls = [];
         foreach ($paths as $path) {
             $urls[$path] = $service->requiresSigning($path)
                 ? $service->signUrl($path)
-                : config('app.url') . '/uploads/' . $path;
+                : config('app.url').'/uploads/'.$path;
         }
 
         return response()->json([

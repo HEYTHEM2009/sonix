@@ -8,7 +8,7 @@ class Story extends Model
 {
     protected $fillable = [
         'user_id', 'type', 'image', 'video', 'text_overlay', 'text_color',
-        'bg_color', 'duration', 'stickers', 'drawing_data', 'is_highlight'
+        'bg_color', 'duration', 'stickers', 'drawing_data', 'is_highlight',
     ];
 
     protected $appends = ['media_url'];

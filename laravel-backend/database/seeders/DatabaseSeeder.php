@@ -2,14 +2,14 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
-use App\Models\Post;
-use App\Models\Story;
-use App\Models\Comment;
-use App\Models\Like;
-use App\Models\Follow;
 use App\Models\Bookmark;
+use App\Models\Comment;
+use App\Models\Follow;
+use App\Models\Like;
+use App\Models\Post;
 use App\Models\Reel;
+use App\Models\Story;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
@@ -19,18 +19,23 @@ class DatabaseSeeder extends Seeder
     {
         if (User::where('email', 'test@test.com')->exists() && Reel::count() > 0) {
             echo "⏭️ Already seeded, skipping\n";
+
             return;
         }
 
+        // Ensure admin role is set even on re-runs
+        User::where('email', 'admin@sonix.app')->update(['role' => 'admin']);
+
         // ── Users ──
         $users = [
-            ['username' => 'admin', 'email' => 'admin@yourapp.com', 'bio' => 'Welcome to the app! 🎵', 'password' => Hash::make('password123')],
-            ['username' => 'sara', 'email' => 'sara@test.com', 'bio' => 'Photography lover 📸', 'password' => Hash::make('password123')],
-            ['username' => 'omar', 'email' => 'omar@test.com', 'bio' => 'Developer 💻', 'password' => Hash::make('password123')],
-            ['username' => 'nora', 'email' => 'nora@test.com', 'bio' => 'Travel ✈️ & Food 🍕', 'password' => Hash::make('password123')],
-            ['username' => 'alex', 'email' => 'alex@test.com', 'bio' => 'Designer 🎨', 'password' => Hash::make('password123')],
-            ['username' => 'lily', 'email' => 'lily@test.com', 'bio' => 'Music is life 🎶', 'password' => Hash::make('password123')],
-            ['username' => 'testuser', 'email' => 'test@test.com', 'bio' => 'مرحباً بكم في التطبيق 🌟', 'password' => Hash::make('password123')],
+            ['username' => 'admin', 'email' => 'admin@sonix.app', 'bio' => 'Welcome to the app! 🎉', 'password' => Hash::make('password'), 'role' => 'admin'],
+            ['username' => 'demo', 'email' => 'demo@sonix.app', 'bio' => 'Demo account 🚀', 'password' => Hash::make('password'), 'role' => 'user'],
+            ['username' => 'sara', 'email' => 'sara@test.com', 'bio' => 'Photography lover 📷', 'password' => Hash::make('password'), 'role' => 'user'],
+            ['username' => 'omar', 'email' => 'omar@test.com', 'bio' => 'Developer 💻', 'password' => Hash::make('password'), 'role' => 'user'],
+            ['username' => 'nora', 'email' => 'nora@test.com', 'bio' => 'Travel 🏖️ & Food 🍝', 'password' => Hash::make('password'), 'role' => 'user'],
+            ['username' => 'alex', 'email' => 'alex@test.com', 'bio' => 'Designer 🎨', 'password' => Hash::make('password'), 'role' => 'user'],
+            ['username' => 'lily', 'email' => 'lily@test.com', 'bio' => 'Music is life 🎵', 'password' => Hash::make('password'), 'role' => 'user'],
+            ['username' => 'testuser', 'email' => 'test@test.com', 'bio' => 'حساب تجريبي للمطورين 🧪', 'password' => Hash::make('password'), 'role' => 'user'],
         ];
 
         $createdUsers = [];
@@ -94,8 +99,9 @@ class DatabaseSeeder extends Seeder
         Bookmark::create(['user_id' => $createdUsers[0]->id, 'post_id' => $createdPosts[1]->id]);
         Bookmark::create(['user_id' => $createdUsers[0]->id, 'post_id' => $createdPosts[4]->id]);
 
-        $this->call(ReelSeeder::class);
+        $this->call(ReelsDemoSeeder::class);
+        $this->call(MusicTrackSeeder::class);
 
-        echo "✅ Seeded: 7 users, 10 posts, 10 likes, 5 comments, 3 stories, 2 bookmarks, 30 reels\n";
+        echo "✅ Seeded: 8 users, 10 posts, 10 likes, 5 comments, 3 stories, 2 bookmarks, reels, music\n";
     }
 }

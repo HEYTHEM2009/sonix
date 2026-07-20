@@ -2,7 +2,19 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { IMAGE_BASE } from "./client";
 
 const REVERB_KEY = process.env.EXPO_PUBLIC_REVERB_KEY || "sonix-reverb";
-const WS_HOST = process.env.EXPO_PUBLIC_WS_HOST || "sonix-api.runsite.app";
+
+// Derive the WebSocket host from the API base URL so it always matches the
+// configured backend (defaults to the Android emulator loopback 10.0.2.2).
+function deriveWsHost() {
+  if (process.env.EXPO_PUBLIC_WS_HOST) return process.env.EXPO_PUBLIC_WS_HOST;
+  try {
+    const url = new URL(IMAGE_BASE);
+    return url.hostname;
+  } catch (e) {
+    return "10.0.2.2";
+  }
+}
+const WS_HOST = deriveWsHost();
 const WS_PORT = process.env.EXPO_PUBLIC_WS_PORT || 443;
 const FORCE_TLS = true;
 
@@ -35,6 +47,7 @@ class RealtimeManager {
     this.appStateUnsub = null;
     this.subscriptions = new Map();
     this.initialized = false;
+    this.initPromise = null;
   }
 
   _setStatus(status) {
@@ -98,53 +111,60 @@ class RealtimeManager {
   }
 
   async init() {
+    // Guard against concurrent init races: return the in-flight promise so a
+    // second caller never spins up a duplicate Echo connection.
+    if (this.initPromise) return this.initPromise;
     if (this.echo) return this.echo;
-    if (this.initialized) return this.echo;
-    this.initialized = true;
+
     this.manualDisconnect = false;
 
-    try {
-      this.token = await AsyncStorage.getItem("token");
-      if (!this.token) {
-        this._setStatus(STATUS.DISCONNECTED);
-        return null;
-      }
+    this.initPromise = (async () => {
+      try {
+        this.token = await AsyncStorage.getItem("token");
+        if (!this.token) {
+          this._setStatus(STATUS.DISCONNECTED);
+          return null;
+        }
 
-      this._setStatus(STATUS.CONNECTING);
+        this._setStatus(STATUS.CONNECTING);
 
-      const Echo = (await import("laravel-echo")).default;
-      const Pusher = (await import("pusher-js")).default;
+        const Echo = (await import("laravel-echo")).default;
+        const Pusher = (await import("pusher-js")).default;
 
-      this.echo = new Echo({
-        broadcaster: "pusher",
-        client: Pusher,
-        key: REVERB_KEY,
-        wsHost: WS_HOST,
-        wsPort: WS_PORT,
-        wssPort: WS_PORT,
-        forceTLS: FORCE_TLS,
-        disableStats: true,
-        enabledTransports: ["ws", "wss"],
-        authEndpoint: `${IMAGE_BASE}/api/broadcasting/auth`,
-        auth: {
-          headers: {
-            Authorization: `Bearer ${this.token}`,
-            Accept: "application/json",
+        this.echo = new Echo({
+          broadcaster: "pusher",
+          client: Pusher,
+          key: REVERB_KEY,
+          wsHost: WS_HOST,
+          wsPort: WS_PORT,
+          wssPort: WS_PORT,
+          forceTLS: FORCE_TLS,
+          disableStats: true,
+          enabledTransports: ["ws", "wss"],
+          authEndpoint: `${IMAGE_BASE}/broadcasting/auth`,
+          auth: {
+            headers: {
+              Authorization: `Bearer ${this.token}`,
+              Accept: "application/json",
+            },
           },
-        },
-      });
+        });
 
-      this._bindConnection();
-      this._bindSystemListeners();
-      return this.echo;
-    } catch (e) {
-      this.echo = null;
-      this._setStatus(STATUS.ERROR);
-      return null;
-    } finally {
-      // init is complete (success or failure); allow future re-inits only via disconnect.
-      if (!this.echo) this.initialized = false;
-    }
+        this._bindConnection();
+        this._bindSystemListeners();
+        return this.echo;
+      } catch (e) {
+        this.echo = null;
+        this._setStatus(STATUS.ERROR);
+        return null;
+      } finally {
+        // Clear the in-flight guard once init resolves/rejects so a later
+        // disconnect()+init() cycle can run again.
+        this.initPromise = null;
+      }
+    })();
+
+    return this.initPromise;
   }
 
   _bindSystemListeners() {

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Events\MessageDelivered;
 use App\Events\MessageRead;
 use App\Events\MessageSent;
+use App\Events\NotificationCreated;
 use App\Models\BlockedUser;
 use App\Models\Message;
 use App\Models\MessageAuditLog;
@@ -38,7 +39,7 @@ class MessageService
             throw new TooManyRequestsHttpException(60, 'Too many messages sent. Please slow down.');
         }
 
-        $message = new Message();
+        $message = new Message;
         $message->sender_id = $sender->id;
         $message->receiver_id = $receiverId;
         $message->content = $data['content'] ?? null;
@@ -56,19 +57,19 @@ class MessageService
 
         $message->load('sender:id,username,avatar', 'replyMessage.sender:id,username');
 
-        broadcast(new MessageSent($message))->toOthers();
+        broadcast(new MessageSent($message));
 
         // Notification dispatch must never break the send flow.
         try {
             $notification = Notification::create([
                 'type' => 'message',
-                'message' => $sender->username . ' sent you a message',
+                'message' => $sender->username.' sent you a message',
                 'seen' => false,
                 'user_id' => $receiverId,
                 'sender_id' => $sender->id,
             ]);
 
-            broadcast(new \App\Events\NotificationCreated($notification))->toOthers();
+            broadcast(new NotificationCreated($notification));
         } catch (\Throwable $e) {
             report($e);
         }
@@ -97,7 +98,7 @@ class MessageService
             $message->sender_id,
             $message->receiver_id,
             $message->delivered_at->toISOString()
-        ))->toOthers();
+        ));
     }
 
     public function markRead(int $messageId, int $readerId): void
@@ -121,7 +122,7 @@ class MessageService
                 $readerId,
                 $message->sender_id,
                 $message->read_at->toISOString()
-            ))->toOthers();
+            ));
         }
 
         $this->audit($message->id, $readerId, 'read', [
@@ -227,7 +228,7 @@ class MessageService
             throw new \InvalidArgumentException('You cannot forward to this user.');
         }
 
-        $forwarded = new Message();
+        $forwarded = new Message;
         $forwarded->sender_id = $userId;
         $forwarded->receiver_id = $toUserId;
         $forwarded->content = $source->content;
@@ -259,9 +260,9 @@ class MessageService
         $escaped = addcslashes($query, '%_\\');
 
         return Message::where(function ($q) use ($userId) {
-                $q->where('sender_id', $userId)->orWhere('receiver_id', $userId);
-            })
-            ->where('content', 'LIKE', '%' . $escaped . '%')
+            $q->where('sender_id', $userId)->orWhere('receiver_id', $userId);
+        })
+            ->where('content', 'LIKE', '%'.$escaped.'%')
             ->where('is_deleted', false)
             ->whereJsonDoesntContain('deleted_for', $userId)
             ->orderBy('created_at', 'desc')
@@ -275,7 +276,7 @@ class MessageService
                 ->where('partner_id', $partnerId)
                 ->delete();
 
-            return new MessageDraft();
+            return new MessageDraft;
         }
 
         return MessageDraft::updateOrCreate(

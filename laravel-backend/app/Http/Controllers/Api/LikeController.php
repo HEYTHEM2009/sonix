@@ -3,9 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Like;
-use App\Models\Post;
 use App\Models\BlockedUser;
+use App\Models\Like;
+use App\Models\Notification;
+use App\Models\Post;
 use Illuminate\Http\Request;
 
 class LikeController extends Controller
@@ -14,7 +15,7 @@ class LikeController extends Controller
     {
         $postId = (int) ($request->input('post_id') ?? $request->input('postId'));
 
-        if (!$postId || !Post::where('id', $postId)->exists()) {
+        if (! $postId || ! Post::where('id', $postId)->exists()) {
             return response()->json(['message' => 'Post not found'], 404);
         }
 
@@ -26,6 +27,7 @@ class LikeController extends Controller
 
         if ($existing) {
             $existing->delete();
+
             return response()->json(['liked' => false]);
         }
 
@@ -36,7 +38,7 @@ class LikeController extends Controller
 
         $postUserId = Post::where('id', $postId)->value('user_id');
         if ($postUserId && $postUserId !== $userId) {
-            \App\Models\Notification::create([
+            Notification::create([
                 'user_id' => $postUserId,
                 'sender_id' => $userId,
                 'type' => 'like',
@@ -59,7 +61,7 @@ class LikeController extends Controller
 
     public function users($postId, Request $request)
     {
-        if (!Post::where('id', $postId)->exists()) {
+        if (! Post::where('id', $postId)->exists()) {
             return response()->json(['message' => 'Post not found'], 404);
         }
 
@@ -72,7 +74,7 @@ class LikeController extends Controller
             })
             ->latest()
             ->paginate(50)
-            ->through(fn($like) => $like->user);
+            ->through(fn ($like) => $like->user);
 
         return response()->json($users);
     }

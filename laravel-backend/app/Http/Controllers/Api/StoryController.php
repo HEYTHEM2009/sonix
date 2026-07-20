@@ -2,22 +2,27 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
+use App\Events\StoryCreated;
 use App\Helpers\Sanitize;
 use App\Helpers\StorageHelper;
+use App\Http\Controllers\Controller;
+use App\Jobs\TranscodeVideo;
+use App\Models\Follow;
+use App\Models\Notification;
 use App\Models\Story;
-use App\Models\StoryView;
-use App\Models\StoryReaction;
 use App\Models\StoryHighlight;
 use App\Models\StoryHighlightItem;
-use App\Models\Follow;
+use App\Models\StoryReaction;
+use App\Models\StoryView;
 use App\Models\User;
-use App\Models\Notification;
-use App\Events\StoryCreated;
+use App\Services\CdnService;
 use App\Services\StoryCacheService;
+use App\Services\WatermarkService;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\ValidationException;
 
 class StoryController extends Controller
 {
@@ -41,7 +46,7 @@ class StoryController extends Controller
 
         $stories = Story::with(['user:id,username,avatar'])
             ->withCount(['views as view_count', 'reactions as reaction_count'])
-            ->withExists(['views as viewed' => fn($q) => $q->where('user_id', $userId)])
+            ->withExists(['views as viewed' => fn ($q) => $q->where('user_id', $userId)])
             ->whereIn('user_id', $followingIds)
             ->where('created_at', '>=', now()->subHours(12))
             ->latest()
@@ -50,16 +55,18 @@ class StoryController extends Controller
 
         if ($stories->isEmpty()) {
             $this->cache->setFeed($userId, []);
+
             return response()->json([]);
         }
 
         $result = [];
         foreach ($stories as $uid => $userStories) {
             $first = $userStories->first();
-            $hasUnseen = $userStories->contains(fn($s) => !$s->viewed);
+            $hasUnseen = $userStories->contains(fn ($s) => ! $s->viewed);
 
             $storiesData = $userStories->map(function ($story) {
                 $story->my_reaction = null;
+
                 return $story;
             });
 
@@ -70,71 +77,24 @@ class StoryController extends Controller
             ];
         }
 
-        usort($result, fn($a, $b) => $b['stories'][0]['created_at'] <=> $a['stories'][0]['created_at']);
+        usort($result, fn ($a, $b) => $b['stories'][0]['created_at'] <=> $a['stories'][0]['created_at']);
 
         return response()->json($result);
-    }
-
-    public function debug(Request $request)
-    {
-        if (!config('app.debug')) {
-            return response()->json(['message' => 'Not available'], 404);
-        }
-
-        $userId = $request->user()->id;
-
-        $rawCount = DB::select("SELECT COUNT(*) as cnt FROM stories WHERE user_id = ?", [$userId]);
-        
-        $hasTable = Schema::hasTable('stories');
-        $columns = $hasTable ? Schema::getColumns('stories') : [];
-        $columnNames = array_column($columns, 'name');
-        $hasIsHighlight = Schema::hasColumn('stories', 'is_highlight');
-
-        $testInsert = null;
-        $testInsertId = null;
-        try {
-            DB::table('stories')->insert([
-                'user_id' => $userId,
-                'type' => 'text',
-                'text_overlay' => 'debug_test_' . time(),
-                'text_color' => '#ffffff',
-                'duration' => 5,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-            $testInsertId = DB::getPdo()->lastInsertId();
-            $testInsert = 'success';
-            DB::table('stories')->where('id', $testInsertId)->delete();
-        } catch (\Throwable $e) {
-            $testInsert = $e->getMessage();
-        }
-
-        $allStories = DB::table('stories')->where('user_id', $userId)->orderBy('created_at', 'desc')->limit(10)->get();
-
-        return response()->json([
-            'user_id' => $userId,
-            'raw_count' => $rawCount[0]->cnt ?? 'error',
-            'table_exists' => $hasTable,
-            'columns' => $columnNames,
-            'has_is_highlight' => $hasIsHighlight,
-            'test_insert' => $testInsert,
-            'test_insert_id' => $testInsertId,
-            'my_stories' => $allStories,
-            'now' => now()->toIso8601String(),
-        ]);
     }
 
     public function store(Request $request)
     {
         try {
             return $this->doStore($request);
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             return response()->json(['message' => 'Validation failed', 'errors' => $e->errors()], 422);
-        } catch (\Illuminate\Database\QueryException $e) {
+        } catch (QueryException $e) {
             \Log::error('Story DB error', ['code' => $e->errorInfo[1] ?? null, 'msg' => $e->getMessage()]);
+
             return response()->json(['message' => 'Database error'], 500);
         } catch (\Throwable $e) {
             \Log::error('Story store error', ['msg' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+
             return response()->json(['message' => 'Story creation failed'], 500);
         }
     }
@@ -143,7 +103,7 @@ class StoryController extends Controller
     {
         $rules = [];
         if ($request->hasFile('video')) {
-            $rules['video'] = 'required|mimes:mp4,mov,avi,webm';
+            $rules['video'] = 'required|mimes:mp4,mov,avi,webm|max:51200';
         } else {
             $rules['image'] = 'nullable|image|max:5120';
         }
@@ -170,9 +130,12 @@ class StoryController extends Controller
         if ($request->hasFile('video')) {
             $videoFile = $request->file('video');
             $origSize = 0;
-            try { $origSize = $videoFile->getSize(); } catch (\Throwable $e) {}
+            try {
+                $origSize = $videoFile->getSize();
+            } catch (\Throwable $e) {
+            }
             $path = StorageHelper::upload($videoFile, 'uploads');
-            if (!$path) {
+            if (! $path) {
                 return response()->json(['message' => 'Video upload failed'], 500);
             }
             $data['video'] = StorageHelper::getUrl($path);
@@ -206,8 +169,8 @@ class StoryController extends Controller
         \Log::info('Story insert attempt', [
             'user_id' => $data['user_id'],
             'type' => $data['type'],
-            'has_image' => !empty($data['image']),
-            'has_video' => !empty($data['video']),
+            'has_image' => ! empty($data['image']),
+            'has_video' => ! empty($data['video']),
             'has_is_highlight_col' => $hasIsHighlight,
         ]);
 
@@ -224,12 +187,12 @@ class StoryController extends Controller
         // Dispatch video transcoding if needed
         if ($story->type === 'video' && $story->video && config('media.transcoding_enabled')) {
             $inputPath = public_path(ltrim($story->video, '/'));
-            \App\Jobs\TranscodeVideo::dispatch($inputPath, $story->id, 'story');
+            TranscodeVideo::dispatch($inputPath, $story->id, 'story');
         }
 
         // Apply watermark if enabled
         if (config('media.watermark_enabled') && $story->image) {
-            $watermarkService = new \App\Services\WatermarkService();
+            $watermarkService = new WatermarkService;
             $watermarkedPath = $watermarkService->addWatermark(public_path(ltrim($story->image, '/')));
             if ($watermarkedPath) {
                 $story->update(['image' => $watermarkedPath]);
@@ -239,7 +202,7 @@ class StoryController extends Controller
         try {
             broadcast(new StoryCreated($story));
         } catch (\Exception $e) {
-            \Log::warning('Story broadcast failed: ' . $e->getMessage());
+            \Log::warning('Story broadcast failed: '.$e->getMessage());
         }
 
         return response()->json($story, 201);
@@ -248,7 +211,9 @@ class StoryController extends Controller
     public function view($id, Request $request)
     {
         $story = Story::find($id);
-        if (!$story) return response()->json(['message' => 'Not found'], 404);
+        if (! $story) {
+            return response()->json(['message' => 'Not found'], 404);
+        }
         if ($story->created_at->lt(now()->subHours(12))) {
             return response()->json(['message' => 'Story expired'], 410);
         }
@@ -258,7 +223,7 @@ class StoryController extends Controller
                 'story_id' => $id,
                 'user_id' => $request->user()->id,
             ]);
-        } catch (\Illuminate\Database\QueryException $e) {
+        } catch (QueryException $e) {
             if ($e->errorInfo[1] == 23505) {
                 return response()->json(['message' => 'Already viewed']);
             }
@@ -268,7 +233,7 @@ class StoryController extends Controller
         if ($view->wasRecentlyCreated && $story->user_id !== $request->user()->id) {
             Notification::create([
                 'type' => 'story_view',
-                'message' => $request->user()->username . ' viewed your story',
+                'message' => $request->user()->username.' viewed your story',
                 'user_id' => $story->user_id,
                 'sender_id' => $request->user()->id,
             ]);
@@ -280,7 +245,9 @@ class StoryController extends Controller
     public function viewers($id, Request $request)
     {
         $story = Story::find($id);
-        if (!$story) return response()->json(['message' => 'Not found'], 404);
+        if (! $story) {
+            return response()->json(['message' => 'Not found'], 404);
+        }
         if ($story->user_id !== $request->user()->id) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
@@ -289,7 +256,7 @@ class StoryController extends Controller
             ->where('story_id', $id)
             ->latest()
             ->paginate(50)
-            ->through(fn($v) => $v->user);
+            ->through(fn ($v) => $v->user);
 
         return response()->json($viewers);
     }
@@ -299,7 +266,9 @@ class StoryController extends Controller
         $request->validate(['emoji' => 'required|string|max:10']);
 
         $story = Story::find($id);
-        if (!$story) return response()->json(['message' => 'Not found'], 404);
+        if (! $story) {
+            return response()->json(['message' => 'Not found'], 404);
+        }
         if ($story->created_at->lt(now()->subHours(12))) {
             return response()->json(['message' => 'Story expired'], 410);
         }
@@ -309,7 +278,7 @@ class StoryController extends Controller
                 ['story_id' => $id, 'user_id' => $request->user()->id],
                 ['emoji' => $request->input('emoji')]
             );
-        } catch (\Illuminate\Database\QueryException $e) {
+        } catch (QueryException $e) {
             if ($e->errorInfo[1] == 23505) {
                 return response()->json(['message' => 'Reaction already exists', 'emoji' => $request->input('emoji')]);
             }
@@ -319,7 +288,7 @@ class StoryController extends Controller
         if ($story->user_id !== $request->user()->id) {
             Notification::create([
                 'type' => 'story_reaction',
-                'message' => $request->user()->username . ' reacted ' . $request->input('emoji') . ' to your story',
+                'message' => $request->user()->username.' reacted '.$request->input('emoji').' to your story',
                 'user_id' => $story->user_id,
                 'sender_id' => $request->user()->id,
             ]);
@@ -340,7 +309,9 @@ class StoryController extends Controller
     public function reactions($id)
     {
         $story = Story::find($id);
-        if (!$story) return response()->json(['message' => 'Not found'], 404);
+        if (! $story) {
+            return response()->json(['message' => 'Not found'], 404);
+        }
         if ($story->created_at->lt(now()->subHours(12))) {
             return response()->json(['message' => 'Story expired'], 410);
         }
@@ -364,7 +335,9 @@ class StoryController extends Controller
     public function analytics($id, Request $request)
     {
         $story = Story::find($id);
-        if (!$story) return response()->json(['message' => 'Not found'], 404);
+        if (! $story) {
+            return response()->json(['message' => 'Not found'], 404);
+        }
         if ($story->user_id !== $request->user()->id) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
@@ -396,7 +369,9 @@ class StoryController extends Controller
         $request->validate(['user_ids' => 'required|array', 'user_ids.*' => 'integer']);
 
         $story = Story::find($id);
-        if (!$story) return response()->json(['message' => 'Not found'], 404);
+        if (! $story) {
+            return response()->json(['message' => 'Not found'], 404);
+        }
 
         $senderId = $request->user()->id;
         $validUserIds = User::whereIn('id', $request->input('user_ids'))
@@ -408,7 +383,7 @@ class StoryController extends Controller
         foreach ($validUserIds as $userId) {
             Notification::create([
                 'type' => 'story_forward',
-                'message' => $request->user()->username . ' shared a story with you',
+                'message' => $request->user()->username.' shared a story with you',
                 'user_id' => $userId,
                 'sender_id' => $senderId,
             ]);
@@ -474,6 +449,7 @@ class StoryController extends Controller
         }
 
         $highlight->load('stories');
+
         return response()->json($highlight, 201);
     }
 
@@ -482,8 +458,12 @@ class StoryController extends Controller
         $request->validate(['story_id' => 'required|integer']);
 
         $highlight = StoryHighlight::find($highlightId);
-        if (!$highlight) return response()->json(['message' => 'Not found'], 404);
-        if ($highlight->user_id !== $request->user()->id) return response()->json(['message' => 'Unauthorized'], 403);
+        if (! $highlight) {
+            return response()->json(['message' => 'Not found'], 404);
+        }
+        if ($highlight->user_id !== $request->user()->id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
 
         $maxPos = StoryHighlightItem::where('highlight_id', $highlightId)->max('position') ?? -1;
 
@@ -493,36 +473,50 @@ class StoryController extends Controller
         );
 
         $highlight->load('stories');
+
         return response()->json($highlight);
     }
 
     public function deleteHighlight($id, Request $request)
     {
         $highlight = StoryHighlight::find($id);
-        if (!$highlight) return response()->json(['message' => 'Not found'], 404);
-        if ($highlight->user_id !== $request->user()->id) return response()->json(['message' => 'Unauthorized'], 403);
+        if (! $highlight) {
+            return response()->json(['message' => 'Not found'], 404);
+        }
+        if ($highlight->user_id !== $request->user()->id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
 
         $highlight->delete();
+
         return response()->json(['message' => 'Highlight deleted']);
     }
 
     public function destroy($id, Request $request)
     {
         $story = Story::find($id);
-        if (!$story) return response()->json(['message' => 'Not found'], 404);
-        if ($story->user_id !== $request->user()->id) return response()->json(['message' => 'Unauthorized'], 403);
+        if (! $story) {
+            return response()->json(['message' => 'Not found'], 404);
+        }
+        if ($story->user_id !== $request->user()->id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
 
         $storyOwnerId = $story->user_id;
         $cdnUrls = [];
-        if ($story->image) $cdnUrls[] = config('app.url') . $story->image;
-        if ($story->video) $cdnUrls[] = config('app.url') . $story->video;
+        if ($story->image) {
+            $cdnUrls[] = config('app.url').$story->image;
+        }
+        if ($story->video) {
+            $cdnUrls[] = config('app.url').$story->video;
+        }
 
         $story->delete();
 
         $this->cache->onStoryDeleted($storyOwnerId);
 
-        if (!empty($cdnUrls)) {
-            $cdn = new \App\Services\CdnService();
+        if (! empty($cdnUrls)) {
+            $cdn = new CdnService;
             $cdn->purgeFiles($cdnUrls);
         }
 
@@ -532,8 +526,12 @@ class StoryController extends Controller
     public function updateHighlight($id, Request $request)
     {
         $highlight = StoryHighlight::find($id);
-        if (!$highlight) return response()->json(['message' => 'Not found'], 404);
-        if ($highlight->user_id !== $request->user()->id) return response()->json(['message' => 'Unauthorized'], 403);
+        if (! $highlight) {
+            return response()->json(['message' => 'Not found'], 404);
+        }
+        if ($highlight->user_id !== $request->user()->id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
 
         $request->validate([
             'title' => 'sometimes|string|max:50',
@@ -544,20 +542,26 @@ class StoryController extends Controller
         }
 
         $highlight->load('stories');
+
         return response()->json($highlight);
     }
 
     public function removeFromHighlight($highlightId, $storyId, Request $request)
     {
         $highlight = StoryHighlight::find($highlightId);
-        if (!$highlight) return response()->json(['message' => 'Not found'], 404);
-        if ($highlight->user_id !== $request->user()->id) return response()->json(['message' => 'Unauthorized'], 403);
+        if (! $highlight) {
+            return response()->json(['message' => 'Not found'], 404);
+        }
+        if ($highlight->user_id !== $request->user()->id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
 
         StoryHighlightItem::where('highlight_id', $highlightId)
             ->where('story_id', $storyId)
             ->delete();
 
         $highlight->load('stories');
+
         return response()->json($highlight);
     }
 

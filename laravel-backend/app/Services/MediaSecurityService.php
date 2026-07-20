@@ -2,13 +2,13 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Crypt;
-use Illuminate\Support\Facades\URL;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\URL;
 
 class MediaSecurityService
 {
     protected string $secret;
+
     protected int $signedUrlTTL; // minutes
 
     public function __construct()
@@ -24,13 +24,13 @@ class MediaSecurityService
     public function signUrl(string $path): string
     {
         $expires = Carbon::now()->addSeconds($this->signedUrlTTL)->timestamp;
-        $payload = $path . '|' . $expires;
+        $payload = $path.'|'.$expires;
         $signature = hash_hmac('sha256', $payload, $this->secret);
 
         $baseUrl = config('app.url', 'http://localhost');
 
         return "{$baseUrl}/media/{$path}?"
-            . http_build_query([
+            .http_build_query([
                 'sig' => $signature,
                 'exp' => $expires,
             ]);
@@ -41,12 +41,12 @@ class MediaSecurityService
      */
     public function verifySignedUrl(string $path, string $signature, string $expires): bool
     {
-        if (!is_numeric($expires) || (int) $expires < time()) {
+        if (! is_numeric($expires) || (int) $expires < time()) {
             return false;
         }
 
         // Verify signature
-        $payload = $path . '|' . $expires;
+        $payload = $path.'|'.$expires;
         $expected = hash_hmac('sha256', $payload, $this->secret);
 
         return hash_equals($expected, $signature);
@@ -57,7 +57,7 @@ class MediaSecurityService
      */
     public function signUrls(array $paths): array
     {
-        return array_map(fn($path) => $this->signUrl($path), $paths);
+        return array_map(fn ($path) => $this->signUrl($path), $paths);
     }
 
     /**

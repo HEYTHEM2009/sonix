@@ -1,10 +1,13 @@
 import React, { Component, Suspense } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, LogBox, ActivityIndicator } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { NavigationContainer } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AuthProvider } from "./src/context/AuthContext";
 import { LanguageProvider } from "./src/context/LanguageContext";
+import { ToastProvider } from "./src/context/ToastContext";
+import { RealtimeProvider } from "./src/context/RealtimeContext";
 import AppNavigator from "./src/navigation/AppNavigator";
 
 LogBox.ignoreLogs(["source.uri should not be an empty string"]);
@@ -12,9 +15,26 @@ LogBox.ignoreLogs(["source.uri should not be an empty string"]);
 class ErrorBoundary extends Component {
   state = { error: null, info: null };
   static getDerivedStateFromError(error) { return { error }; }
-  componentDidCatch(error, info) { this.setState({ info }); }
+  componentDidCatch(error, info) {
+    this.setState({ info });
+    // In production we avoid exposing raw stack traces to end users.
+    if (!__DEV__) {
+      console.error("App crash:", error?.message);
+    }
+  }
   render() {
     if (this.state.error) {
+      if (!__DEV__) {
+        return (
+          <View style={s.errorContainer}>
+            <Text style={s.errorTitle}>⚠️ Something went wrong</Text>
+            <Text style={s.errorSub}>The app hit an unexpected error. Please restart it.</Text>
+            <TouchableOpacity style={s.errorBtn} onPress={() => this.setState({ error: null })}>
+              <Text style={s.errorBtnText}>Try Again</Text>
+            </TouchableOpacity>
+          </View>
+        );
+      }
       return (
         <View style={s.errorContainer}>
           <Text style={s.errorTitle}>⚠️ Something went wrong</Text>
@@ -41,18 +61,24 @@ class ErrorBoundary extends Component {
 export default function App() {
   return (
     <ErrorBoundary>
-      <SafeAreaProvider>
-        <AuthProvider>
-          <LanguageProvider>
-            <NavigationContainer>
-              <StatusBar style="light" backgroundColor="#0D0D1A" />
-              <Suspense fallback={<View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#0D0D1A" }}><ActivityIndicator size="large" color="#6C63FF" /></View>}>
-                <AppNavigator />
-              </Suspense>
-            </NavigationContainer>
-          </LanguageProvider>
-        </AuthProvider>
-      </SafeAreaProvider>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <SafeAreaProvider>
+          <AuthProvider>
+            <LanguageProvider>
+              <ToastProvider>
+                <RealtimeProvider>
+                <NavigationContainer>
+                  <StatusBar style="light" backgroundColor="#0D0D1A" />
+                  <Suspense fallback={<View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#0D0D1A" }}><ActivityIndicator size="large" color="#6C63FF" /></View>}>
+                    <AppNavigator />
+                  </Suspense>
+                </NavigationContainer>
+                </RealtimeProvider>
+              </ToastProvider>
+            </LanguageProvider>
+          </AuthProvider>
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
     </ErrorBoundary>
   );
 }
@@ -60,6 +86,7 @@ export default function App() {
 const s = StyleSheet.create({
   errorContainer: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#0D0D1A", padding: 20 },
   errorTitle: { fontSize: 20, fontWeight: "700", color: "#fff", marginBottom: 16 },
+  errorSub: { fontSize: 14, color: "#aaa", textAlign: "center", marginBottom: 20 },
   scrollArea: { flex: 1, width: "100%", marginBottom: 16 },
   errorLabel: { fontSize: 12, fontWeight: "600", color: "#6C5CE7", marginTop: 12, marginBottom: 4 },
   errorMsg: { fontSize: 14, color: "#E17055", backgroundColor: "#1A1A35", padding: 12, borderRadius: 8, fontFamily: "monospace" },

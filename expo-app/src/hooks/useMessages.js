@@ -442,6 +442,15 @@ export default function useMessages(partnerId, myIdOverride) {
             );
           }
         });
+        realtime.listen(`typing.${mid}`, "typing.indicator", (p) => {
+          if (!p || !p.typing) {
+            setTyping(false);
+            return;
+          }
+          setTyping(true);
+          if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+          typingTimerRef.current = setTimeout(() => setTyping(false), 4000);
+        });
 
         statusUnsub = realtime.onStatus((s) => {
           setConnection(s);
@@ -463,6 +472,11 @@ export default function useMessages(partnerId, myIdOverride) {
         // Ignore.
       }
       if (statusUnsub) statusUnsub();
+      try {
+        realtime.leave(`typing.${mid}`);
+      } catch (e) {
+        // Ignore.
+      }
     };
   }, [partnerId, myId, receive]);
 

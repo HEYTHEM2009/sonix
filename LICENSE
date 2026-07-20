@@ -1,10 +1,47 @@
-All Rights Reserved.
+SONIX COMMERCIAL STARTER KIT LICENSE
+=====================================
 
-Copyright (c) 2026
+Copyright (c) 2026 Sonix. All rights reserved.
 
-This source code is the exclusive property of the copyright holder. 
-Unauthorized copying, distribution, modification, or commercial use 
-of this software, via any medium, is strictly prohibited without 
-the prior written permission of the copyright holder.
+This license governs the use of the "Sonix" social media starter kit
+(the "Software"), consisting of the Laravel backend, the React Native /
+Expo mobile app, documentation, and associated assets.
 
-For licensing inquiries, please contact the repository owner.
+1. GRANT OF LICENSE
+   Subject to the terms below, the copyright holder grants you a
+   non-exclusive, worldwide, royalty-free license to:
+     (a) Use the Software to build and operate your own applications.
+     (b) Modify, rebrand, and customize the Software (including logo,
+         name, colors, and copy) for your own products.
+     (c) Distribute your own applications that incorporate the Software.
+
+2. RESTRICTIONS
+   You may NOT, without the express prior written permission of the
+   copyright holder:
+     (a) Resell, sublicense, lease, or redistribute the unmodified
+         source code of the Software as a competing "starter kit",
+         template, or boilerplate.
+     (b) Use the "Sonix" name, logo, or trademarks to market a
+         third-party product without rebranding.
+     (c) Remove or alter copyright, license, or attribution notices
+         embedded in source files you redistribute.
+
+3. NO TRADEMARK INFRINGEMENT
+   The Software is 100% original and contains no assets, logos, or
+   trademarks of Instagram, TikTok, Facebook, or any other third party.
+   You are responsible for ensuring your rebranded product does not
+   infringe any third-party rights.
+
+4. WARRANTY DISCLAIMER
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+   EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+   NONINFRINGEMENT. IN NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE
+   FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY ARISING FROM THE USE OF
+   THE SOFTWARE.
+
+5. SUPPORT
+   Support is provided at the discretion of the copyright holder and
+   may require a separate support agreement.
+
+For licensing inquiries, contact the repository owner.

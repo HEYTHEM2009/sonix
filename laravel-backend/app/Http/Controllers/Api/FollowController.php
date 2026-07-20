@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Follow;
-use App\Models\User;
 use App\Models\Notification;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class FollowController extends Controller
@@ -14,7 +14,7 @@ class FollowController extends Controller
     {
         $followingId = (int) ($request->input('following_id') ?? $request->input('followingId'));
 
-        if (!$followingId) {
+        if (! $followingId) {
             return response()->json(['message' => 'following_id or followingId required'], 400);
         }
 
@@ -33,11 +33,12 @@ class FollowController extends Controller
             if ($existing->status === 'pending') {
                 return response()->json(['following' => false, 'requested' => false, 'message' => 'Request cancelled']);
             }
+
             return response()->json(['following' => false, 'message' => 'Unfollowed successfully']);
         }
 
         $targetUser = User::find($followingId);
-        if (!$targetUser) {
+        if (! $targetUser) {
             return response()->json(['message' => 'User not found'], 404);
         }
 
@@ -131,6 +132,7 @@ class FollowController extends Controller
         }
 
         $follow->delete();
+
         return response()->json(['message' => 'Follow request rejected']);
     }
 
@@ -142,7 +144,7 @@ class FollowController extends Controller
             ->where('following_id', $userId)
             ->first();
 
-        if (!$follow) {
+        if (! $follow) {
             return response()->json(['following' => false, 'requested' => false]);
         }
 

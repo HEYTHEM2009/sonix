@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions, StatusBar, ActivityIndicator } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { WebView } from "react-native-webview";
 import { resolveUrl } from "../api/client";
@@ -67,6 +68,14 @@ export default function VideoPostScreen({ route, navigation }) {
   });
 </script>
 </body></html>`;
+
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        try { webViewRef.current?.postMessage("mute"); } catch (e) {}
+      };
+    }, [])
+  );
 
   const onMessage = useCallback((event) => {
     const data = event.nativeEvent?.data || "";

@@ -75,7 +75,7 @@ export default function RegisterScreen({ navigation }) {
 
   const handleRegister = async () => {
     if (!username.trim() || !email.trim() || !password.trim()) return Alert.alert(t("error"), t("allFieldsRequired"));
-    if (password.length < 6) return Alert.alert(t("error"), t("passwordMin"));
+    if (password.length < 8) return Alert.alert(t("error"), t("passwordMin"));
     setLoading(true);
     try { await register(username.trim(), email.trim(), password); }
     catch (e) { const msg = e.response?.data?.message || Object.values(e.response?.data?.errors || {}).flat().join(", ") || t("failedToRegister"); Alert.alert(t("registerFailed"), msg); }

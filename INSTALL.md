@@ -88,8 +88,9 @@ php artisan db:seed
 ```
 
 This creates:
-- 6 demo users with avatars
+- 8 demo users with avatars (admin, demo, sara, omar, nora, alex, lily, testuser)
 - 10 sample posts
+- 30 demo reels and 12 music tracks
 - Stories, likes, comments, follows
 
 ---

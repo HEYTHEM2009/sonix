@@ -92,10 +92,10 @@ export default function ProfileScreen({ navigation }) {
               <Text style={s.statNum}>{stats.followers}</Text>
               <Text style={s.statLbl}>{t("followers")}</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => navigation.navigate("Followers")} style={s.statItem}>
-              <Text style={s.statNum}>{stats.following}</Text>
-              <Text style={s.statLbl}>{t("following")}</Text>
-            </TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.navigate("Followers", { tab: "following" })} style={s.statItem}>
+          <Text style={s.statNum}>{stats.following}</Text>
+          <Text style={s.statLbl}>{t("following")}</Text>
+        </TouchableOpacity>
           </View>
         </View>
 

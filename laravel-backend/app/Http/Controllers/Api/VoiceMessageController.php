@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\VoiceMessage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class VoiceMessageController extends Controller
 {
@@ -18,10 +20,10 @@ class VoiceMessageController extends Controller
 
         $audioPath = $request->file('audio')->store('voice-messages', 'public');
 
-        $voice = \App\Models\VoiceMessage::create([
+        $voice = VoiceMessage::create([
             'user_id' => Auth::id(),
             'conversation_id' => $request->conversation_id,
-            'audio_url' => \Illuminate\Support\Facades\Storage::disk('public')->url($audioPath),
+            'audio_url' => Storage::disk('public')->url($audioPath),
             'duration' => $request->duration,
         ]);
 
@@ -30,14 +32,16 @@ class VoiceMessageController extends Controller
 
     public function show($id)
     {
-        $voice = \App\Models\VoiceMessage::findOrFail($id);
+        $voice = VoiceMessage::findOrFail($id);
+
         return response()->json($voice);
     }
 
     public function destroy($id)
     {
-        $voice = \App\Models\VoiceMessage::where('user_id', Auth::id())->findOrFail($id);
+        $voice = VoiceMessage::where('user_id', Auth::id())->findOrFail($id);
         $voice->delete();
+
         return response()->json(['message' => 'Voice message deleted']);
     }
 }

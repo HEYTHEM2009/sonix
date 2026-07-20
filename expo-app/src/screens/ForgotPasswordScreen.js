@@ -60,7 +60,7 @@ export default function ForgotPasswordScreen({ navigation }) {
     try {
       await client.post("/auth/forgot-password", { email: email.trim() });
       Alert.alert(t("success"), t("codeSent"));
-      navigation.navigate("Login");
+      navigation.navigate("ResetPassword", { email: email.trim() });
     } catch (e) {
       Alert.alert(t("error"), e.response?.data?.message || t("resetFailed"));
     }

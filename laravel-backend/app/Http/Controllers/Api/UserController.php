@@ -2,17 +2,17 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Helpers\Sanitize;
 use App\Helpers\StorageHelper;
-use App\Models\User;
-use App\Models\Post;
-use App\Models\Follow;
+use App\Http\Controllers\Controller;
 use App\Models\BlockedUser;
-use App\Models\ProfileVisitor;
-use App\Models\UserBadge;
+use App\Models\Follow;
+use App\Models\Post;
 use App\Models\ProfileTemplate;
+use App\Models\ProfileVisitor;
 use App\Models\RecentSearch;
+use App\Models\User;
+use App\Models\UserBadge;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redis;
 
@@ -24,12 +24,14 @@ class UserController extends Controller
         $users = User::select('id', 'username', 'avatar', 'is_private')
             ->whereNotIn('id', $blockedIds)
             ->paginate(50);
+
         return response()->json($users);
     }
 
     public function me(Request $request)
     {
         $user = $request->user();
+
         return response()->json([
             'id' => $user->id,
             'username' => $user->username,
@@ -47,7 +49,7 @@ class UserController extends Controller
             ? User::select('id', 'username', 'bio', 'avatar', 'is_private', 'created_at')->find($id)
             : User::select('id', 'username', 'bio', 'avatar', 'is_private', 'created_at')->where('username', $id)->first();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json(['message' => 'User not found'], 404);
         }
 
@@ -81,7 +83,7 @@ class UserController extends Controller
     public function togglePrivacy(Request $request)
     {
         $user = $request->user();
-        $user->is_private = !$user->is_private;
+        $user->is_private = ! $user->is_private;
         $user->save();
 
         return response()->json([
@@ -90,12 +92,24 @@ class UserController extends Controller
         ]);
     }
 
+    public function toggleActivityStatus(Request $request)
+    {
+        $user = $request->user();
+        $user->activity_status = ! $user->activity_status;
+        $user->save();
+
+        return response()->json([
+            'activity_status' => $user->activity_status,
+            'message' => $user->activity_status ? 'Activity status is now visible' : 'Activity status is now hidden',
+        ]);
+    }
+
     public function updateProfile(Request $request)
     {
         $user = $request->user();
 
         $request->validate([
-            'username' => 'sometimes|string|max:30|unique:users,username,' . $user->id,
+            'username' => 'sometimes|string|max:30|unique:users,username,'.$user->id,
             'bio' => 'nullable|string|max:150',
             'avatar' => 'nullable|image|max:2048',
         ]);
@@ -128,7 +142,9 @@ class UserController extends Controller
     public function search(Request $request)
     {
         $query = $request->input('q', '');
-        if (strlen($query) < 2) return response()->json([]);
+        if (strlen($query) < 2) {
+            return response()->json([]);
+        }
 
         $query = Sanitize::text($query);
         $userId = $request->user()->id;
@@ -140,17 +156,17 @@ class UserController extends Controller
         $type = $request->input('type', 'all');
 
         $exact = $query;
-        $prefix = $query . '%';
-        $contains = '%' . $query . '%';
+        $prefix = $query.'%';
+        $contains = '%'.$query.'%';
 
         $users = User::select('id', 'username', 'bio', 'avatar', 'is_private', 'online_at')
             ->whereNotIn('id', $excludeIds)
-            ->where(function ($q) use ($exact, $prefix, $contains) {
+            ->where(function ($q) use ($prefix, $contains) {
                 $q->where('username', 'ilike', $prefix)
-                  ->orWhere('username', 'ilike', $contains)
-                  ->orWhere('bio', 'ilike', $contains);
+                    ->orWhere('username', 'ilike', $contains)
+                    ->orWhere('bio', 'ilike', $contains);
             })
-            ->orderByRaw("CASE WHEN username ILIKE ? THEN 0 WHEN username ILIKE ? THEN 1 WHEN username ILIKE ? THEN 2 ELSE 3 END", [$exact, $prefix, $contains])
+            ->orderByRaw('CASE WHEN username ILIKE ? THEN 0 WHEN username ILIKE ? THEN 1 WHEN username ILIKE ? THEN 2 ELSE 3 END', [$exact, $prefix, $contains])
             ->orderBy('username')
             ->paginate($perPage);
 
@@ -180,7 +196,9 @@ class UserController extends Controller
     public function searchSuggestions(Request $request)
     {
         $query = $request->input('q', '');
-        if (strlen($query) < 1) return response()->json([]);
+        if (strlen($query) < 1) {
+            return response()->json([]);
+        }
 
         $query = Sanitize::text($query);
         $userId = $request->user()->id;
@@ -190,7 +208,7 @@ class UserController extends Controller
         $excludeIds = array_unique(array_merge($blockedIds, $blockedByMe));
 
         $users = User::whereNotIn('id', $excludeIds)
-            ->where('username', 'ilike', $query . '%')
+            ->where('username', 'ilike', $query.'%')
             ->select('id', 'username', 'avatar')
             ->limit(5)
             ->get();
@@ -238,6 +256,7 @@ class UserController extends Controller
     public function clearRecentSearches(Request $request)
     {
         RecentSearch::where('user_id', $request->user()->id)->delete();
+
         return response()->json(['message' => 'Cleared']);
     }
 
@@ -271,6 +290,7 @@ class UserController extends Controller
             }
         } catch (\Throwable $e) {
         }
+
         return response()->json(['message' => 'Online status updated']);
     }
 
@@ -281,6 +301,7 @@ class UserController extends Controller
                 ->where('user_id', $id)
                 ->latest()
                 ->paginate(50);
+
             return response()->json($visitors);
         } catch (\Throwable $e) {
             return response()->json(['data' => [], 'message' => 'Table not available yet']);
@@ -291,6 +312,7 @@ class UserController extends Controller
     {
         try {
             $badges = UserBadge::where('user_id', $id)->latest()->get();
+
             return response()->json($badges);
         } catch (\Throwable $e) {
             return response()->json([]);
@@ -313,6 +335,7 @@ class UserController extends Controller
             ]);
 
             $badge = UserBadge::create($request->only(['user_id', 'badge_type', 'badge_name', 'description', 'icon_url']));
+
             return response()->json($badge, 201);
         } catch (\Throwable $e) {
             return response()->json(['message' => 'Failed to add badge', 'error' => 'Internal server error'], 500);
@@ -322,13 +345,14 @@ class UserController extends Controller
     public function removeBadge($id)
     {
         $user = request()->user();
-        if (!$user || $user->role !== 'admin') {
+        if (! $user || $user->role !== 'admin') {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
         try {
             $badge = UserBadge::findOrFail($id);
             $badge->delete();
+
             return response()->json(['message' => 'Badge removed']);
         } catch (\Throwable $e) {
             return response()->json(['message' => 'Failed to remove badge'], 500);
@@ -339,6 +363,7 @@ class UserController extends Controller
     {
         try {
             $template = ProfileTemplate::where('user_id', $id)->where('is_active', true)->first();
+
             return response()->json($template);
         } catch (\Throwable $e) {
             return response()->json(['message' => 'Template not available']);

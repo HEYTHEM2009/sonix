@@ -3,8 +3,8 @@
 namespace App\Events;
 
 use App\Models\Message;
-use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Broadcasting\InteractsWithSockets;
+use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
@@ -14,7 +14,9 @@ class MessageSent implements ShouldBroadcast
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public Message $message;
+
     public int $senderId;
+
     public int $receiverId;
 
     public function __construct(Message $message)
@@ -27,8 +29,8 @@ class MessageSent implements ShouldBroadcast
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel('messages.' . $this->receiverId),
-            new PrivateChannel('messages.' . $this->senderId),
+            new PrivateChannel('messages.'.$this->receiverId),
+            new PrivateChannel('messages.'.$this->senderId),
         ];
     }
 
@@ -49,6 +51,7 @@ class MessageSent implements ShouldBroadcast
             'receiver_id' => $this->message->receiver_id,
             'created_at' => $this->message->created_at->toISOString(),
             'is_read' => $this->message->is_read,
+            'delivered' => false,
             'reply_to' => $this->message->reply_to,
             'sender' => [
                 'id' => $this->message->sender->id,

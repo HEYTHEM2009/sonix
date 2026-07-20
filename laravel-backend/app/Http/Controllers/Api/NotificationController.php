@@ -11,7 +11,7 @@ class NotificationController extends Controller
     {
         $prefs = $request->user()->notification_prefs;
 
-        if (!$prefs) {
+        if (! $prefs) {
             $prefs = (object) [
                 'push_enabled' => true,
                 'email_enabled' => false,

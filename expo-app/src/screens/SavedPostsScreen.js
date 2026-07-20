@@ -60,7 +60,7 @@ export default function SavedPostsScreen({ navigation }) {
           renderItem={({ item: row }) => (
             <View style={s.row}>
               {row.map((post) => (
-                <TouchableOpacity key={post.id} style={s.cell}>
+                <TouchableOpacity key={post.id} style={s.cell} activeOpacity={0.8} onPress={() => navigation.navigate("Comments", { postId: post.id })}>
                   {post.image ? <Image source={{ uri: resolveUrl(post.image) }} style={s.cellImg} resizeMode="cover" />
                   : <View style={s.cellText}><Text style={s.cellTextContent} numberOfLines={3}>{post.content}</Text></View>}
                 </TouchableOpacity>

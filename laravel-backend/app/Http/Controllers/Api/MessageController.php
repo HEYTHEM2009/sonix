@@ -2,17 +2,18 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
+use App\Events\MessageRead;
+use App\Events\TypingIndicator;
 use App\Helpers\Sanitize;
 use App\Helpers\StorageHelper;
+use App\Http\Controllers\Controller;
+use App\Models\ConversationSetting;
 use App\Models\Message;
 use App\Models\MessageReaction;
-use App\Models\ConversationSetting;
 use App\Models\User;
-use App\Events\MessageSent;
-use App\Events\TypingIndicator;
 use App\Services\MessageService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
 
 class MessageController extends Controller
@@ -21,7 +22,7 @@ class MessageController extends Controller
     {
         $receiverId = (int) ($request->input('receiver_id') ?? $request->input('receiverId') ?? $request->input('recipient_id') ?? $request->input('recipientId'));
 
-        if (!$receiverId || !User::where('id', $receiverId)->exists()) {
+        if (! $receiverId || ! User::where('id', $receiverId)->exists()) {
             return response()->json(['message' => 'Receiver not found'], 404);
         }
 
@@ -33,7 +34,7 @@ class MessageController extends Controller
             $rules['voice'] = 'mimes:mp3,wav,m4a,mp4,ogg,webm|max:10240';
         }
         if ($request->hasFile('document')) {
-            $rules['document'] = 'file|max:51200';
+            $rules['document'] = 'file|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,txt,zip,csv|max:51200';
         }
         $request->validate($rules);
 
@@ -58,6 +59,7 @@ class MessageController extends Controller
                 }
             } catch (\Exception $e) {
                 \Log::error('Image upload failed', ['error' => $e->getMessage()]);
+
                 return response()->json(['message' => 'Failed to upload image'], 422);
             }
         } elseif ($request->hasFile('voice')) {
@@ -71,6 +73,7 @@ class MessageController extends Controller
                 }
             } catch (\Exception $e) {
                 \Log::error('Voice upload failed', ['error' => $e->getMessage()]);
+
                 return response()->json(['message' => 'Failed to upload voice'], 422);
             }
         } elseif ($request->hasFile('document')) {
@@ -84,6 +87,7 @@ class MessageController extends Controller
                 }
             } catch (\Exception $e) {
                 \Log::error('Document upload failed', ['error' => $e->getMessage()]);
+
                 return response()->json(['message' => 'Failed to upload document'], 422);
             }
         } elseif ($request->has('reaction')) {
@@ -107,7 +111,7 @@ class MessageController extends Controller
             ->orWhere('receiver_id', $userId)
             ->selectRaw('DISTINCT CASE WHEN sender_id = ? THEN receiver_id ELSE sender_id END as partner_id', [$userId])
             ->pluck('partner_id')
-            ->filter(fn($id) => $id !== $userId)
+            ->filter(fn ($id) => $id !== $userId)
             ->values();
 
         if ($partnerIds->isEmpty()) {
@@ -122,19 +126,19 @@ class MessageController extends Controller
         $lastMessages = Message::where(function ($q) use ($userId) {
             $q->where('sender_id', $userId)->orWhere('receiver_id', $userId);
         })
-        ->where('is_deleted', false)
-        ->whereIn('id', function ($q) use ($userId) {
-            $q->selectRaw('MAX(id)')
-              ->from('messages')
-              ->where(function ($sub) use ($userId) {
-                  $sub->where('sender_id', $userId)
-                      ->orWhere('receiver_id', $userId);
-              })
-              ->where('is_deleted', false)
-              ->groupByRaw('CASE WHEN sender_id = ? THEN receiver_id ELSE sender_id END', [$userId]);
-        })
-        ->get()
-        ->keyBy(fn($m) => $m->sender_id === $userId ? $m->receiver_id : $m->sender_id);
+            ->where('is_deleted', false)
+            ->whereIn('id', function ($q) use ($userId) {
+                $q->selectRaw('MAX(id)')
+                    ->from('messages')
+                    ->where(function ($sub) use ($userId) {
+                        $sub->where('sender_id', $userId)
+                            ->orWhere('receiver_id', $userId);
+                    })
+                    ->where('is_deleted', false)
+                    ->groupByRaw('CASE WHEN sender_id = ? THEN receiver_id ELSE sender_id END', [$userId]);
+            })
+            ->get()
+            ->keyBy(fn ($m) => $m->sender_id === $userId ? $m->receiver_id : $m->sender_id);
 
         $unreadCounts = Message::where('receiver_id', $userId)
             ->where('is_read', false)
@@ -150,7 +154,9 @@ class MessageController extends Controller
         $conversations = [];
         foreach ($partnerIds as $otherId) {
             $otherUser = $users->get($otherId);
-            if (!$otherUser) continue;
+            if (! $otherUser) {
+                continue;
+            }
 
             $lastMessage = $lastMessages->get($otherId);
 
@@ -175,7 +181,10 @@ class MessageController extends Controller
         }
 
         usort($conversations, function ($a, $b) {
-            if ($a['is_pinned'] !== $b['is_pinned']) return $b['is_pinned'] <=> $a['is_pinned'];
+            if ($a['is_pinned'] !== $b['is_pinned']) {
+                return $b['is_pinned'] <=> $a['is_pinned'];
+            }
+
             return ($b['last_message']['created_at']?->timestamp ?? 0) - ($a['last_message']['created_at']?->timestamp ?? 0);
         });
 
@@ -199,7 +208,7 @@ class MessageController extends Controller
             ->where('is_deleted', false)
             ->where(function ($q) use ($currentUserId) {
                 $q->whereNull('deleted_for')
-                  ->orWhereJsonDoesntContain('deleted_for', $currentUserId);
+                    ->orWhereJsonDoesntContain('deleted_for', $currentUserId);
             })
             ->where(function ($q) {
                 $q->whereNull('disappears_at')->orWhere('disappears_at', '>', now());
@@ -225,10 +234,28 @@ class MessageController extends Controller
 
     public function markAsRead(Request $request, $userId)
     {
-        Message::where('sender_id', $userId)
-            ->where('receiver_id', $request->user()->id)
+        $reader = $request->user();
+
+        $updated = Message::where('sender_id', $userId)
+            ->where('receiver_id', $reader->id)
             ->where('is_read', false)
             ->update(['is_read' => true, 'read_at' => now()]);
+
+        if ($updated > 0 && ($reader->privacy_read_receipts ?? true)) {
+            $last = Message::where('sender_id', $userId)
+                ->where('receiver_id', $reader->id)
+                ->orderByDesc('id')
+                ->first();
+
+            if ($last) {
+                broadcast(new MessageRead(
+                    $last->id,
+                    $reader->id,
+                    (int) $userId,
+                    $last->read_at->toISOString()
+                ));
+            }
+        }
 
         return response()->json(['message' => 'Marked as read']);
     }
@@ -278,7 +305,7 @@ class MessageController extends Controller
         try {
             broadcast(new TypingIndicator($user->id, $receiverId, $isTyping));
         } catch (\Exception $e) {
-            \Log::warning('Typing broadcast failed: ' . $e->getMessage());
+            \Log::warning('Typing broadcast failed: '.$e->getMessage());
         }
 
         return response()->json([
@@ -291,8 +318,10 @@ class MessageController extends Controller
     public function checkTyping($userId, Request $request)
     {
         $currentUser = $request->user();
-        $otherUser = \App\Models\User::find($userId);
-        if (!$otherUser) return response()->json(['typing' => false]);
+        $otherUser = User::find($userId);
+        if (! $otherUser) {
+            return response()->json(['typing' => false]);
+        }
 
         $isTyping = $otherUser->typing_at &&
                      $otherUser->typing_to_user_id == $currentUser->id &&
@@ -304,7 +333,9 @@ class MessageController extends Controller
     public function addReaction(Request $request, $id)
     {
         $message = Message::find($id);
-        if (!$message) return response()->json(['message' => 'Not found'], 404);
+        if (! $message) {
+            return response()->json(['message' => 'Not found'], 404);
+        }
 
         if ($message->sender_id !== $request->user()->id && $message->receiver_id !== $request->user()->id) {
             return response()->json(['message' => 'Unauthorized'], 403);
@@ -323,7 +354,9 @@ class MessageController extends Controller
     public function removeReaction(Request $request, $id)
     {
         $message = Message::find($id);
-        if (!$message) return response()->json(['message' => 'Not found'], 404);
+        if (! $message) {
+            return response()->json(['message' => 'Not found'], 404);
+        }
 
         if ($message->sender_id !== $request->user()->id && $message->receiver_id !== $request->user()->id) {
             return response()->json(['message' => 'Unauthorized'], 403);
@@ -339,8 +372,12 @@ class MessageController extends Controller
     public function update(Request $request, $id)
     {
         $message = Message::find($id);
-        if (!$message) return response()->json(['message' => 'Not found'], 404);
-        if ($message->sender_id !== $request->user()->id) return response()->json(['message' => 'Unauthorized'], 403);
+        if (! $message) {
+            return response()->json(['message' => 'Not found'], 404);
+        }
+        if ($message->sender_id !== $request->user()->id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
 
         $request->validate(['content' => 'required|string|max:5000']);
 
@@ -352,8 +389,12 @@ class MessageController extends Controller
     public function setVanish(Request $request, $id)
     {
         $message = Message::find($id);
-        if (!$message) return response()->json(['message' => 'Not found'], 404);
-        if ($message->sender_id !== $request->user()->id) return response()->json(['message' => 'Unauthorized'], 403);
+        if (! $message) {
+            return response()->json(['message' => 'Not found'], 404);
+        }
+        if ($message->sender_id !== $request->user()->id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
 
         $request->validate(['seconds' => 'required|integer|min:1|max:86400']);
 
@@ -370,22 +411,30 @@ class MessageController extends Controller
     public function destroy(Request $request, $id)
     {
         $message = Message::find($id);
-        if (!$message) return response()->json(['message' => 'Not found'], 404);
-        if ($message->sender_id !== $request->user()->id) return response()->json(['message' => 'Unauthorized'], 403);
+        if (! $message) {
+            return response()->json(['message' => 'Not found'], 404);
+        }
+        if ($message->sender_id !== $request->user()->id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
 
         app(MessageService::class)->deleteForEveryone((int) $id, $request->user()->id);
+
         return response()->json(['message' => 'Message deleted']);
     }
 
     public function deleteForMe(Request $request, $id)
     {
         $message = Message::find($id);
-        if (!$message) return response()->json(['message' => 'Not found'], 404);
+        if (! $message) {
+            return response()->json(['message' => 'Not found'], 404);
+        }
         if ($message->sender_id !== $request->user()->id && $message->receiver_id !== $request->user()->id) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
         app(MessageService::class)->deleteForMe((int) $id, $request->user()->id);
+
         return response()->json(['message' => 'Message deleted for you']);
     }
 
@@ -395,7 +444,7 @@ class MessageController extends Controller
             ['user_id' => $request->user()->id, 'partner_id' => $userId],
             ['is_muted' => false]
         );
-        $setting->update(['is_muted' => \Illuminate\Support\Facades\DB::raw('NOT is_muted')]);
+        $setting->update(['is_muted' => DB::raw('NOT is_muted')]);
         $setting->refresh();
 
         return response()->json(['is_muted' => $setting->is_muted]);
@@ -407,7 +456,7 @@ class MessageController extends Controller
             ['user_id' => $request->user()->id, 'partner_id' => $userId],
             ['is_pinned' => false]
         );
-        $setting->update(['is_pinned' => \Illuminate\Support\Facades\DB::raw('NOT is_pinned')]);
+        $setting->update(['is_pinned' => DB::raw('NOT is_pinned')]);
         $setting->refresh();
 
         return response()->json(['is_pinned' => $setting->is_pinned]);
@@ -427,7 +476,9 @@ class MessageController extends Controller
     public function forward(Request $request, $id)
     {
         $message = Message::find($id);
-        if (!$message) return response()->json(['message' => 'Not found'], 404);
+        if (! $message) {
+            return response()->json(['message' => 'Not found'], 404);
+        }
 
         if ($message->sender_id !== $request->user()->id && $message->receiver_id !== $request->user()->id) {
             return response()->json(['message' => 'Unauthorized'], 403);

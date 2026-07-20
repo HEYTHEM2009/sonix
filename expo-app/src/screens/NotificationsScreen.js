@@ -46,11 +46,17 @@ export default function NotificationsScreen({ navigation }) {
             </View>
           }
           renderItem={({ item: n }) => (
-            <View style={[s.card, !n.seen && s.unread]}>
+            <TouchableOpacity
+              style={[s.card, !n.seen && s.unread]}
+              activeOpacity={0.8}
+              onPress={() => {
+                if (n.sender?.id) navigation.navigate("UserProfile", { userId: n.sender.id });
+              }}
+            >
               <View style={s.avatar}><Text style={s.avatarText}>{n.sender?.username?.[0]?.toUpperCase() || "?"}</Text></View>
               <Text style={s.msg}><Text style={s.user}>{n.sender?.username}</Text> {n.message}</Text>
               <Text style={s.time}>{new Date(n.created_at).toLocaleDateString()}</Text>
-            </View>
+            </TouchableOpacity>
           )}
         />
       )}

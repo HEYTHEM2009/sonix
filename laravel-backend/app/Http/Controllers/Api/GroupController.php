@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Events\GroupMessageSent;
 use App\Http\Controllers\Controller;
 use App\Models\Group;
 use App\Models\GroupMember;
@@ -21,12 +22,13 @@ class GroupController extends Controller
             ->get()
             ->map(function ($group) use ($userId) {
                 $lastMsg = $group->lastMessage;
+
                 return [
                     'id' => $group->id,
                     'name' => $group->name,
                     'avatar' => $group->avatar,
                     'members_count' => $group->members_count,
-                    'members' => $group->members->map(fn($m) => [
+                    'members' => $group->members->map(fn ($m) => [
                         'id' => $m->user->id,
                         'username' => $m->user->username,
                         'avatar' => $m->user->avatar,
@@ -45,7 +47,7 @@ class GroupController extends Controller
                     'created_at' => $group->created_at,
                 ];
             })
-            ->sortByDesc(fn($g) => $g['last_message'] ? $g['last_message']['created_at'] : $g['created_at'])
+            ->sortByDesc(fn ($g) => $g['last_message'] ? $g['last_message']['created_at'] : $g['created_at'])
             ->values();
 
         return response()->json($groups);
@@ -81,7 +83,7 @@ class GroupController extends Controller
             'name' => $group->name,
             'avatar' => $group->avatar,
             'members_count' => $group->members->count(),
-            'members' => $group->members->map(fn($m) => [
+            'members' => $group->members->map(fn ($m) => [
                 'id' => $m->user->id,
                 'username' => $m->user->username,
                 'avatar' => $m->user->avatar,
@@ -95,17 +97,21 @@ class GroupController extends Controller
     public function show(Request $request, $id)
     {
         $group = Group::with('members.user:id,username,avatar')->withCount('members')->find($id);
-        if (!$group) return response()->json(['message' => 'Not found'], 404);
+        if (! $group) {
+            return response()->json(['message' => 'Not found'], 404);
+        }
 
         $isMember = $group->members->contains('user_id', $request->user()->id);
-        if (!$isMember) return response()->json(['message' => 'Forbidden'], 403);
+        if (! $isMember) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
 
         return response()->json([
             'id' => $group->id,
             'name' => $group->name,
             'avatar' => $group->avatar,
             'members_count' => $group->members_count,
-            'members' => $group->members->map(fn($m) => [
+            'members' => $group->members->map(fn ($m) => [
                 'id' => $m->user->id,
                 'username' => $m->user->username,
                 'avatar' => $m->user->avatar,
@@ -119,10 +125,14 @@ class GroupController extends Controller
     public function addMembers(Request $request, $id)
     {
         $group = Group::find($id);
-        if (!$group) return response()->json(['message' => 'Not found'], 404);
+        if (! $group) {
+            return response()->json(['message' => 'Not found'], 404);
+        }
 
         $member = GroupMember::where('group_id', $id)->where('user_id', $request->user()->id)->first();
-        if (!$member || $member->role !== 'admin') return response()->json(['message' => 'Forbidden'], 403);
+        if (! $member || $member->role !== 'admin') {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
 
         $request->validate(['user_ids' => 'required|array|min:1', 'user_ids.*' => 'exists:users,id']);
 
@@ -134,7 +144,8 @@ class GroupController extends Controller
         }
 
         $group->load('members.user:id,username,avatar');
-        return response()->json(['message' => 'Members added', 'members' => $group->members->map(fn($m) => [
+
+        return response()->json(['message' => 'Members added', 'members' => $group->members->map(fn ($m) => [
             'id' => $m->user->id, 'username' => $m->user->username, 'avatar' => $m->user->avatar, 'role' => $m->role,
         ])]);
     }
@@ -142,22 +153,31 @@ class GroupController extends Controller
     public function removeMember(Request $request, $id, $userId)
     {
         $group = Group::find($id);
-        if (!$group) return response()->json(['message' => 'Not found'], 404);
+        if (! $group) {
+            return response()->json(['message' => 'Not found'], 404);
+        }
 
         $currentMember = GroupMember::where('group_id', $id)->where('user_id', $request->user()->id)->first();
-        if (!$currentMember || $currentMember->role !== 'admin') return response()->json(['message' => 'Forbidden'], 403);
+        if (! $currentMember || $currentMember->role !== 'admin') {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
 
         GroupMember::where('group_id', $id)->where('user_id', $userId)->delete();
+
         return response()->json(['message' => 'Member removed']);
     }
 
     public function sendMessage(Request $request, $id)
     {
         $group = Group::find($id);
-        if (!$group) return response()->json(['message' => 'Not found'], 404);
+        if (! $group) {
+            return response()->json(['message' => 'Not found'], 404);
+        }
 
         $isMember = GroupMember::where('group_id', $id)->where('user_id', $request->user()->id)->exists();
-        if (!$isMember) return response()->json(['message' => 'Forbidden'], 403);
+        if (! $isMember) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
 
         $request->validate(['content' => 'required|string|max:5000']);
 
@@ -170,16 +190,22 @@ class GroupController extends Controller
 
         $message->load('user:id,username,avatar');
 
+        event(new GroupMessageSent($message));
+
         return response()->json($message, 201);
     }
 
     public function messages(Request $request, $id)
     {
         $group = Group::find($id);
-        if (!$group) return response()->json(['message' => 'Not found'], 404);
+        if (! $group) {
+            return response()->json(['message' => 'Not found'], 404);
+        }
 
         $isMember = GroupMember::where('group_id', $id)->where('user_id', $request->user()->id)->exists();
-        if (!$isMember) return response()->json(['message' => 'Forbidden'], 403);
+        if (! $isMember) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
 
         $limit = (int) $request->input('limit', 50);
         $cursor = $request->input('cursor');
@@ -187,7 +213,9 @@ class GroupController extends Controller
         $query = GroupMessage::with('user:id,username,avatar')
             ->where('group_id', $id);
 
-        if ($cursor) $query->where('id', '<', $cursor);
+        if ($cursor) {
+            $query->where('id', '<', $cursor);
+        }
 
         $messages = $query->orderBy('id', 'desc')->limit($limit + 1)->get();
 
@@ -204,10 +232,15 @@ class GroupController extends Controller
     public function destroy(Request $request, $id)
     {
         $group = Group::find($id);
-        if (!$group) return response()->json(['message' => 'Not found'], 404);
-        if ($group->created_by !== $request->user()->id) return response()->json(['message' => 'Forbidden'], 403);
+        if (! $group) {
+            return response()->json(['message' => 'Not found'], 404);
+        }
+        if ($group->created_by !== $request->user()->id) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
 
         $group->delete();
+
         return response()->json(['message' => 'Group deleted']);
     }
 }

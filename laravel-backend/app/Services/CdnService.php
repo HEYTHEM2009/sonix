@@ -8,7 +8,9 @@ use Illuminate\Support\Facades\Log;
 class CdnService
 {
     protected string $zoneId;
+
     protected string $apiToken;
+
     protected string $baseUrl;
 
     public function __construct()
@@ -20,18 +22,18 @@ class CdnService
 
     public function isEnabled(): bool
     {
-        return !empty($this->zoneId) && !empty($this->apiToken);
+        return ! empty($this->zoneId) && ! empty($this->apiToken);
     }
 
     public function purgeFiles(array $urls): bool
     {
-        if (!$this->isEnabled()) {
+        if (! $this->isEnabled()) {
             return false;
         }
 
         try {
             $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $this->apiToken,
+                'Authorization' => 'Bearer '.$this->apiToken,
                 'Content-Type' => 'application/json',
             ])->post("{$this->baseUrl}/zones/{$this->zoneId}/purge_cache", [
                 'files' => $urls,
@@ -39,6 +41,7 @@ class CdnService
 
             if ($response->successful()) {
                 Log::info('CDN purge successful', ['urls' => $urls]);
+
                 return true;
             }
 
@@ -46,22 +49,24 @@ class CdnService
                 'status' => $response->status(),
                 'body' => $response->json(),
             ]);
+
             return false;
         } catch (\Exception $e) {
-            Log::warning('CDN purge error: ' . $e->getMessage());
+            Log::warning('CDN purge error: '.$e->getMessage());
+
             return false;
         }
     }
 
     public function purgeAll(): bool
     {
-        if (!$this->isEnabled()) {
+        if (! $this->isEnabled()) {
             return false;
         }
 
         try {
             $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $this->apiToken,
+                'Authorization' => 'Bearer '.$this->apiToken,
                 'Content-Type' => 'application/json',
             ])->delete("{$this->baseUrl}/zones/{$this->zoneId}/purge_cache", [
                 'purge_everything' => true,
@@ -69,7 +74,8 @@ class CdnService
 
             return $response->successful();
         } catch (\Exception $e) {
-            Log::warning('CDN purge all error: ' . $e->getMessage());
+            Log::warning('CDN purge all error: '.$e->getMessage());
+
             return false;
         }
     }

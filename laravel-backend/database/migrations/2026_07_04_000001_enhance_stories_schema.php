@@ -3,14 +3,13 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
     public function up(): void
     {
         Schema::table('stories', function (Blueprint $table) {
-            if (!Schema::hasColumn('stories', 'is_highlight')) {
+            if (! Schema::hasColumn('stories', 'is_highlight')) {
                 $table->boolean('is_highlight')->default(false)->after('drawing_data');
             }
         });
@@ -66,7 +65,7 @@ return new class extends Migration
             Schema::table($table, function (Blueprint $table) use ($index, $columns) {
                 $table->index($columns, $index);
             });
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             // Index already exists or table missing, skip
         }
     }

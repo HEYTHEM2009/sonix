@@ -2,6 +2,8 @@
 
 namespace App\Jobs;
 
+use App\Models\Post;
+use App\Models\Story;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -9,20 +11,23 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Process;
-use App\Models\Story;
-use App\Models\Post;
 
 class TranscodeVideo implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $tries = 3;
+
     public int $timeout = 300;
+
     public int $backoff = 30;
 
     protected string $inputPath;
+
     protected string $outputDir;
+
     protected int $modelId;
+
     protected string $modelType; // 'story' or 'post'
 
     public function __construct(string $inputPath, int $modelId, string $modelType = 'story')
@@ -35,17 +40,18 @@ class TranscodeVideo implements ShouldQueue
 
     public function handle(): void
     {
-        if (!file_exists($this->inputPath)) {
+        if (! file_exists($this->inputPath)) {
             Log::warning('[Transcode] Input file not found', ['path' => $this->inputPath]);
+
             return;
         }
 
-        if (!is_dir($this->outputDir)) {
+        if (! is_dir($this->outputDir)) {
             mkdir($this->outputDir, 0755, true);
         }
 
         $basename = pathinfo($this->inputPath, PATHINFO_FILENAME);
-        $outputPath = $this->outputDir . '/' . $basename . '_transcoded.mp4';
+        $outputPath = $this->outputDir.'/'.$basename.'_transcoded.mp4';
 
         try {
             // Transcode to H.264 with adaptive bitrate
@@ -68,10 +74,11 @@ class TranscodeVideo implements ShouldQueue
                     'input' => $this->inputPath,
                 ]);
                 $this->release(60); // Retry after 60 seconds
+
                 return;
             }
 
-            $thumbPath = $this->outputDir . '/' . $basename . '_thumb.jpg';
+            $thumbPath = $this->outputDir.'/'.$basename.'_thumb.jpg';
             Process::run([
                 'ffmpeg',
                 '-i', $this->inputPath,
@@ -88,7 +95,7 @@ class TranscodeVideo implements ShouldQueue
             ];
 
             foreach ($qualities as $label => $dimensions) {
-                $variantPath = $this->outputDir . '/' . $basename . '_' . $label . '.mp4';
+                $variantPath = $this->outputDir.'/'.$basename.'_'.$label.'.mp4';
                 Process::run([
                     'ffmpeg',
                     '-i', $this->inputPath,
@@ -104,15 +111,15 @@ class TranscodeVideo implements ShouldQueue
                 ]);
             }
 
-            $relativePath = '/uploads/transcoded/' . $basename . '_transcoded.mp4';
-            $thumbRelative = '/uploads/transcoded/' . $basename . '_thumb.jpg';
+            $relativePath = '/uploads/transcoded/'.$basename.'_transcoded.mp4';
+            $thumbRelative = '/uploads/transcoded/'.$basename.'_thumb.jpg';
 
             $this->updateModel($relativePath, $thumbRelative);
 
             Log::info('[Transcode] Success', [
                 'input' => $this->inputPath,
                 'output' => $outputPath,
-                'model' => $this->modelType . ':' . $this->modelId,
+                'model' => $this->modelType.':'.$this->modelId,
             ]);
 
         } catch (\Exception $e) {
@@ -145,7 +152,7 @@ class TranscodeVideo implements ShouldQueue
     public function failed(\Throwable $exception): void
     {
         Log::error('[Transcode] Permanently failed', [
-            'model' => $this->modelType . ':' . $this->modelId,
+            'model' => $this->modelType.':'.$this->modelId,
             'error' => $exception->getMessage(),
         ]);
     }

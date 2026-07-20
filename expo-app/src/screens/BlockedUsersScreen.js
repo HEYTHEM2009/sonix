@@ -29,8 +29,11 @@ export default function BlockedUsersScreen({ navigation }) {
   const handleUnblock = useCallback(async (userId) => {
     setUnblockingId(userId);
     try {
-      await client.post("/block", { blocked_id: userId });
-      setUsers((prev) => prev.filter((u) => u.id !== userId));
+      const res = await client.post(`/users/${userId}/unblock`);
+      // Trust the server's authoritative blocked flag (toggle semantics vary).
+      if (res.data?.blocked === false || res.status === 200) {
+        setUsers((prev) => prev.filter((u) => u.id !== userId));
+      }
     } catch {
       Alert.alert(t("error"), t("failedToUnblock"));
     }

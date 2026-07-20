@@ -4,18 +4,23 @@ namespace App\Services;
 
 use App\Models\Follow;
 use App\Models\Story;
-use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Log;
-use Carbon\Carbon;
+use Illuminate\Support\Facades\Redis;
 
 class StoryCacheService
 {
     protected int $ttl = 300; // 5 minutes
+
     protected string $prefix = '';
+
     protected string $feedPrefix = 'stories:feed:';
+
     protected string $timelinePrefix = 'stories:timeline:';
+
     protected string $metadataPrefix = 'stories:meta:';
+
     protected string $statsPrefix = 'stories:stats:';
+
     protected string $pendingPrefix = 'stories:pending:';
 
     /**
@@ -39,7 +44,7 @@ class StoryCacheService
             $timelineKey = "{$this->timelinePrefix}{$userId}";
             $storyIds = Redis::zrevrange($timelineKey, 0, 50);
 
-            if (!empty($storyIds)) {
+            if (! empty($storyIds)) {
                 return $this->hydrateFromIds($storyIds);
             }
         } catch (\Throwable $e) {
@@ -69,7 +74,7 @@ class StoryCacheService
                 }
             }
 
-            if (!empty($storyIds)) {
+            if (! empty($storyIds)) {
                 $now = (float) microtime(true);
                 foreach ($storyIds as $id) {
                     Redis::zadd($timelineKey, [$id => $now]);
@@ -110,7 +115,9 @@ class StoryCacheService
 
             $followerIds[] = $userId; // Include self
 
-            if (empty($followerIds)) return;
+            if (empty($followerIds)) {
+                return;
+            }
 
             // Batch delete all keys at once
             $keysToDelete = [];
@@ -160,7 +167,9 @@ class StoryCacheService
         try {
             while ($payload = Redis::rpop("{$this->pendingPrefix}queue")) {
                 $job = json_decode($payload, true);
-                if (!$job || !isset($job['user_id'])) continue;
+                if (! $job || ! isset($job['user_id'])) {
+                    continue;
+                }
 
                 $this->invalidateFollowers($job['user_id']);
                 $processed++;
@@ -198,7 +207,7 @@ class StoryCacheService
         try {
             $key = "{$this->metadataPrefix}{$storyId}";
             $data = Redis::hgetall($key);
-            if (!empty($data)) {
+            if (! empty($data)) {
                 return $data;
             }
         } catch (\Throwable $e) {
@@ -217,9 +226,11 @@ class StoryCacheService
             $key = "{$this->statsPrefix}{$storyId}:views";
             $count = Redis::incr($key);
             Redis::expire($key, $this->ttl + 120);
+
             return $count;
         } catch (\Throwable $e) {
             Log::warning('[StoryCache] View increment failed', ['error' => $e->getMessage()]);
+
             return 0;
         }
     }
@@ -232,6 +243,7 @@ class StoryCacheService
         try {
             $key = "{$this->statsPrefix}{$storyId}:views";
             $count = Redis::get($key);
+
             return $count !== null ? (int) $count : null;
         } catch (\Throwable $e) {
             return null;
@@ -271,7 +283,7 @@ class StoryCacheService
                 $cursor = null;
                 do {
                     [$cursor, $keys] = Redis::scan($cursor ?? 0, ['match' => $pattern, 'count' => 100]);
-                    if (!empty($keys)) {
+                    if (! empty($keys)) {
                         Redis::del($keys);
                     }
                 } while ($cursor > 0);
@@ -293,7 +305,9 @@ class StoryCacheService
                 ->get()
                 ->keyBy('id');
 
-            if ($stories->isEmpty()) return null;
+            if ($stories->isEmpty()) {
+                return null;
+            }
 
             $result = [];
             foreach ($storyIds as $id) {
@@ -305,6 +319,7 @@ class StoryCacheService
             return $result;
         } catch (\Throwable $e) {
             Log::warning('[StoryCache] Hydration failed', ['error' => $e->getMessage()]);
+
             return null;
         }
     }

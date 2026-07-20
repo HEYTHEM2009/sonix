@@ -3,13 +3,14 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Database\Schema\Blueprint;
 
 class EnsureFeatureTables extends Command
 {
     protected $signature = 'app:ensure-feature-tables';
+
     protected $description = 'Create missing feature tables (profile_visitors, user_badges, profile_templates) and clean stale migration records';
 
     public function handle()
@@ -35,7 +36,7 @@ class EnsureFeatureTables extends Command
         }
 
         // Create profile_visitors table
-        if (!Schema::hasTable('profile_visitors')) {
+        if (! Schema::hasTable('profile_visitors')) {
             Schema::create('profile_visitors', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('user_id')->constrained()->onDelete('cascade');
@@ -51,7 +52,7 @@ class EnsureFeatureTables extends Command
         }
 
         // Create user_badges table
-        if (!Schema::hasTable('user_badges')) {
+        if (! Schema::hasTable('user_badges')) {
             Schema::create('user_badges', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('user_id')->constrained()->onDelete('cascade');
@@ -69,7 +70,7 @@ class EnsureFeatureTables extends Command
         }
 
         // Create profile_templates table
-        if (!Schema::hasTable('profile_templates')) {
+        if (! Schema::hasTable('profile_templates')) {
             Schema::create('profile_templates', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('user_id')->constrained()->onDelete('cascade');
@@ -86,7 +87,7 @@ class EnsureFeatureTables extends Command
         }
 
         // Create support_messages table
-        if (!Schema::hasTable('support_messages')) {
+        if (! Schema::hasTable('support_messages')) {
             Schema::create('support_messages', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('user_id')->constrained()->cascadeOnDelete();
@@ -101,7 +102,7 @@ class EnsureFeatureTables extends Command
         }
 
         // Create recent_searches table
-        if (!Schema::hasTable('recent_searches')) {
+        if (! Schema::hasTable('recent_searches')) {
             Schema::create('recent_searches', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('user_id')->constrained()->cascadeOnDelete();
@@ -117,35 +118,35 @@ class EnsureFeatureTables extends Command
 
         // Add missing columns to messages table (PostgreSQL-safe, no ->after())
         $missingMessageColumns = 0;
-        if (!Schema::hasColumn('messages', 'is_edited')) {
+        if (! Schema::hasColumn('messages', 'is_edited')) {
             Schema::table('messages', function (Blueprint $table) {
                 $table->boolean('is_edited')->default(false);
             });
             $this->info('Added is_edited column to messages');
             $missingMessageColumns++;
         }
-        if (!Schema::hasColumn('messages', 'original_content')) {
+        if (! Schema::hasColumn('messages', 'original_content')) {
             Schema::table('messages', function (Blueprint $table) {
                 $table->text('original_content')->nullable();
             });
             $this->info('Added original_content column to messages');
             $missingMessageColumns++;
         }
-        if (!Schema::hasColumn('messages', 'is_disappearing')) {
+        if (! Schema::hasColumn('messages', 'is_disappearing')) {
             Schema::table('messages', function (Blueprint $table) {
                 $table->boolean('is_disappearing')->default(false);
             });
             $this->info('Added is_disappearing column to messages');
             $missingMessageColumns++;
         }
-        if (!Schema::hasColumn('messages', 'disappears_at')) {
+        if (! Schema::hasColumn('messages', 'disappears_at')) {
             Schema::table('messages', function (Blueprint $table) {
                 $table->timestamp('disappears_at')->nullable();
             });
             $this->info('Added disappears_at column to messages');
             $missingMessageColumns++;
         }
-        if (!Schema::hasColumn('messages', 'deleted_for')) {
+        if (! Schema::hasColumn('messages', 'deleted_for')) {
             Schema::table('messages', function (Blueprint $table) {
                 $table->text('deleted_for')->nullable();
             });
@@ -159,21 +160,21 @@ class EnsureFeatureTables extends Command
 
         // Add missing columns to users table
         $missingUserColumns = 0;
-        if (!Schema::hasColumn('users', 'role')) {
+        if (! Schema::hasColumn('users', 'role')) {
             Schema::table('users', function (Blueprint $table) {
                 $table->string('role')->default('user');
             });
             $this->info('Added role column to users');
             $missingUserColumns++;
         }
-        if (!Schema::hasColumn('users', 'two_factor_enabled')) {
+        if (! Schema::hasColumn('users', 'two_factor_enabled')) {
             Schema::table('users', function (Blueprint $table) {
                 $table->boolean('two_factor_enabled')->default(false);
             });
             $this->info('Added two_factor_enabled column to users');
             $missingUserColumns++;
         }
-        if (!Schema::hasColumn('users', 'two_factor_secret')) {
+        if (! Schema::hasColumn('users', 'two_factor_secret')) {
             Schema::table('users', function (Blueprint $table) {
                 $table->text('two_factor_secret')->nullable();
             });
@@ -186,7 +187,7 @@ class EnsureFeatureTables extends Command
         }
 
         // Reel tables
-        if (!Schema::hasTable('reels')) {
+        if (! Schema::hasTable('reels')) {
             Schema::create('reels', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('user_id')->constrained()->onDelete('cascade');
@@ -202,7 +203,7 @@ class EnsureFeatureTables extends Command
             });
             $this->info('Created reels table');
         }
-        if (!Schema::hasTable('reel_likes')) {
+        if (! Schema::hasTable('reel_likes')) {
             Schema::create('reel_likes', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('user_id')->constrained()->onDelete('cascade');
@@ -212,7 +213,7 @@ class EnsureFeatureTables extends Command
             });
             $this->info('Created reel_likes table');
         }
-        if (!Schema::hasTable('reel_comments')) {
+        if (! Schema::hasTable('reel_comments')) {
             Schema::create('reel_comments', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('user_id')->constrained()->onDelete('cascade');
@@ -223,7 +224,7 @@ class EnsureFeatureTables extends Command
             });
             $this->info('Created reel_comments table');
         }
-        if (!Schema::hasTable('reel_comment_likes')) {
+        if (! Schema::hasTable('reel_comment_likes')) {
             Schema::create('reel_comment_likes', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('user_id')->constrained()->onDelete('cascade');
@@ -236,7 +237,7 @@ class EnsureFeatureTables extends Command
 
         // Group chat tables
         $groupTablesCreated = 0;
-        if (!Schema::hasTable('groups')) {
+        if (! Schema::hasTable('groups')) {
             Schema::create('groups', function (Blueprint $table) {
                 $table->id();
                 $table->string('name');
@@ -247,7 +248,7 @@ class EnsureFeatureTables extends Command
             $this->info('Created groups table');
             $groupTablesCreated++;
         }
-        if (!Schema::hasTable('group_members')) {
+        if (! Schema::hasTable('group_members')) {
             Schema::create('group_members', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('group_id')->constrained('groups')->onDelete('cascade');
@@ -260,7 +261,7 @@ class EnsureFeatureTables extends Command
             $this->info('Created group_members table');
             $groupTablesCreated++;
         }
-        if (!Schema::hasTable('group_messages')) {
+        if (! Schema::hasTable('group_messages')) {
             Schema::create('group_messages', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('group_id')->constrained('groups')->onDelete('cascade');

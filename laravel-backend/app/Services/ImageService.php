@@ -8,11 +8,13 @@ class ImageService
     {
         $path = $file->getRealPath();
         $info = @getimagesize($path);
-        if (!$info) return $path;
+        if (! $info) {
+            return $path;
+        }
 
         try {
             $mime = $info[2];
-            $tempPath = tempnam(sys_get_temp_dir(), 'compressed_') . '.jpg';
+            $tempPath = tempnam(sys_get_temp_dir(), 'compressed_').'.jpg';
 
             switch ($mime) {
                 case IMAGETYPE_JPEG:
@@ -31,13 +33,15 @@ class ImageService
                     return $path;
             }
 
-            if (!$image) return $path;
+            if (! $image) {
+                return $path;
+            }
 
             $origW = imagesx($image);
             $origH = imagesy($image);
 
             if ($origW > $maxWidth) {
-                $newH = (int)($origH * $maxWidth / $origW);
+                $newH = (int) ($origH * $maxWidth / $origW);
                 $resized = imagecreatetruecolor($maxWidth, $newH);
                 imagecopyresampled($resized, $image, 0, 0, 0, 0, $maxWidth, $newH, $origW, $origH);
                 imagedestroy($image);
@@ -57,11 +61,13 @@ class ImageService
     {
         $path = $file->getRealPath();
         $info = @getimagesize($path);
-        if (!$info) return $path;
+        if (! $info) {
+            return $path;
+        }
 
         try {
             $mime = $info[2];
-            $tempPath = tempnam(sys_get_temp_dir(), 'thumb_') . '.jpg';
+            $tempPath = tempnam(sys_get_temp_dir(), 'thumb_').'.jpg';
 
             switch ($mime) {
                 case IMAGETYPE_JPEG:
@@ -80,21 +86,23 @@ class ImageService
                     return $path;
             }
 
-            if (!$image) return $path;
+            if (! $image) {
+                return $path;
+            }
 
             $origW = imagesx($image);
             $origH = imagesy($image);
 
             $ratio = max($width / $origW, $height / $origH);
-            $newW = (int)($origW * $ratio);
-            $newH = (int)($origH * $ratio);
+            $newW = (int) ($origW * $ratio);
+            $newH = (int) ($origH * $ratio);
 
             $resized = imagecreatetruecolor($newW, $newH);
             imagecopyresampled($resized, $image, 0, 0, 0, 0, $newW, $newH, $origW, $origH);
             imagedestroy($image);
 
-            $cropX = (int)(($newW - $width) / 2);
-            $cropY = (int)(($newH - $height) / 2);
+            $cropX = (int) (($newW - $width) / 2);
+            $cropY = (int) (($newH - $height) / 2);
 
             $thumb = imagecreatetruecolor($width, $height);
             imagecopyresampled($thumb, $resized, 0, 0, $cropX, $cropY, $width, $height, $width, $height);

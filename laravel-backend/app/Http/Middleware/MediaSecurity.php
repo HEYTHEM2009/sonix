@@ -2,9 +2,9 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\MediaSecurityService;
 use Closure;
 use Illuminate\Http\Request;
-use App\Services\MediaSecurityService;
 
 class MediaSecurity
 {
@@ -12,25 +12,31 @@ class MediaSecurity
     {
         $path = $request->route('path');
 
-        if (!$path) {
+        if (! $path) {
             return $next($request);
         }
 
-        $service = new MediaSecurityService();
+        $service = new MediaSecurityService;
 
-        if (!$service->requiresSigning($path)) {
+        // Public assets (avatars, default thumbnails) are always allowed.
+        if (! $service->requiresSigning($path)) {
             return $this->serveFile($request, $path);
         }
 
-        // Verify signed URL
+        // Authenticated API clients (the mobile app) may access media directly.
+        if ($request->user()) {
+            return $this->serveFile($request, $path);
+        }
+
+        // Unauthenticated requests must present a valid signed URL.
         $signature = $request->query('sig');
         $expires = $request->query('exp');
 
-        if (!$signature || !$expires) {
-            return response()->json(['message' => 'Missing signature'], 403);
+        if (! $signature || ! $expires) {
+            return response()->json(['message' => 'Unauthorized'], 401);
         }
 
-        if (!$service->verifySignedUrl($path, $signature, $expires)) {
+        if (! $service->verifySignedUrl($path, $signature, $expires)) {
             return response()->json(['message' => 'Invalid or expired signature'], 403);
         }
 
@@ -39,9 +45,16 @@ class MediaSecurity
 
     protected function serveFile(Request $request, string $path)
     {
-        $fullPath = public_path('uploads/' . $path);
+        // Contain the path inside public/uploads/ to prevent traversal.
+        $path = ltrim($path, '/\\');
+        $fullPath = public_path('uploads/'.$path);
 
-        if (!file_exists($fullPath) || !is_file($fullPath)) {
+        $realUploads = realpath(public_path('uploads'));
+        $realFile = realpath($fullPath);
+
+        if ($realUploads === false || $realFile === false
+            || strncmp($realFile, $realUploads.DIRECTORY_SEPARATOR, strlen($realUploads.DIRECTORY_SEPARATOR)) !== 0
+            || ! is_file($realFile)) {
             abort(404);
         }
 

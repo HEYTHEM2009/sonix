@@ -66,6 +66,10 @@ export default function CreateReelScreen({ navigation }) {
   const [videoUri, setVideoUri] = useState(null);
   const [caption, setCaption] = useState("");
   const [musicTitle, setMusicTitle] = useState("");
+  const [status, setStatus] = useState("published");
+  const [scheduledAt, setScheduledAt] = useState("");
+  const [musicList, setMusicList] = useState([]);
+  const [showMusic, setShowMusic] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [speed, setSpeed] = useState(1);
   const [timer, setTimer] = useState(0);
@@ -175,6 +179,10 @@ export default function CreateReelScreen({ navigation }) {
 
   const submitReel = async () => {
     if (!videoUri || uploading) return;
+    if (status === "scheduled" && !scheduledAt) {
+      Alert.alert(t("error"), t("scheduleRequired") || "Pick a schedule date/time.");
+      return;
+    }
     setUploading(true);
     try {
       const form = new FormData();
@@ -187,6 +195,8 @@ export default function CreateReelScreen({ navigation }) {
       form.append("duration", String(Math.max(lastRecordTime, 30)));
       if (speed !== 1) form.append("speed", String(speed));
       if (filter > 0) form.append("filter", FILTERS[filter].name);
+      form.append("status", status);
+      if (status === "scheduled") form.append("scheduled_at", new Date(scheduledAt).toISOString());
       await client.post("/reels", form, { headers: { "Content-Type": "multipart/form-data" } });
       navigation.navigate("Home", { screen: "Reels" });
     } catch (e) {
@@ -194,6 +204,22 @@ export default function CreateReelScreen({ navigation }) {
     }
     setUploading(false);
   };
+
+  const openMusic = async () => {
+    try {
+      const res = await client.get("/reels/music");
+      setMusicList(res.data?.data || []);
+      setShowMusic(true);
+    } catch (e) {
+      console.warn("music load error", e);
+    }
+  };
+
+  const STATUS_OPTIONS = [
+    { key: "published", label: t("publish") || "Publish" },
+    { key: "draft", label: t("saveDraft") || "Save Draft" },
+    { key: "scheduled", label: t("schedule") || "Schedule" },
+  ];
 
   if (!permission) return null;
   if (!permission.granted) {
@@ -236,16 +262,58 @@ export default function CreateReelScreen({ navigation }) {
             multiline
             textAlignVertical="top"
           />
-          <TextInput
-            style={s.inputMusic}
-            placeholder={"🎵 " + (t("musicTitle") || "Music / Artist")}
-            placeholderTextColor={COLORS.muted}
-            value={musicTitle}
-            onChangeText={setMusicTitle}
-          />
+          <TouchableOpacity style={s.musicPicker} onPress={openMusic}>
+            <Text style={s.musicPickerText}>
+              {musicTitle ? "🎵 " + musicTitle : "🎵 " + (t("pickMusic") || "Pick from Music Library")}
+            </Text>
+          </TouchableOpacity>
+
+          <View style={s.statusRow}>
+            {STATUS_OPTIONS.map((opt) => (
+              <TouchableOpacity
+                key={opt.key}
+                style={[s.statusChip, status === opt.key && s.statusChipActive]}
+                onPress={() => setStatus(opt.key)}
+              >
+                <Text style={[s.statusChipText, status === opt.key && s.statusChipTextActive]}>{opt.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {status === "scheduled" && (
+            <TextInput
+              style={s.inputMusic}
+              placeholder="YYYY-MM-DD HH:MM"
+              placeholderTextColor={COLORS.muted}
+              value={scheduledAt}
+              onChangeText={setScheduledAt}
+            />
+          )}
+
           {speed !== 1 && <Text style={s.metaInfo}>Speed: {speed}x</Text>}
           {filter > 0 && <Text style={s.metaInfo}>Filter: {FILTERS[filter].name}</Text>}
         </View>
+
+        {showMusic && (
+          <View style={s.musicSheet}>
+            <Text style={s.musicSheetTitle}>{t("musicLibrary") || "Music Library"}</Text>
+            <ScrollView style={{ maxHeight: 240 }}>
+              {musicList.map((m) => (
+                <TouchableOpacity
+                  key={m.id}
+                  style={s.musicItem}
+                  onPress={() => { setMusicTitle(`${m.title} — ${m.artist || "Unknown"}`); setShowMusic(false); }}
+                >
+                  <Text style={s.musicItemTitle}>🎵 {m.title}</Text>
+                  <Text style={s.musicItemArtist}>{m.artist} · {m.genre}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            <TouchableOpacity style={s.musicClose} onPress={() => setShowMusic(false)}>
+              <Text style={s.musicCloseText}>{t("cancel") || "Cancel"}</Text>
+            </TouchableOpacity>
+          </View>
+        )}
         {uploading && <ActivityIndicator style={{ marginTop: 20 }} color={COLORS.primary} size="large" />}
       </Screen3D>
     );
@@ -370,6 +438,20 @@ const s = StyleSheet.create({
   input: { backgroundColor: COLORS.input, color: COLORS.text, borderRadius: 12, padding: 12, fontSize: 15, minHeight: 100, textAlignVertical: "top" },
   inputMusic: { backgroundColor: COLORS.input, color: COLORS.text, borderRadius: 12, padding: 12, fontSize: 14 },
   metaInfo: { color: COLORS.muted, fontSize: 12, fontStyle: "italic" },
+  musicPicker: { backgroundColor: COLORS.input, borderRadius: 12, padding: 12 },
+  musicPickerText: { color: COLORS.text, fontSize: 14 },
+  statusRow: { flexDirection: "row", gap: 8 },
+  statusChip: { flex: 1, backgroundColor: COLORS.input, borderRadius: 10, paddingVertical: 10, alignItems: "center" },
+  statusChipActive: { backgroundColor: COLORS.primary },
+  statusChipText: { color: COLORS.muted, fontSize: 13, fontWeight: "600" },
+  statusChipTextActive: { color: "#fff", fontWeight: "700" },
+  musicSheet: { position: "absolute", left: 12, right: 12, bottom: 20, backgroundColor: "#1c1c1e", borderRadius: 16, padding: 16, zIndex: 50, maxHeight: 320 },
+  musicSheetTitle: { color: "#fff", fontWeight: "800", fontSize: 16, marginBottom: 10 },
+  musicItem: { paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.08)" },
+  musicItemTitle: { color: "#fff", fontSize: 14, fontWeight: "600" },
+  musicItemArtist: { color: "#999", fontSize: 12, marginTop: 2 },
+  musicClose: { marginTop: 8, alignItems: "center" },
+  musicCloseText: { color: COLORS.primary, fontWeight: "700" },
   topControls: { position: "absolute", left: 16, right: 16, flexDirection: "row", justifyContent: "space-between", zIndex: 10 },
   controlBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(0,0,0,0.5)", alignItems: "center", justifyContent: "center" },
   controlBtnActive: { backgroundColor: "rgba(255,200,0,0.6)" },

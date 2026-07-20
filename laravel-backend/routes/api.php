@@ -1,33 +1,38 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\PostController;
-use App\Http\Controllers\Api\LikeController;
-use App\Http\Controllers\Api\CommentController;
-use App\Http\Controllers\Api\FollowController;
-use App\Http\Controllers\Api\FeedController;
-use App\Http\Controllers\Api\NotificationController;
-use App\Http\Controllers\Api\MessageController;
-use App\Http\Controllers\Api\UserController;
-use App\Http\Controllers\Api\StoryController;
-use App\Http\Controllers\Api\BookmarkController;
-use App\Http\Controllers\Api\BlockController;
-use App\Http\Controllers\Api\ReportController;
-use App\Http\Controllers\Api\ReelController;
-use App\Http\Controllers\Api\VoiceMessageController;
-use App\Http\Controllers\Api\PostStatsController;
-use App\Http\Controllers\Api\TwoFactorController;
-use App\Http\Controllers\Api\BadWordController;
-use App\Http\Controllers\Api\SupportController;
-use App\Http\Controllers\Api\GroupController;
-use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\AdminController;
+use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\BadWordController;
+use App\Http\Controllers\Api\BlockController;
+use App\Http\Controllers\Api\BookmarkController;
+use App\Http\Controllers\Api\CommentController;
+use App\Http\Controllers\Api\ExploreController;
+use App\Http\Controllers\Api\FeedController;
+use App\Http\Controllers\Api\FollowController;
+use App\Http\Controllers\Api\GroupController;
+use App\Http\Controllers\Api\LikeController;
+use App\Http\Controllers\Api\MediaController;
+use App\Http\Controllers\Api\MessageController;
+use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\PostController;
+use App\Http\Controllers\Api\PostStatsController;
+use App\Http\Controllers\Api\ReelController;
+use App\Http\Controllers\Api\ReportController;
+use App\Http\Controllers\Api\SearchController;
+use App\Http\Controllers\Api\StoryController;
+use App\Http\Controllers\Api\SupportController;
+use App\Http\Controllers\Api\TwoFactorController;
+use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\VoiceMessageController;
+use Illuminate\Support\Facades\Route;
 
 Route::post('/auth/register', [AuthController::class, 'register'])->middleware('throttle:5,1');
 Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
 Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:3,1');
 Route::post('/auth/reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:5,1');
+Route::post('/auth/2fa-login', [AuthController::class, 'twoFactorLogin'])->middleware('throttle:10,1');
+Route::post('/auth/verify-email', [AuthController::class, 'verifyEmail'])->middleware('throttle:5,1');
+Route::post('/auth/resend-verification', [AuthController::class, 'resendVerification'])->middleware('throttle:3,1');
 
 Route::get('/users', [UserController::class, 'index'])->middleware('auth:sanctum');
 Route::get('/users/search', [UserController::class, 'search'])->middleware('auth:sanctum');
@@ -49,6 +54,7 @@ Route::get('/users/{id}/template', [UserController::class, 'getTemplate'])->midd
 Route::post('/users/template', [UserController::class, 'setTemplate'])->middleware('auth:sanctum');
 Route::post('/notifications/register', [NotificationController::class, 'registerToken'])->middleware('auth:sanctum');
 Route::post('/users/toggle-privacy', [UserController::class, 'togglePrivacy'])->middleware('auth:sanctum');
+Route::post('/users/toggle-activity-status', [UserController::class, 'toggleActivityStatus'])->middleware('auth:sanctum');
 
 Route::post('/auth/change-password', [AuthController::class, 'changePassword'])->middleware(['auth:sanctum', 'throttle:5,1']);
 Route::delete('/auth/account', [AuthController::class, 'deleteAccount'])->middleware(['auth:sanctum', 'throttle:3,1']);
@@ -78,7 +84,7 @@ Route::post('/follow/reject/{id}', [FollowController::class, 'reject'])->middlew
 Route::get('/follow/{userId}/status', [FollowController::class, 'status'])->middleware('auth:sanctum');
 
 Route::get('/feed', [FeedController::class, 'index'])->middleware('auth:sanctum');
-Route::get('/explore', [App\Http\Controllers\Api\ExploreController::class, 'index'])->middleware('auth:sanctum');
+Route::get('/explore', [ExploreController::class, 'index'])->middleware('auth:sanctum');
 
 Route::get('/notifications', [NotificationController::class, 'index'])->middleware('auth:sanctum');
 Route::patch('/notifications/seen', [NotificationController::class, 'markAsSeen'])->middleware('auth:sanctum');
@@ -97,8 +103,8 @@ Route::post('/messages/{id}/react', [MessageController::class, 'addReaction'])->
 Route::delete('/messages/{id}/react', [MessageController::class, 'removeReaction'])->middleware('auth:sanctum');
 Route::put('/messages/{id}', [MessageController::class, 'update'])->middleware(['auth:sanctum', 'throttle:10,1']);
 Route::post('/messages/{id}/vanish', [MessageController::class, 'setVanish'])->middleware(['auth:sanctum', 'throttle:10,1']);
-  Route::delete('/messages/{id}', [MessageController::class, 'destroy'])->middleware(['auth:sanctum', 'throttle:20,1']);
-  Route::delete('/messages/{id}/for-me', [MessageController::class, 'deleteForMe'])->middleware(['auth:sanctum', 'throttle:20,1']);
+Route::delete('/messages/{id}', [MessageController::class, 'destroy'])->middleware(['auth:sanctum', 'throttle:20,1']);
+Route::delete('/messages/{id}/for-me', [MessageController::class, 'deleteForMe'])->middleware(['auth:sanctum', 'throttle:20,1']);
 Route::post('/messages/{id}/forward', [MessageController::class, 'forward'])->middleware(['auth:sanctum', 'throttle:20,1']);
 Route::post('/messages/mute/{userId}', [MessageController::class, 'toggleMute'])->middleware('auth:sanctum');
 Route::post('/messages/pin/{userId}', [MessageController::class, 'togglePin'])->middleware('auth:sanctum');
@@ -145,11 +151,11 @@ Route::post('/reports', [ReportController::class, 'store'])->middleware(['auth:s
 Route::post('/support/feedback', [SupportController::class, 'feedback'])->middleware(['auth:sanctum', 'throttle:5,1']);
 
 // Media routes with signed URLs
-Route::get('/media/{path}', [App\Http\Controllers\Api\MediaController::class, 'serve'])
+Route::get('/media/{path}', [MediaController::class, 'serve'])
     ->middleware(['auth:sanctum', 'media.security'])
     ->where('path', '.*');
-Route::post('/media/sign', [App\Http\Controllers\Api\MediaController::class, 'sign'])->middleware('auth:sanctum');
-Route::post('/media/sign-batch', [App\Http\Controllers\Api\MediaController::class, 'signBatch'])->middleware('auth:sanctum');
+Route::post('/media/sign', [MediaController::class, 'sign'])->middleware('auth:sanctum');
+Route::post('/media/sign-batch', [MediaController::class, 'signBatch'])->middleware('auth:sanctum');
 
 // Reels
 Route::get('/reels', [ReelController::class, 'index'])->middleware('auth:sanctum');
@@ -221,7 +227,7 @@ Route::post('/bad-words', [BadWordController::class, 'store'])->middleware('auth
 Route::delete('/bad-words/{id}', [BadWordController::class, 'destroy'])->middleware('auth:sanctum');
 
 // Admin Panel
-Route::prefix('admin')->middleware(['auth:sanctum'])->group(function () {
+Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::get('/dashboard', [AdminController::class, 'dashboard']);
     Route::get('/users', [AdminController::class, 'users']);
     Route::get('/users/{id}', [AdminController::class, 'showUser']);
@@ -244,5 +250,3 @@ Route::prefix('admin')->middleware(['auth:sanctum'])->group(function () {
     Route::post('/bad-words', [AdminController::class, 'addBadWord']);
     Route::delete('/bad-words/{id}', [AdminController::class, 'deleteBadWord']);
 });
-
-

@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Helpers\Sanitize;
-use App\Models\Report;
+use App\Http\Controllers\Controller;
 use App\Models\Post;
+use App\Models\Report;
 use App\Models\User;
 use Illuminate\Http\Request;
 
@@ -25,10 +25,14 @@ class ReportController extends Controller
 
         if ($type === 'post') {
             $target = Post::find($targetId);
-            if (!$target) return response()->json(['message' => 'Post not found'], 404);
+            if (! $target) {
+                return response()->json(['message' => 'Post not found'], 404);
+            }
         } else {
             $target = User::find($targetId);
-            if (!$target) return response()->json(['message' => 'User not found'], 404);
+            if (! $target) {
+                return response()->json(['message' => 'User not found'], 404);
+            }
             if ($target->id === $request->user()->id) {
                 return response()->json(['message' => 'Cannot report yourself'], 400);
             }

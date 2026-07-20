@@ -22,6 +22,7 @@ class BlockController extends Controller
 
         if ($existing) {
             $existing->delete();
+
             return response()->json(['blocked' => false]);
         }
 

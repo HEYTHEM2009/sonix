@@ -9,6 +9,7 @@ import * as ImagePicker from "expo-image-picker";
 import { isExpoGo } from "../utils/audioHelper";
 import client, { resolveUrl, uploadWithProgress } from "../api/client";
 import { getEcho } from "../api/websocket";
+import realtime from "../api/realtime";
 import { cacheMessages, getCachedMessages, addToOfflineQueue, getOfflineQueue, removeFromOfflineQueue } from "../api/cache";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
@@ -284,7 +285,17 @@ function formatMs(ms) {
    ChatScreen
    ═══════════════════════════════════════════════════════ */
 export default function ChatScreen({ route, navigation }) {
-  const { userId, username } = route.params;
+  const params = route.params ?? {};
+  const userId = params.userId;
+  const username = params.username;
+
+  if (!userId) {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#0B0B12" }}>
+        <Text style={{ color: "#fff" }}>Conversation not found.</Text>
+      </View>
+    );
+  }
   const { t } = useLanguage();
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
@@ -364,6 +375,12 @@ export default function ChatScreen({ route, navigation }) {
       }
     };
     processQueue();
+
+    // BUG-013: flush the offline queue again whenever realtime reconnects.
+    const unsub = realtime.onStatus((status) => {
+      if (status === "connected") processQueue();
+    });
+    return () => { if (unsub) unsub(); };
   }, []);
 
   const loadMore = async () => {
@@ -472,7 +489,7 @@ export default function ChatScreen({ route, navigation }) {
         const echo = await getEcho();
         if (!echo) return;
         echoChannel = echo.private(`messages.${user?.id}`);
-        echoChannel.listen(".message.sent", (event) => {
+        echoChannel.listen("message.sent", (event) => {
           if (event.sender_id === parseInt(userId) || event.receiver_id === parseInt(userId)) {
             setMessages((prev) => {
               if (prev.find((m) => m.id === event.id)) return prev;
@@ -487,8 +504,21 @@ export default function ChatScreen({ route, navigation }) {
           }
         });
         typingChannel = echo.private(`typing.${user?.id}`);
-        typingChannel.listen(".typing.indicator", (event) => {
+        typingChannel.listen("typing.indicator", (event) => {
           if (event.sender_id === parseInt(userId)) setRemoteTyping(event.typing);
+        });
+        // Delivered + read receipts for messages we sent (BUG-005).
+        echoChannel.listen("message.delivered", (event) => {
+          if (!event || event.id == null) return;
+          setMessages((prev) =>
+            prev.map((m) => (m.id === event.id ? { ...m, delivered: event.delivered ?? true } : m))
+          );
+        });
+        echoChannel.listen("message.read", (event) => {
+          if (!event || event.id == null) return;
+          setMessages((prev) =>
+            prev.map((m) => (m.id === event.id ? { ...m, is_read: event.read ?? true } : m))
+          );
         });
         client.post("/messages/online").catch(() => {});
       } catch (_) {}
@@ -509,7 +539,20 @@ export default function ChatScreen({ route, navigation }) {
     return () => sub.remove();
   }, []);
 
-  useEffect(() => { client.post(`/messages/read/${userId}`).catch(() => {}); }, [messages, userId]);
+  // Mark messages as read only when the other user has unread messages for us,
+  // and debounce so optimistic local appends don't spam the server.
+  useEffect(() => {
+    if (!userId) return;
+    const hasUnreadFromThem = messages.some(
+      (m) => m.sender_id !== parseInt(userId) && !m.is_read
+    );
+    if (!hasUnreadFromThem) return;
+
+    const t = setTimeout(() => {
+      client.post(`/messages/read/${userId}`).catch(() => {});
+    }, 500);
+    return () => clearTimeout(t);
+  }, [messages, userId]);
 
   /* ─── Send message ──────────────────────────────────── */
   const send = async () => {
@@ -563,18 +606,32 @@ export default function ChatScreen({ route, navigation }) {
       if (!result.canceled && result.assets?.[0]) {
         setSending(true);
         setUploading(true); setUploadProgress(0);
+        const uri = result.assets[0].uri;
+        const filename = uri.split("/").pop() || (type === "video" ? "video.mp4" : "photo.jpg");
+        const ext = filename.split(".").pop().toLowerCase();
+        const mimeMap = { mp4: "video/mp4", mov: "video/quicktime", webm: "video/webm", jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png" };
+        const mimeType = mimeMap[ext] || (type === "video" ? "video/mp4" : "image/jpeg");
+        const tempId = `temp_${Date.now()}`;
+        const optimistic = {
+          id: tempId, type: type === "video" ? "video" : "image",
+          sender_id: user?.id, receiver_id: parseInt(userId),
+          created_at: new Date().toISOString(), is_read: false,
+          image: type === "video" ? null : uri, video: type === "video" ? uri : null,
+          sender: { id: user?.id, username: user?.username, avatar: user?.avatar },
+          reactions: [], pending: true,
+        };
+        setMessages((prev) => [...prev, optimistic]);
         try {
           const formData = new FormData();
           formData.append("receiver_id", String(userId));
-          const uri = result.assets[0].uri;
-          const filename = uri.split("/").pop() || (type === "video" ? "video.mp4" : "photo.jpg");
-          const ext = filename.split(".").pop().toLowerCase();
-          const mimeMap = { mp4: "video/mp4", mov: "video/quicktime", webm: "video/webm", jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png" };
-          const mimeType = mimeMap[ext] || (type === "video" ? "video/mp4" : "image/jpeg");
           formData.append(type === "video" ? "video" : "image", { uri, name: filename, type: mimeType });
-          await uploadWithProgress("/messages", formData, setUploadProgress);
+          const res = await uploadWithProgress("/messages", formData, setUploadProgress);
+          setMessages((prev) => prev.map((m) => m.id === tempId ? { ...(res.data || {}), pending: false } : m));
           await load();
-        } catch (_) { Alert.alert(t("error"), t(type === "video" ? "failedToSendVideo" : "failedToSendImage")); }
+        } catch (_) {
+          setMessages((prev) => prev.map((m) => m.id === tempId ? { ...m, pending: false } : m));
+          Alert.alert(t("error"), t(type === "video" ? "failedToSendVideo" : "failedToSendImage"));
+        }
         setUploading(false); setUploadProgress(0);
         setSending(false);
       }
@@ -585,6 +642,15 @@ export default function ChatScreen({ route, navigation }) {
   const handleSendVoice = async (uri, duration) => {
     setShowVoiceRecorder(false);
     if (!uri || duration <= 0) return;
+    const tempId = `temp_${Date.now()}`;
+    const optimistic = {
+      id: tempId, type: "voice", sender_id: user?.id,
+      receiver_id: parseInt(userId), created_at: new Date().toISOString(),
+      is_read: false, voice: uri, duration,
+      sender: { id: user?.id, username: user?.username, avatar: user?.avatar },
+      reactions: [], pending: true,
+    };
+    setMessages((prev) => [...prev, optimistic]);
     const formData = new FormData();
     formData.append("receiver_id", String(userId));
     formData.append("duration", String(duration));
@@ -594,9 +660,12 @@ export default function ChatScreen({ route, navigation }) {
     setUploading(true); setUploadProgress(0);
     try {
       const res = await uploadWithProgress("/messages", formData, setUploadProgress);
-      if (res.data?.id) setMessages((prev) => [...prev, { ...res.data, key: String(res.data.id) }]);
-      setTimeout(() => load(), 1500);
-    } catch (e) { Alert.alert(t("error"), e?.response?.data?.message || t("failedToSend")); }
+      setMessages((prev) => prev.map((m) => m.id === tempId ? { ...(res.data || {}), pending: false } : m));
+      await load();
+    } catch (e) {
+      setMessages((prev) => prev.map((m) => m.id === tempId ? { ...m, pending: false } : m));
+      Alert.alert(t("error"), e?.response?.data?.message || t("failedToSend"));
+    }
     setUploading(false); setUploadProgress(0);
     setSending(false);
   };

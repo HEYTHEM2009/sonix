@@ -3,12 +3,16 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Process;
 
 class WatermarkService
 {
     protected string $watermarkText;
+
     protected int $fontSize;
+
     protected string $fontColor;
+
     protected int $opacity;
 
     public function __construct()
@@ -24,8 +28,9 @@ class WatermarkService
      */
     public function addWatermark(string $imagePath): ?string
     {
-        if (!function_exists('imagecreatefromjpeg') && !function_exists('imagecreatefrompng')) {
+        if (! function_exists('imagecreatefromjpeg') && ! function_exists('imagecreatefrompng')) {
             Log::warning('[Watermark] GD library not available');
+
             return null;
         }
 
@@ -33,19 +38,21 @@ class WatermarkService
         $ext = strtolower($info['extension'] ?? '');
 
         try {
-            $image = match($ext) {
+            $image = match ($ext) {
                 'jpg', 'jpeg' => imagecreatefromjpeg($imagePath),
                 'png' => imagecreatefrompng($imagePath),
                 default => null,
             };
 
-            if (!$image) return null;
+            if (! $image) {
+                return null;
+            }
 
             $width = imagesx($image);
             $height = imagesy($image);
 
             $fontPath = public_path('fonts/arial.ttf');
-            if (!file_exists($fontPath)) {
+            if (! file_exists($fontPath)) {
                 $fontPath = null;
             }
 
@@ -75,9 +82,9 @@ class WatermarkService
                 imagefilledrectangle($image, $x, $y, $x + $boxWidth, $y + $boxHeight, $color);
             }
 
-            $outputPath = $info['dirname'] . '/' . $info['filename'] . '_wm.' . $ext;
+            $outputPath = $info['dirname'].'/'.$info['filename'].'_wm.'.$ext;
 
-            $result = match($ext) {
+            $result = match ($ext) {
                 'jpg', 'jpeg' => imagejpeg($image, $outputPath, 90),
                 'png' => imagepng($image, $outputPath, 9),
                 default => false,
@@ -86,12 +93,13 @@ class WatermarkService
             imagedestroy($image);
 
             if ($result) {
-                return '/' . ltrim(str_replace(public_path(), '', $outputPath), '/');
+                return '/'.ltrim(str_replace(public_path(), '', $outputPath), '/');
             }
 
             return null;
         } catch (\Exception $e) {
             Log::error('[Watermark] Failed', ['error' => $e->getMessage()]);
+
             return null;
         }
     }
@@ -102,11 +110,11 @@ class WatermarkService
     public function addVideoWatermark(string $videoPath): ?string
     {
         $info = pathinfo($videoPath);
-        $outputPath = $info['dirname'] . '/' . $info['filename'] . '_wm.' . ($info['extension'] ?? 'mp4');
+        $outputPath = $info['dirname'].'/'.$info['filename'].'_wm.'.($info['extension'] ?? 'mp4');
 
         try {
             $text = $this->watermarkText;
-            $result = \Illuminate\Support\Facades\Process::run([
+            $result = Process::run([
                 'ffmpeg',
                 '-i', $videoPath,
                 '-vf', "drawtext=text='{$text}':fontsize={$this->fontSize}:fontcolor=white@0.3:x=w-tw-20:y=h-th-10",
@@ -116,12 +124,13 @@ class WatermarkService
             ]);
 
             if ($result->successful()) {
-                return '/' . ltrim(str_replace(public_path(), '', $outputPath), '/');
+                return '/'.ltrim(str_replace(public_path(), '', $outputPath), '/');
             }
 
             return null;
         } catch (\Exception $e) {
             Log::error('[Watermark] Video watermark failed', ['error' => $e->getMessage()]);
+
             return null;
         }
     }
@@ -129,6 +138,7 @@ class WatermarkService
     protected function hexToRgb(string $hex): array
     {
         $hex = ltrim($hex, '#');
+
         return [
             'r' => (int) hexdec(substr($hex, 0, 2)),
             'g' => (int) hexdec(substr($hex, 2, 2)),

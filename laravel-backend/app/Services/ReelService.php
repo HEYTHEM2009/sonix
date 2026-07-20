@@ -2,19 +2,17 @@
 
 namespace App\Services;
 
-use App\Models\Reel;
-use App\Models\User;
 use App\Models\MusicTrack;
+use App\Models\Reel;
 use App\Models\ReelAnalytics;
-use App\Models\ReelWatchHistory;
 use App\Models\ReelHashtag;
 use App\Models\ReelLike;
 use App\Models\ReelSave;
 use App\Models\ReelShare;
-use App\Models\ReelComment;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
+use App\Models\ReelWatchHistory;
+use App\Models\User;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Encapsulates all Reels business logic: feed, recommendations, trending,
@@ -26,7 +24,7 @@ class ReelService
 
     public function feed(int $userId, array $filters = []): array
     {
-        $cacheKey = 'reel_feed:' . $userId . ':' . md5(json_encode($filters));
+        $cacheKey = 'reel_feed:'.$userId.':'.md5(json_encode($filters));
 
         return Cache::remember($cacheKey, 60, function () use ($userId, $filters) {
             $query = Reel::with('user:id,username,avatar,is_private,is_pro')
@@ -36,15 +34,15 @@ class ReelService
                     $q->whereNull('scheduled_at')->orWhere('scheduled_at', '<=', now());
                 });
 
-            if (!empty($filters['hashtag'])) {
-                $query->whereHas('hashtags', fn($q) => $q->where('tag', strtolower($filters['hashtag'])));
+            if (! empty($filters['hashtag'])) {
+                $query->whereHas('hashtags', fn ($q) => $q->where('tag', strtolower($filters['hashtag'])));
             }
 
-            if (!empty($filters['user_id'])) {
+            if (! empty($filters['user_id'])) {
                 $query->where('user_id', $filters['user_id']);
             }
 
-            if (!empty($filters['trending'])) {
+            if (! empty($filters['trending'])) {
                 $query->join('reel_analytics', 'reel_analytics.reel_id', '=', 'reels.id')
                     ->orderByDesc('reel_analytics.trending_score');
             } else {
@@ -63,7 +61,7 @@ class ReelService
      */
     public function forYou(int $userId): array
     {
-        $cacheKey = 'reel_foryou:' . $userId;
+        $cacheKey = 'reel_foryou:'.$userId;
 
         return Cache::remember($cacheKey, 120, function () use ($userId) {
             $interestedUserIds = ReelLike::where('user_id', $userId)
@@ -90,7 +88,7 @@ class ReelService
 
             if ($preferredCreators->isNotEmpty()) {
                 $query->orderByRaw(
-                    'CASE WHEN reels.user_id IN (' . $preferredCreators->implode(',') . ') THEN 0 ELSE 1 END'
+                    'CASE WHEN reels.user_id IN ('.$preferredCreators->implode(',').') THEN 0 ELSE 1 END'
                 );
             }
 
@@ -120,7 +118,7 @@ class ReelService
     {
         $reels = Reel::with('user:id,username,avatar,is_private')
             ->withCount(['likes', 'comments'])
-            ->whereHas('hashtags', fn($q) => $q->where('tag', strtolower($tag)))
+            ->whereHas('hashtags', fn ($q) => $q->where('tag', strtolower($tag)))
             ->orderByDesc('created_at')
             ->paginate($perPage)
             ->withQueryString();
@@ -132,8 +130,8 @@ class ReelService
     {
         $reels = Reel::with('user:id,username,avatar,is_private')
             ->withCount(['likes', 'comments'])
-            ->where('caption', 'ilike', '%' . $term . '%')
-            ->orWhere('music_title', 'ilike', '%' . $term . '%')
+            ->where('caption', 'ilike', '%'.$term.'%')
+            ->orWhere('music_title', 'ilike', '%'.$term.'%')
             ->orderByDesc('created_at')
             ->paginate($perPage)
             ->withQueryString();
@@ -145,7 +143,7 @@ class ReelService
     {
         $reels = Reel::with('user:id,username,avatar,is_private')
             ->withCount(['likes', 'comments'])
-            ->whereHas('saves', fn($q) => $q->where('user_id', $userId))
+            ->whereHas('saves', fn ($q) => $q->where('user_id', $userId))
             ->orderByDesc('created_at')
             ->paginate($perPage)
             ->withQueryString();
@@ -198,7 +196,7 @@ class ReelService
         }
 
         $this->recomputeAnalytics($reelId);
-        Cache::forget('reel_feed:' . $userId);
+        Cache::forget('reel_feed:'.$userId);
 
         return $saved;
     }
@@ -217,7 +215,7 @@ class ReelService
         }
 
         $this->recomputeAnalytics($reelId);
-        Cache::forget('reel_feed:' . $userId);
+        Cache::forget('reel_feed:'.$userId);
 
         $reel = Reel::withCount('likes')->findOrFail($reelId);
 
@@ -233,7 +231,7 @@ class ReelService
     public function recomputeAnalytics(int $reelId): void
     {
         $reel = Reel::withCount(['likes', 'comments', 'saves', 'shares'])->find($reelId);
-        if (!$reel) {
+        if (! $reel) {
             return;
         }
 
@@ -286,8 +284,8 @@ class ReelService
         $totalComments = $reels->sum('comments_count');
         $totalSaves = $reels->sum('saves_count');
         $totalShares = $reels->sum('shares_count');
-        $watchTime = $reels->sum(fn($r) => $r->analytics?->watch_time_seconds ?? 0);
-        $avgCompletion = $reels->avg(fn($r) => $r->analytics?->completion_rate ?? 0);
+        $watchTime = $reels->sum(fn ($r) => $r->analytics?->watch_time_seconds ?? 0);
+        $avgCompletion = $reels->avg(fn ($r) => $r->analytics?->completion_rate ?? 0);
 
         return [
             'totals' => [
@@ -388,7 +386,7 @@ class ReelService
         if ($term) {
             $query->where(function ($q) use ($term) {
                 $q->where('title', 'ilike', "%{$term}%")
-                  ->orWhere('artist', 'ilike', "%{$term}%");
+                    ->orWhere('artist', 'ilike', "%{$term}%");
             });
         }
 
@@ -411,7 +409,6 @@ class ReelService
         return $enabled;
     }
 
-
     protected function decorateCollection($paginator, int $userId): array
     {
         $likedIds = ReelLike::where('user_id', $userId)->pluck('reel_id')->toArray();
@@ -421,6 +418,7 @@ class ReelService
             $reel->liked = in_array($reel->id, $likedIds, true);
             $reel->saved = in_array($reel->id, $savedIds, true);
             $reel->hashtags = $reel->hashtags()->pluck('tag')->toArray();
+
             return $reel;
         });
 

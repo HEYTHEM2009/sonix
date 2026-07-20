@@ -17,7 +17,7 @@ function renderLinkable(text) {
   });
 }
 
-function CommentItem({ comment, user, isRTL, isReel, onDelete, onLike, onReply }) {
+function CommentItem({ comment, user, isRTL, isReel, onDelete, onReply }) {
   const [liked, setLiked] = useState(comment.liked || false);
   const [likesCount, setLikesCount] = useState(comment.likes_count || 0);
   const [showReplies, setShowReplies] = useState(false);
@@ -149,18 +149,22 @@ export default function CommentsScreen({ route, navigation }) {
 
   useEffect(() => { load(); }, [load]);
 
-  const submit = async () => {
-    if (!text.trim()) return;
+  const submit = useCallback(async () => {
+    const content = text.trim();
+    if (!content) return;
     try {
       if (isReel && reelId) {
-        await client.post(`/reels/${reelId}/comment`, { content: text.trim() });
+        await client.post(`/reels/${reelId}/comment`, { content });
       } else if (postId) {
-        await client.post(`/posts/${postId}/comments`, { content: text.trim() });
+        await client.post(`/posts/${postId}/comments`, { content });
       }
       setText("");
       await load();
-    } catch (e) { console.warn("Comment error", e?.response?.status); }
-  };
+    } catch (e) {
+      console.warn("Comment error", e?.response?.status);
+      Alert.alert(t("error") || "Error", t("commentFailed") || "Failed to post comment");
+    }
+  }, [text, isReel, reelId, postId, load, t]);
 
   const submitReply = async (parentId, content) => {
     if (isReel && reelId) {
@@ -187,7 +191,7 @@ export default function CommentsScreen({ route, navigation }) {
 
   return (
     <Screen3D>
-    <KeyboardAvoidingView style={s.container} behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={0}>
+    <KeyboardAvoidingView style={s.container} behavior="padding" keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}>
       <View style={[s.topBar, { paddingTop: insets.top + 6 }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
           <Text style={s.backText}>←</Text>
@@ -215,7 +219,6 @@ export default function CommentsScreen({ route, navigation }) {
               isRTL={isRTL}
               isReel={isReel}
               onDelete={deleteComment}
-              onLike={() => {}}
               onReply={submitReply}
             />
           )}

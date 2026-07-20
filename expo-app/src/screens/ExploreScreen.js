@@ -17,12 +17,17 @@ export default function ExploreScreen({ navigation }) {
   const [searchQ, setSearchQ] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
+  const [error, setError] = useState(false);
 
   const fetchExplore = useCallback(async () => {
+    setError(false);
     try {
       const res = await client.get("/explore");
       setData(res.data || {});
-    } catch (e) { console.warn(e); }
+    } catch (e) {
+      console.warn("Explore load error", e?.response?.status);
+      setError(true);
+    }
     setLoading(false);
   }, []);
 
@@ -71,6 +76,20 @@ export default function ExploreScreen({ navigation }) {
       <View style={[s.container, { paddingTop: insets.top }]}>
         <View style={s.topBar}><Text style={s.logo}>{t("sonix")}</Text></View>
         <ActivityIndicator size="large" color={COLORS.primary} style={{ marginTop: 60 }} />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={[s.container, { paddingTop: insets.top }]}>
+        <View style={s.topBar}><Text style={s.logo}>{t("sonix")}</Text></View>
+        <View style={s.errorWrap}>
+          <Text style={s.errorText}>{t("failedToLoad")}</Text>
+          <TouchableOpacity style={s.retryBtn} onPress={fetchExplore} activeOpacity={0.8}>
+            <Text style={s.retryText}>{t("retry") || "Retry"}</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   }
@@ -138,5 +157,9 @@ const s = StyleSheet.create({
   userBio: { fontSize: SIZES.sm, color: COLORS.muted, marginTop: 2 },
 
   empty: { textAlign: "center", marginTop: 40, color: COLORS.muted, fontSize: SIZES.md },
+  errorWrap: { alignItems: "center", marginTop: 80 },
+  errorText: { color: COLORS.muted, fontSize: SIZES.md, marginBottom: 16 },
+  retryBtn: { backgroundColor: COLORS.primary, borderRadius: 16, paddingHorizontal: 24, paddingVertical: 10 },
+  retryText: { color: "#fff", fontWeight: "700", fontSize: SIZES.md },
 });
 

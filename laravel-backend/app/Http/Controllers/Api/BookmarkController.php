@@ -12,7 +12,7 @@ class BookmarkController extends Controller
     public function index(Request $request)
     {
         $posts = Post::with('user:id,username')
-            ->withCount(['likes', 'likes as liked' => fn($q) => $q->where('user_id', $request->user()->id)])
+            ->withCount(['likes', 'likes as liked' => fn ($q) => $q->where('user_id', $request->user()->id)])
             ->whereIn('id', Bookmark::where('user_id', $request->user()->id)->pluck('post_id'))
             ->latest()
             ->paginate(20);
@@ -24,7 +24,7 @@ class BookmarkController extends Controller
     {
         $postId = (int) ($request->input('post_id') ?? $request->input('postId'));
 
-        if (!Post::where('id', $postId)->exists()) {
+        if (! Post::where('id', $postId)->exists()) {
             return response()->json(['message' => 'Post not found'], 404);
         }
 
@@ -33,6 +33,7 @@ class BookmarkController extends Controller
 
         if ($existing) {
             $existing->delete();
+
             return response()->json(['bookmarked' => false]);
         }
 

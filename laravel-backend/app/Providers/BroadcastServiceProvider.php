@@ -13,7 +13,7 @@ class BroadcastServiceProvider extends ServiceProvider
             Broadcast::routes(['middleware' => ['auth:sanctum']]);
             require base_path('routes/channels.php');
         } catch (\Throwable $e) {
-            \Log::warning('BroadcastServiceProvider boot skipped: ' . $e->getMessage());
+            \Log::warning('BroadcastServiceProvider boot skipped: '.$e->getMessage());
         }
     }
 }

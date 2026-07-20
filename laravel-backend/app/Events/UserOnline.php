@@ -13,6 +13,7 @@ class UserOnline implements ShouldBroadcast
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public int $userId;
+
     public bool $isOnline;
 
     public function __construct(int $userId, bool $isOnline = true)

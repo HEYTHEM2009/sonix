@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (!Schema::hasTable('profile_visitors')) {
+        if (! Schema::hasTable('profile_visitors')) {
             Schema::create('profile_visitors', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('user_id')->constrained()->onDelete('cascade');
@@ -19,7 +19,7 @@ return new class extends Migration
             });
         }
 
-        if (!Schema::hasTable('user_badges')) {
+        if (! Schema::hasTable('user_badges')) {
             Schema::create('user_badges', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('user_id')->constrained()->onDelete('cascade');
@@ -32,7 +32,7 @@ return new class extends Migration
             });
         }
 
-        if (!Schema::hasTable('profile_templates')) {
+        if (! Schema::hasTable('profile_templates')) {
             Schema::create('profile_templates', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('user_id')->constrained()->onDelete('cascade');
