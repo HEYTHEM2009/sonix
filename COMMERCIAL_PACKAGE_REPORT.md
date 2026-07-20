@@ -2,7 +2,7 @@
 
 Generated: 2026-07-20
 Author: opencode (autonomous release prep)
-Deliverable: `C:\Users\HEYTHEM\Downloads\sonix-commercial.zip` (9.8 MB)
+Deliverable: `sonix-commercial.zip` (9.8 MB)
 
 ---
 
