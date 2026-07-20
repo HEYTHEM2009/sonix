@@ -123,8 +123,8 @@ All **41 screen files** are present and registered in `AppNavigator.js`
 `<Tab.Screen>`). No screen is missing.
 
 ## 7. Sanitization Re-Check
-- No `HEYTHEM` / `heythem` / `github.com/HEYTHEM2009` in any tracked file.
-- No real LAN IPs (`192.168.1.x`); only generic `192.168.x.x` / `192.168.0.20` examples.
+- No developer username / personal handle in any tracked file.
+- No real LAN IPs (`192.168.0.x`); only generic `192.168.x.x` / `192.168.0.20` examples.
 - No secrets (`sk-…`, `pk_…`, `AKIA…`, real Cloudinary URLs) in tracked files.
 - `.env` files gitignored and absent from ZIP.
 - Git remote removed (no `origin`).
