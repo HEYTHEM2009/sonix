@@ -39,7 +39,11 @@ receives via `git clone` / archive.
 - [x] Root: `README.md`, `INSTALL.md`, `LICENSE`, `CHANGELOG.md`, `BUYER_GUIDE.md`.
 - [x] `docs/`: API, BUYER_GUIDE, DATABASE, DEPLOYMENT, FAQ, ADMIN, BRANDING,
       CHANGELOG, FEATURE_LIST, plus messaging-specific references.
-- [x] Internal sales/marketing/audit docs left untracked (not part of the package).
+- [x] Internal sales/marketing/audit docs left untracked or removed from the repo
+      (MEMORY.md, SELLING_GUIDE_AR.md, SALES_PITCH.md, SALE_DESCRIPTION_ACQUIRE.md,
+      SALE_LISTING_AR.md, DELIVERY_MESSAGE.md, CLEANUP_CHECKLIST.md,
+      README_CODECANYON_AR.md, temp_login.json removed). Only `CONFIG.md`,
+      `CUSTOMIZATION.md`, `DEPLOY.md` retained as buyer-relevant product docs.
 - [x] Buyer guide fixed to use `EXPO_PUBLIC_API_URL` (was incorrectly referencing
       `BASE_URL` in client.js).
 
