@@ -94,8 +94,16 @@ APKs, temporary files, and personal files":
 | Native caches: `.cxx`, `build`, `.gradle`, `.kotlin` | Gitignored build caches |
 
 ## 5. Final Tracked File Count
-**404 files** (excluding `node_modules/` and `vendor/` which are dependency
-installs, not source). The shipped ZIP = 404 files, 9.8 MB.
+**404 shippable files** (405 tracked total, minus `SELLING.md` which was
+intentionally un-tracked; excluding `node_modules/` and `vendor/` which are
+dependency installs, not source). The shipped ZIP = 404 files, 9.8 MB.
+
+> Note: in addition to the 77 newly-added files above, a working-tree sync
+> commit (`5ea1935`) captured **107 previously-uncommitted modifications**
+> representing the latest, complete application state (gesture handler root,
+> Toast + Realtime providers wired into `App.js`, security hardening in
+> controllers/middleware, route + migration refinements, etc.). This ensures
+> the package ships the current code, not a stale HEAD.
 
 ## 6. Feature Coverage Confirmation
 Every application feature is present in the package (screens, API clients,
