@@ -155,6 +155,13 @@ class AuthController extends Controller
         return response()->json(['message' => 'If the email exists, a verification code has been sent.']);
     }
 
+    public function refresh(Request $request)
+    {
+        $user = $request->user();
+        $user->tokens()->delete();
+        return $this->issueToken($user);
+    }
+
     protected function issueToken(User $user)
     {
         $token = $user->createToken('auth_token')->plainTextToken;

@@ -25,18 +25,43 @@ class TwoFactorController extends Controller
 
         TwoFactorToken::create([
             'user_id' => Auth::id(),
-            'token' => $code,
+            'token' => Hash::make($code),
             'type' => 'enable_2fa',
             'expires_at' => now()->addMinutes(10),
         ]);
+
+        // In production, send $code via email/SMS here
+        \Log::info('2FA enable code for user '.Auth::id().': '.$code);
+
+        return response()->json([
+            'message' => 'Verification code sent to your email',
+        ]);
+    }
+
+    public function verify(Request $request)
+    {
+        $request->validate([
+            'code' => 'required|string|size:6',
+        ]);
+
+        $token = TwoFactorToken::where('user_id', Auth::id())
+            ->where('type', 'enable_2fa')
+            ->where('used', false)
+            ->where('expires_at', '>', now())
+            ->latest()
+            ->first();
+
+        if (! $token || ! Hash::check($request->code, $token->token)) {
+            return response()->json(['error' => 'Invalid or expired code'], 401);
+        }
+
+        $token->update(['used' => true]);
 
         User::where('id', Auth::id())->update([
             'two_factor_enabled' => true,
         ]);
 
-        return response()->json([
-            'message' => '2FA enabled',
-        ]);
+        return response()->json(['message' => '2FA enabled successfully', 'verified' => true]);
     }
 
     public function disable(Request $request)
@@ -51,12 +76,13 @@ class TwoFactorController extends Controller
         }
 
         $token = TwoFactorToken::where('user_id', Auth::id())
-            ->where('token', $request->code)
+            ->where('type', 'disable_2fa')
             ->where('used', false)
             ->where('expires_at', '>', now())
+            ->latest()
             ->first();
 
-        if (! $token) {
+        if (! $token || ! Hash::check($request->code, $token->token)) {
             return response()->json(['error' => 'Invalid or expired 2FA code'], 401);
         }
 
@@ -68,27 +94,6 @@ class TwoFactorController extends Controller
         ]);
 
         return response()->json(['message' => '2FA disabled']);
-    }
-
-    public function verify(Request $request)
-    {
-        $request->validate([
-            'code' => 'required|string|size:6',
-        ]);
-
-        $token = TwoFactorToken::where('user_id', Auth::id())
-            ->where('token', $request->code)
-            ->where('used', false)
-            ->where('expires_at', '>', now())
-            ->first();
-
-        if (! $token) {
-            return response()->json(['error' => 'Invalid or expired code'], 401);
-        }
-
-        $token->update(['used' => true]);
-
-        return response()->json(['message' => 'Code verified', 'verified' => true]);
     }
 
     public function status()

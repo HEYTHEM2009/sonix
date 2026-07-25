@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import client, { setAuthExpiredHandler, setAuthToken } from "../api/client";
+import realtime from "../api/realtime";
 
 const AuthContext = createContext(null);
 
@@ -75,6 +76,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   const logout = useCallback(async () => {
+    realtime.disconnect();
     await AsyncStorage.multiRemove(["token", "user"]);
     setAuthToken(null);
     setToken(null);

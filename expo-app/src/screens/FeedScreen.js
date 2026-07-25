@@ -1,13 +1,20 @@
 import { useState, useEffect, useCallback, useRef, useMemo, memo } from "react";
-import { View, Text, FlatList, TouchableOpacity, Image, RefreshControl, StyleSheet, Dimensions, Pressable, Alert, Animated, I18nManager } from "react-native";
+import { View, Text, FlatList, TouchableOpacity, Image, RefreshControl, StyleSheet, Dimensions, Pressable, Animated, I18nManager, Alert } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
-
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
+import { useNetworkStatus } from "../hooks/useNetworkStatus";
 import client, { resolveUrl } from "../api/client";
-import { COLORS, SIZES, FONTS } from "../components/Theme";
-import Screen3D from "../components/3D/Screen3D";
+import { COLORS, SIZES, FONTS, SPACING, RADIUS, TYPOGRAPHY, SHADOWS, LAYOUT, GLASS } from "../design/DesignSystem";
+import { useFadeIn, useSlideIn, useSpringValue, useStaggerAnimation } from "../design/animations/animations";
+import Button from "../design/ui/Button";
+import Avatar from "../design/ui/Avatar";
+import Badge from "../design/ui/Badge";
+import { PostSkeleton } from "../design/states/LoadingState";
+import EmptyState from "../design/states/EmptyState";
+import ErrorState from "../design/states/ErrorState";
+import { OfflineBanner } from "../design/states/OfflineState";
 
 const { width: SCREEN_W } = Dimensions.get("window");
 
@@ -25,190 +32,169 @@ function formatTime(dateStr, t) {
   return d.toLocaleDateString(I18nManager.isRTL ? "ar" : "en-US", { month: "short", day: "numeric" });
 }
 
-function renderContent(text, nav) {
-  if (!text) return null;
-  const parts = text.split(/([#@][\p{L}\p{N}_]+)/gu);
-  return parts.map((part, i) => {
-    if (part.startsWith("#")) {
-      const tag = part.slice(1);
-      return (
-        <Text key={i} style={s.hashtag} onPress={() => nav?.("HashtagPosts", { tag })}>
-          {part}
-        </Text>
-      );
-    }
-    if (part.startsWith("@")) {
-      const username = part.slice(1);
-      return (
-        <Text key={i} style={s.mention} onPress={() => nav?.("UserProfile", { username })}>
-          {part}
-        </Text>
-      );
-    }
-    return <Text key={i}>{part}</Text>;
-  });
-}
-
-const HeartAnimation = memo(({ show }) => {
+const LikeAnimation = memo(({ show }) => {
   const scale = useRef(new Animated.Value(0)).current;
   const opacity = useRef(new Animated.Value(0)).current;
-
   useEffect(() => {
     if (show) {
-      scale.setValue(0);
-      opacity.setValue(1);
+      scale.setValue(0); opacity.setValue(1);
       Animated.sequence([
-        Animated.spring(scale, { toValue: 1.3, useNativeDriver: true }),
+        Animated.spring(scale, { toValue: 1.4, useNativeDriver: true }),
         Animated.spring(scale, { toValue: 1, useNativeDriver: true }),
-        Animated.delay(400),
+        Animated.delay(300),
         Animated.timing(opacity, { toValue: 0, duration: 200, useNativeDriver: true }),
       ]).start();
     }
   }, [show]);
-
   if (!show) return null;
-  return (
-    <Animated.View style={[s.heartOverlay, { transform: [{ scale }], opacity }]}>
-      <Text style={s.heartBig}>❤️</Text>
-    </Animated.View>
-  );
+  return <Animated.View style={[styles.heartOverlay, { transform: [{ scale }], opacity }]}><Text style={styles.heartBig}>❤️</Text></Animated.View>;
 });
 
-const PostCard = memo(({ post, currentUser, onLike, onBookmark, onComment, onShare, onImagePress, onVideoPress, onMenuPress, onUserPress, onLikesPress, onHashtagPress }) => {
-  const { t } = useLanguage();
+const PostCard = memo(({ post, currentUser, onLike, onBookmark, onComment, onShare, onImagePress, onVideoPress, onMenuPress, onUserPress, onLikesPress, navigation }) => {
+  const { t, isRTL } = useLanguage();
   const [showHeart, setShowHeart] = useState(false);
+  const [liked, setLiked] = useState(post.liked > 0);
+  const [likesCount, setLikesCount] = useState(post.likes_count || 0);
+  const [bookmarked, setBookmarked] = useState(post.bookmarked || false);
   const lastTap = useRef(0);
   const tapTimer = useRef(null);
+  const likeAnims = Array.from({ length: 5 }, () => useRef(new Animated.Value(0)).current);
   const cardAnim = useRef(new Animated.Value(0)).current;
   useEffect(() => { Animated.spring(cardAnim, { toValue: 1, tension: 40, friction: 9, useNativeDriver: true }).start(); }, []);
 
-  const handleTap = () => {
+  const handleLike = useCallback(() => {
+    const newLiked = !liked;
+    setLiked(newLiked);
+    setLikesCount(prev => newLiked ? prev + 1 : prev - 1);
+    onLike(post.id, !newLiked, likesCount);
+    if (newLiked) {
+      likeAnims.forEach((a) => { a.current.setValue(0); Animated.spring(a.current, { toValue: 1, useNativeDriver: true }).start(); });
+    }
+  }, [liked, likesCount, post.id, onLike, likeAnims]);
+
+  const handleDoubleTap = useCallback(() => {
     const now = Date.now();
     if (now - lastTap.current < 300) {
       clearTimeout(tapTimer.current);
-      if (post.liked === 0) {
-        onLike(post.id, false, post.likes_count);
-      }
+      if (!liked) handleLike();
       setShowHeart(true);
       setTimeout(() => setShowHeart(false), 800);
     } else {
       tapTimer.current = setTimeout(() => {
         if (post.image) onImagePress(post);
-        else if (post.type === "video" && post.video) onVideoPress(post);
       }, 300);
     }
     lastTap.current = now;
-  };
+  }, [liked, handleLike, post, onImagePress]);
+
+  const handleBookmark = useCallback(() => {
+    setBookmarked(!bookmarked);
+    onBookmark(post.id);
+  }, [bookmarked, post.id, onBookmark]);
 
   const cardStyle = {
     opacity: cardAnim,
     transform: [
-      { translateY: cardAnim.interpolate({ inputRange: [0, 1], outputRange: [40, 0] }) },
-      { scale: cardAnim.interpolate({ inputRange: [0, 1], outputRange: [0.92, 1] }) },
-      { perspective: 800 },
-      { rotateX: cardAnim.interpolate({ inputRange: [0, 1], outputRange: ["5deg", "0deg"] }) },
+      { translateY: cardAnim.interpolate({ inputRange: [0, 1], outputRange: [30, 0] }) },
+      { scale: cardAnim.interpolate({ inputRange: [0, 1], outputRange: [0.96, 1] }) },
     ],
   };
 
   return (
-    <Animated.View style={[s.card, cardStyle]}>
-      <View style={s.cardHeader}>
-        <TouchableOpacity style={s.cardHeaderLeft} onPress={() => onUserPress(post.user?.id)} activeOpacity={0.7}>
-          {post.user?.avatar ? (
-            <Image source={{ uri: `${resolveUrl(post.user.avatar)}${post.user?.id === currentUser?.id ? "?t=" + Date.now() : ""}` }} style={[s.cardAvatar, { backgroundColor: COLORS.primary + "30" }]} />
-          ) : (
-            <View style={[s.cardAvatar, { backgroundColor: COLORS.primary + "30" }]}>
-              <Text style={[s.cardAvatarText, { color: COLORS.primary }]}>{post.user?.username?.[0]?.toUpperCase() || "?"}</Text>
-            </View>
-          )}
+    <Animated.View style={[styles.card, cardStyle]}>
+      <View style={styles.cardHeader}>
+        <TouchableOpacity style={styles.cardHeaderLeft} onPress={() => onUserPress(post.user?.id)} activeOpacity={0.7}>
+          <Avatar source={post.user?.avatar ? `${resolveUrl(post.user.avatar)}${post.user?.id === currentUser?.id ? `?t=${Date.now()}` : ""}` : null} username={post.user?.username} size="sm" />
           <View>
-            <Text style={s.cardUsername}>{post.user?.username}</Text>
-            <Text style={s.cardTime}>{formatTime(post.created_at, t)}</Text>
+            <Text style={styles.cardUsername}>{post.user?.username}</Text>
+            <Text style={styles.cardTime}>{formatTime(post.created_at, t)}</Text>
           </View>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => onMenuPress(post)} style={s.menuBtn}>
-          <Text style={s.menuDots}>•••</Text>
+        <TouchableOpacity onPress={() => onMenuPress(post)} style={styles.menuBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+          <Text style={styles.menuDots}>•••</Text>
         </TouchableOpacity>
       </View>
 
       {(post.type === "video" && post.video) || post.image ? (
-        <Pressable onPress={handleTap} style={s.imagePressable}>
+        <Pressable onPress={handleDoubleTap} style={styles.mediaWrap}>
           {post.type === "video" && post.video ? (
             <>
-              <Image source={{ uri: resolveUrl(post.image || "") }} style={s.postImg} resizeMode="cover" />
-              {!post.image && <View style={s.videoPlaceholder}><Text style={s.videoPlaceholderIcon}>🎬</Text></View>}
-              <TouchableOpacity style={s.playOverlayIcon} onPress={() => onVideoPress(post)} activeOpacity={0.8}>
-                <View style={s.playCircle}><Text style={s.playTriangle}>▶</Text></View>
+              <Image source={{ uri: resolveUrl(post.image || "") }} style={styles.postImg} resizeMode="cover" />
+              <TouchableOpacity style={styles.playOverlay} onPress={() => onVideoPress(post)} activeOpacity={0.8}>
+                <View style={styles.playCircle}><Text style={styles.playIcon}>▶</Text></View>
               </TouchableOpacity>
             </>
           ) : post.image ? (
-            <Image source={{ uri: resolveUrl(post.image) }} style={s.postImg} resizeMode="cover" />
+            <Image source={{ uri: resolveUrl(post.image) }} style={styles.postImg} resizeMode="cover" />
           ) : null}
-          <HeartAnimation show={showHeart} />
+          <LikeAnimation show={showHeart} />
         </Pressable>
       ) : null}
 
       {post.content ? (
-        <View style={[s.contentWrap, !post.image && !(post.type === "video" && post.video) && s.textContentNoImage]}>
-          <Text style={[s.contentText, !post.image && !(post.type === "video" && post.video) && s.textContentLarge]}>
-            <Text style={s.contentUser}>{post.user?.username} </Text>
-            {renderContent(post.content, onHashtagPress)}
+        <View style={[styles.contentWrap, !post.image && !(post.type === "video" && post.video) && styles.textOnly]}>
+            <Text style={[styles.contentText, !post.image && !(post.type === "video" && post.video) && { fontSize: 16, lineHeight: 24 }]}>
+            <Text style={styles.contentUser}>{post.user?.username} </Text>
+            <ContentText text={post.content} navigation={navigation} />
           </Text>
         </View>
       ) : null}
 
-      <View style={s.actionsBar}>
-        <View style={s.actionsLeft}>
-          <Pressable onPress={() => onLike(post.id, post.liked > 0, post.likes_count)} style={s.actionBtn}>
-            <Text style={[s.actionIcon, post.liked > 0 && s.likedIcon]}>
-              {post.liked > 0 ? "❤️" : "🤍"}
-            </Text>
-          </Pressable>
-          <TouchableOpacity onPress={() => onComment(post.id)} style={s.actionBtn}>
-            <Text style={s.actionIcon}>💬</Text>
+      <View style={styles.actionsBar}>
+        <View style={styles.actionsLeft}>
+          <TouchableOpacity onPress={handleLike} style={styles.actionBtn}>
+            <Text style={[styles.actionIcon, liked && styles.likedIcon]}>{liked ? "❤️" : "🤍"}</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => onShare(post.id)} style={s.actionBtn}>
-            <Text style={s.actionIcon}>📤</Text>
+          <TouchableOpacity onPress={() => onComment(post.id)} style={styles.actionBtn}>
+            <Text style={styles.actionIcon}>💬</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => onShare(post.id)} style={styles.actionBtn}>
+            <Text style={styles.actionIcon}>📤</Text>
           </TouchableOpacity>
         </View>
-        <TouchableOpacity onPress={() => onBookmark(post.id)} style={s.actionBtn}>
-          <Text style={[s.actionIcon, post.bookmarked && s.bookmarkedIcon]}>
-            {post.bookmarked ? "🔖" : "🏷️"}
-          </Text>
+        <TouchableOpacity onPress={handleBookmark} style={styles.actionBtn}>
+          <Text style={[styles.actionIcon, bookmarked && { transform: [{ scale: 1.15 }] }]}>{bookmarked ? "🔖" : "🏷️"}</Text>
         </TouchableOpacity>
       </View>
 
       <TouchableOpacity onPress={() => onLikesPress(post.id)}>
-        <Text style={s.likesText}>{t("likes").replace("{count}", post.likes_count || 0)}</Text>
+        <Text style={styles.likesText}>{t("likes").replace("{count}", likesCount)}</Text>
       </TouchableOpacity>
 
       {post.comments && post.comments.length > 0 && (
-        <View style={s.commentsPreview}>
+        <View style={styles.commentsPreview}>
           {post.comments.slice(0, 2).map((comment) => (
-            <TouchableOpacity key={comment.id} onPress={() => onComment(post.id)} style={s.commentRow}>
-              <Text style={s.commentUser}>{comment.user?.username}</Text>
-              <Text style={s.commentText} numberOfLines={1}>{comment.content}</Text>
+            <TouchableOpacity key={comment.id} onPress={() => onComment(post.id)} style={styles.commentRow}>
+              <Text style={styles.commentUser}>{comment.user?.username}</Text>
+              <Text style={styles.commentText} numberOfLines={1}>{comment.content}</Text>
             </TouchableOpacity>
           ))}
           {post.comments_count > 2 && (
             <TouchableOpacity onPress={() => onComment(post.id)}>
-              <Text style={s.viewAllComments}>{t("viewComments").replace("{count}", post.comments_count)}</Text>
+              <Text style={styles.viewAllComments}>{t("viewComments").replace("{count}", post.comments_count)}</Text>
             </TouchableOpacity>
           )}
         </View>
       )}
-
       {(!post.comments || post.comments.length === 0) && (
-        <TouchableOpacity onPress={() => onComment(post.id)}>
-          <Text style={s.viewAllComments}>{t("addComment")}</Text>
-        </TouchableOpacity>
+        <TouchableOpacity onPress={() => onComment(post.id)}><Text style={styles.viewAllComments}>{t("addComment")}</Text></TouchableOpacity>
       )}
     </Animated.View>
   );
 });
 
-export default function FeedScreen({ navigation, route }) {
-  const { t } = useLanguage();
+function ContentText({ text, navigation }) {
+  if (!text) return null;
+  const parts = text.split(/([#@][\p{L}\p{N}_]+)/gu);
+  return parts.map((part, i) => {
+    if (part.startsWith("#")) return <Text key={i} style={styles.hashtag} onPress={() => navigation?.navigate?.("HashtagPosts", { tag: part.slice(1) })}>{part}</Text>;
+    if (part.startsWith("@")) return <Text key={i} style={styles.mention} onPress={() => navigation?.navigate?.("UserProfile", { username: part.slice(1) })}>{part}</Text>;
+    return <Text key={i}>{part}</Text>;
+  });
+}
+
+export default function FeedScreen({ navigation }) {
+  const { t, isRTL } = useLanguage();
   const [posts, setPosts] = useState([]);
   const [stories, setStories] = useState([]);
   const [highlights, setHighlights] = useState([]);
@@ -216,15 +202,18 @@ export default function FeedScreen({ navigation, route }) {
   const [page, setPage] = useState(1);
   const [loadingMore, setLoadingMore] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [hasMore, setHasMore] = useState(true);
   const { user } = useAuth();
   const loadingRef = useRef(false);
   const insets = useSafeAreaInsets();
+  const isOnline = useNetworkStatus();
 
-  const load = useCallback(async (pageNum = 1, append = false) => {
+  const loadPosts = useCallback(async (pageNum = 1, append = false) => {
     if (loadingRef.current) return;
     loadingRef.current = true;
-    setLoading(pageNum === 1 && !append);
+    setError(null);
+    if (pageNum === 1 && !append) setLoading(true);
     try {
       const res = await client.get(`/feed?page=${pageNum}&per_page=20`);
       const newPosts = res.data?.data || [];
@@ -233,99 +222,46 @@ export default function FeedScreen({ navigation, route }) {
       setHasMore(newPosts.length >= 20);
       setPage(pageNum);
     } catch (e) {
-      console.warn("Feed error:", e?.code || e?.message, e?.config?.url, e?.response?.status);
+      if (e?.response?.status !== 401) setError(t("feedError"));
     }
     loadingRef.current = false;
     setLoading(false);
-  }, []);
+  }, [t]);
 
   const loadStories = useCallback(async () => {
-    try {
-      const res = await client.get("/stories");
-      setStories(res.data || []);
-    } catch (e) {
-      const status = e?.response?.status;
-      const msg = e?.response?.data?.message || e?.message || "unknown";
-      console.warn("Stories error:", status, msg, e?.config?.url);
-    }
+    try { const res = await client.get("/stories"); setStories(res.data || []); } catch (e) {}
   }, []);
 
   const loadHighlights = useCallback(async () => {
-    try { const res = await client.get("/stories/highlights/all"); setHighlights(res.data || []); } catch (e) { /* silent */ }
+    try { const res = await client.get("/stories/highlights/all"); setHighlights(res.data || []); } catch (e) {}
   }, []);
 
-  const refreshAll = useCallback(() => {
-    load(1);
-    loadStories();
-    loadHighlights();
-  }, [load, loadStories, loadHighlights]);
+  const refreshAll = useCallback(() => { loadPosts(1); loadStories(); loadHighlights(); }, [loadPosts, loadStories, loadHighlights]);
 
-  useFocusEffect(
-    useCallback(() => {
-      loadingRef.current = false;
-      refreshAll();
-      return () => { loadingRef.current = false; };
-    }, [refreshAll])
-  );
+  useFocusEffect(useCallback(() => { loadingRef.current = false; refreshAll(); return () => { loadingRef.current = false; }; }, [refreshAll]));
 
   const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    setHasMore(true);
-    await Promise.all([load(1), loadStories(), loadHighlights()]);
+    setRefreshing(true); setHasMore(true);
+    await Promise.all([loadPosts(1), loadStories(), loadHighlights()]);
     setRefreshing(false);
-  }, [load, loadStories, loadHighlights]);
+  }, [loadPosts, loadStories, loadHighlights]);
 
   const onEndReached = useCallback(async () => {
     if (!hasMore || loadingMore) return;
     setLoadingMore(true);
-    await load(page + 1, true);
+    await loadPosts(page + 1, true);
     setLoadingMore(false);
-  }, [hasMore, loadingMore, page, load]);
+  }, [hasMore, loadingMore, page, loadPosts]);
 
-  const likePost = useCallback(async (postId, liked, count) => {
+  const likePost = useCallback((postId, liked, count) => {
     setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, liked: liked ? 0 : 1, likes_count: count + (liked ? -1 : 1) } : p));
-    try { await client.post("/likes", { post_id: postId }); }
-    catch (e) { setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, liked: liked ? 1 : 0, likes_count: count } : p)); }
+    client.post("/likes", { post_id: postId }).catch(() => setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, liked: liked ? 1 : 0, likes_count: count } : p)));
   }, []);
 
-  const toggleBookmark = useCallback(async (postId) => {
+  const toggleBookmark = useCallback((postId) => {
     setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, bookmarked: !p.bookmarked } : p));
-    try { await client.post("/bookmarks", { post_id: postId }); }
-    catch (e) { setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, bookmarked: !p.bookmarked } : p)); }
+    client.post("/bookmarks", { post_id: postId }).catch(() => setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, bookmarked: !p.bookmarked } : p)));
   }, []);
-
-  const deletePost = useCallback((postId) => {
-    Alert.alert(t("deletePost"), t("deletePostConfirm"), [
-      { text: t("cancel"), style: "cancel" },
-      { text: t("delete"), style: "destructive", onPress: async () => {
-        try { await client.delete(`/posts/${postId}`); setPosts((prev) => prev.filter((p) => p.id !== postId)); }
-        catch (e) { Alert.alert(t("error"), t("failedToDelete")); }
-      }},
-    ]);
-  }, [t]);
-
-  const showPostMenu = useCallback((post) => {
-    const isMine = post.user?.id === user?.id;
-    const options = [];
-    if (isMine) {
-      options.push({ text: `✏️ ${t("edit")}`, onPress: () => navigation.navigate("EditPost", { postId: post.id, initialContent: post.content }) });
-      options.push({ text: `🗑️ ${t("deletePost")}`, style: "destructive", onPress: () => deletePost(post.id) });
-    } else {
-      options.push({ text: `⚠️ ${t("report")}`, onPress: async () => {
-        try { await client.post("/reports", { type: "post", id: post.id, reason: "Inappropriate" }); Alert.alert(t("success"), t("reported")); } catch (e) {}
-      }});
-    }
-    options.push({ text: t("cancel"), style: "cancel" });
-    Alert.alert(null, null, options);
-  }, [user, t, navigation, deletePost]);
-
-  const navigateComments = useCallback((id) => navigation.navigate("Comments", { postId: id }), [navigation]);
-  const navigateShare = useCallback((id) => navigation.navigate("SharePost", { postId: id }), [navigation]);
-  const navigateImage = useCallback((p) => navigation.navigate("ImageViewer", { imageUrl: p.image, username: p.user?.username }), [navigation]);
-  const navigateVideo = useCallback((p) => navigation.navigate("VideoPost", { videoUrl: p.video, username: p.user?.username }), [navigation]);
-  const navigateUser = useCallback((id) => navigation.navigate("UserProfile", { userId: id }), [navigation]);
-  const navigateLikes = useCallback((id) => navigation.navigate("LikeList", { postId: id }), [navigation]);
-  const navigateHashtag = useCallback((screen, params) => navigation.navigate(screen, params), [navigation]);
 
   const storiesData = useMemo(() => [
     { _k: "me", isMe: true },
@@ -334,152 +270,116 @@ export default function FeedScreen({ navigation, route }) {
 
   const header = useMemo(() => (
     <View>
-      <View style={[s.topBar, { paddingTop: insets.top + 4 }]}>
-          <Text style={s.logo}>{t("sonix")}</Text>
-        <View style={s.topActions}>
-          <TouchableOpacity onPress={() => navigation.navigate("Notifications")} style={s.topBtn}>
-            <Text style={s.topBtnIcon}>🔔</Text>
-          </TouchableOpacity>
-        </View>
+      <View style={[styles.topBar, { paddingTop: insets.top + SPACING.sm }]}>
+        <Text style={styles.logo}>{t("sonix")}</Text>
+        <TouchableOpacity onPress={() => navigation.navigate("Notifications")} style={styles.notifBtn}>
+          <Text style={styles.notifIcon}>🔔</Text>
+        </TouchableOpacity>
       </View>
 
-      <View style={s.storiesWrap}>
+      <View style={styles.storiesSection}>
         <FlatList
           horizontal
           data={storiesData}
           showsHorizontalScrollIndicator={false}
           keyExtractor={(item) => item._k}
-          contentContainerStyle={s.storiesInner}
+          contentContainerStyle={{ paddingHorizontal: SPACING.md, gap: 10 }}
           renderItem={({ item }) => {
             if (item.isMe) {
               return (
-                <TouchableOpacity style={s.storyItem} onPress={() => navigation.navigate("CreateStory")} activeOpacity={0.7}>
-                  <View style={s.myStoryRing}>
-                    <View style={s.myStoryAvatar}>
-                      <Text style={s.myStoryInitial}>{user?.username?.[0]?.toUpperCase() || "?"}</Text>
+                <TouchableOpacity style={styles.storyItem} onPress={() => navigation.navigate("CreateStory")} activeOpacity={0.7}>
+                  <View style={styles.myStoryRing}>
+                    <View style={styles.myStoryAvatar}>
+                      {user?.avatar ? (
+                        <Image source={{ uri: `${resolveUrl(user.avatar)}?t=${Date.now()}` }} style={{ width: 56, height: 56, borderRadius: 28 }} />
+                      ) : (
+                        <Text style={styles.myStoryInitial}>{user?.username?.[0]?.toUpperCase() || "?"}</Text>
+                      )}
                     </View>
-                    <View style={s.plusBadge}><Text style={s.plusText}>+</Text></View>
+                    <View style={styles.plusBadge}><Text style={styles.plusText}>+</Text></View>
                   </View>
-                  <Text style={s.storyLabel}>{t("yourStory")}</Text>
+                  <Text style={styles.storyLabel}>{t("yourStory")}</Text>
                 </TouchableOpacity>
               );
             }
             return (
-              <TouchableOpacity style={s.storyItem} onPress={() => navigation.navigate("StoryViewer", { stories: item.stories, user: item.user })} activeOpacity={0.7}>
-                <View style={[s.storyRing, !item.has_unseen && { borderColor: COLORS.border }]}>
-                  <View style={s.storyAvatar}>
+              <TouchableOpacity style={styles.storyItem} onPress={() => navigation.navigate("StoryViewer", { stories: item.stories, user: item.user })} activeOpacity={0.7}>
+                <View style={[styles.storyRing, !item.has_unseen && { borderColor: COLORS.border }]}>
+                  <View style={styles.storyAvatarInner}>
                     {item.user?.avatar ? (
-                      <Image source={{ uri: `${resolveUrl(item.user.avatar)}${item.user?.id === user?.id ? "?t=" + Date.now() : ""}` }} style={{ width: "100%", height: "100%", borderRadius: 29 }} />
+                      <Image source={{ uri: `${resolveUrl(item.user.avatar)}${item.user?.id === user?.id ? "?t=" + Date.now() : ""}` }} style={{ width: 54, height: 54, borderRadius: 27 }} />
                     ) : (
-                      <Text style={s.storyInitial}>{item.user?.username?.[0]?.toUpperCase() || "?"}</Text>
+                      <Text style={styles.storyInitial}>{item.user?.username?.[0]?.toUpperCase() || "?"}</Text>
                     )}
                   </View>
-                  {item.stories?.some((s) => s.type === "video") && (
-                    <View style={s.videoBadge}>
-                      <Text style={s.videoBadgeIcon}>🔊</Text>
-                    </View>
-                  )}
                 </View>
-                <Text style={s.storyLabel} numberOfLines={1}>{item.user?.username}</Text>
+                <Text style={styles.storyLabel} numberOfLines={1}>{item.user?.username}</Text>
               </TouchableOpacity>
             );
           }}
         />
       </View>
-
-      {highlights.length > 0 && (
-        <View style={s.highlightsWrap}>
-          <View style={s.highlightsHeader}>
-            <Text style={s.highlightsTitle}>{t("highlights")}</Text>
-            <TouchableOpacity onPress={() => navigation.navigate("Highlights")}>
-              <Text style={s.highlightsSeeAll}>{t("seeAll")}</Text>
-            </TouchableOpacity>
-          </View>
-          <FlatList
-            horizontal
-            data={highlights}
-            showsHorizontalScrollIndicator={false}
-            keyExtractor={(h) => String(h.id)}
-            contentContainerStyle={s.highlightsInner}
-            renderItem={({ item: h }) => (
-              <TouchableOpacity style={s.highlightItem} onPress={() => navigation.navigate("Highlights")}>
-                <View style={s.highlightRing}>
-                  <View style={s.highlightAvatar}>
-                    <Text style={s.highlightEmoji}>✨</Text>
-                  </View>
-                </View>
-                <Text style={s.highlightLabel} numberOfLines={1}>{h.title}</Text>
-              </TouchableOpacity>
-            )}
-          />
-        </View>
-      )}
     </View>
-  ), [insets, storiesData, user, highlights, loading, stories]);
+  ), [insets, storiesData, user, highlights, t, navigation]);
 
   if (loading && posts.length === 0) {
     return (
-      <Screen3D>
-        <View style={[s.topBar, { paddingTop: insets.top + 4 }]}>
-        <Text style={s.logo}>{t("sonix")}</Text>
+      <View style={styles.container}>
+        <View style={[styles.topBar, { paddingTop: insets.top + SPACING.sm }]}>
+          <Text style={styles.logo}>{t("sonix")}</Text>
         </View>
-        <View style={s.skeletonWrap}>
-          {[1, 2, 3].map((i) => (
-            <View key={i} style={s.skeletonCard}>
-              <View style={s.skeletonHeader}>
-                <View style={s.skeletonAvatar} />
-                <View style={s.skeletonLines}>
-                  <View style={[s.skeletonLine, { width: 120 }]} />
-                  <View style={[s.skeletonLine, { width: 60, height: 8 }]} />
-                </View>
-              </View>
-              <View style={s.skeletonImage} />
-              <View style={s.skeletonActions}>
-                <View style={[s.skeletonLine, { width: 40 }]} />
-                <View style={[s.skeletonLine, { width: 40 }]} />
-                <View style={[s.skeletonLine, { width: 40 }]} />
-              </View>
-            </View>
-          ))}
-        </View>
-      </Screen3D>
+        <FlatList data={[1, 2, 3]} renderItem={() => <PostSkeleton />} keyExtractor={(i) => String(i)} contentContainerStyle={{ padding: SPACING.md }} />
+      </View>
+    );
+  }
+
+  if (error && posts.length === 0) {
+    return (
+      <View style={[styles.container, { paddingTop: insets.top }]}>
+        <ErrorState message={error} onRetry={() => loadPosts(1)} />
+      </View>
+    );
+  }
+
+  if (!isOnline && posts.length === 0) {
+    return (
+      <View style={[styles.container, { paddingTop: insets.top }]}>
+        <OfflineState onRetry={() => loadPosts(1)} />
+      </View>
     );
   }
 
   return (
-    <Screen3D>
-        <FlatList
+    <View style={styles.container}>
+      <OfflineBanner />
+      <FlatList
         data={posts}
         keyExtractor={(p) => String(p.id)}
         ListHeaderComponent={header}
         extraData={posts.length}
-        initialNumToRender={8}
-        maxToRenderPerBatch={10}
-        windowSize={11}
-        removeClippedSubviews={true}
-        updateCellsBatchingPeriod={50}
+        initialNumToRender={6}
+        maxToRenderPerBatch={8}
+        windowSize={9}
+        removeClippedSubviews
         ListEmptyComponent={
-          <View style={s.emptyWrap}>
-            <View style={s.emptyCircle}>
-              <Text style={s.emptyIcon}>✨</Text>
-            </View>
-            <Text style={s.emptyTitle}>{t("emptyFeed")}</Text>
-            <Text style={s.emptySub}>{t("followPeople")}</Text>
-            <TouchableOpacity style={s.emptyBtn} onPress={() => navigation.getParent()?.navigate("Explore")}>
-              <Text style={s.emptyBtnText}>{t("findPeople")}</Text>
-            </TouchableOpacity>
-          </View>
+          <EmptyState
+            icon="✨"
+            title={t("emptyFeed")}
+            message={t("followPeople")}
+            actionLabel={t("findPeople")}
+            onAction={() => navigation.getParent()?.navigate("Explore")}
+          />
         }
         ListFooterComponent={loadingMore ? (
-          <View style={s.loadingFooter}>
-            <View style={s.loadingDot} />
-            <View style={[s.loadingDot, { opacity: 0.6 }]} />
-            <View style={[s.loadingDot, { opacity: 0.3 }]} />
+          <View style={styles.loadingFooter}>
+            {[0, 1, 2].map((i) => (
+              <View key={i} style={[styles.loadingDot, i > 0 && { opacity: 1 - i * 0.3 }]} />
+            ))}
           </View>
         ) : null}
         onEndReached={onEndReached}
         onEndReachedThreshold={0.5}
-        contentContainerStyle={{ paddingBottom: 100 }}
+        contentContainerStyle={{ paddingBottom: 120 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} colors={[COLORS.primary]} />}
         renderItem={({ item: post }) => (
           <PostCard
@@ -487,117 +387,87 @@ export default function FeedScreen({ navigation, route }) {
             currentUser={user}
             onLike={likePost}
             onBookmark={toggleBookmark}
-            onComment={navigateComments}
-            onShare={navigateShare}
-            onImagePress={navigateImage}
-            onVideoPress={navigateVideo}
-            onMenuPress={showPostMenu}
-            onUserPress={navigateUser}
-            onLikesPress={navigateLikes}
-            onHashtagPress={navigateHashtag}
+            onComment={(id) => navigation.navigate("Comments", { postId: id })}
+            onShare={(id) => navigation.navigate("SharePost", { postId: id })}
+            onImagePress={(p) => navigation.navigate("ImageViewer", { imageUrl: p.image, username: p.user?.username })}
+            onVideoPress={(p) => navigation.navigate("VideoPost", { videoUrl: p.video, username: p.user?.username })}
+            onMenuPress={(p) => {
+              const isMine = p.user?.id === user?.id;
+              const options = [];
+              if (isMine) {
+                options.push({ text: `✏️ ${t("edit")}`, onPress: () => navigation.navigate("EditPost", { postId: p.id, initialContent: p.content }) });
+                options.push({ text: `🗑️ ${t("deletePost")}`, destructive: true, onPress: () => { client.delete(`/posts/${p.id}`).then(() => setPosts((prev) => prev.filter((x) => x.id !== p.id))); } });
+              } else {
+                options.push({ text: `⚠️ ${t("report")}`, onPress: () => { client.post("/reports", { type: "post", id: p.id, reason: "Inappropriate" }); } });
+              }
+              options.push({ text: t("cancel"), cancel: true });
+              Alert.alert(null, null, options);
+            }}
+            onUserPress={(id) => navigation.navigate("UserProfile", { userId: id })}
+            onLikesPress={(id) => navigation.navigate("LikeList", { postId: id })}
+            navigation={navigation}
           />
         )}
-        />
-    </Screen3D>
+      />
+    </View>
   );
 }
 
-const s = StyleSheet.create({
-  container: { flex: 1 },
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: COLORS.screenBg },
+  topBar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: SPACING.lg, paddingBottom: SPACING.sm },
+  logo: { fontSize: 28, fontWeight: "900", color: COLORS.text, letterSpacing: 2 },
+  notifBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: GLASS.default.backgroundColor, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: GLASS.default.borderColor },
+  notifIcon: { fontSize: 18 },
 
-  topBar: { paddingHorizontal: 16, paddingBottom: 8, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  logo: { fontSize: 28, fontWeight: "900", color: COLORS.amethystLight, letterSpacing: -1 },
-  topActions: { flexDirection: "row", gap: 8 },
-  topBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: COLORS.card, alignItems: "center", justifyContent: "center", borderWidth: 0.5, borderColor: COLORS.border },
-  topBtnIcon: { fontSize: 18 },
+  storiesSection: { paddingVertical: SPACING.sm, paddingBottom: SPACING.md },
+  storyItem: { alignItems: "center", width: 70 },
+  myStoryRing: { width: 68, height: 68, borderRadius: 34, borderWidth: 2, borderColor: COLORS.primaryGlow, alignItems: "center", justifyContent: "center", marginBottom: 4 },
+  myStoryAvatar: { width: 60, height: 60, borderRadius: 30, backgroundColor: COLORS.cardElevated, alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  myStoryInitial: { color: COLORS.primary, fontSize: 22, fontWeight: "700" },
+  plusBadge: { position: "absolute", bottom: 0, right: 0, width: 24, height: 24, borderRadius: 12, backgroundColor: COLORS.primary, alignItems: "center", justifyContent: "center", borderWidth: 2.5, borderColor: COLORS.bg },
+  plusText: { color: COLORS.text, fontSize: 15, fontWeight: "700", marginTop: -1 },
+  storyRing: { width: 68, height: 68, borderRadius: 34, borderWidth: 3, borderColor: COLORS.accent, padding: 2, marginBottom: 4 },
+  storyAvatarInner: { width: "100%", height: "100%", borderRadius: 29, backgroundColor: COLORS.cardElevated, alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  storyInitial: { color: COLORS.text, fontSize: 22, fontWeight: "700" },
+  storyLabel: { fontSize: 11, color: COLORS.textSecondary, textAlign: "center", maxWidth: 68 },
 
-  storiesWrap: { paddingVertical: 12 },
-  storiesInner: { paddingHorizontal: 12, gap: 12 },
-  storyItem: { alignItems: "center", width: 68 },
-  myStoryRing: { width: 66, height: 66, borderRadius: 33, borderWidth: 2, borderColor: COLORS.border, alignItems: "center", justifyContent: "center", marginBottom: 4 },
-  myStoryAvatar: { width: 58, height: 58, borderRadius: 29, backgroundColor: COLORS.card, alignItems: "center", justifyContent: "center" },
-  myStoryInitial: { color: COLORS.primary, fontSize: 20, fontWeight: "700" },
-  plusBadge: { position: "absolute", bottom: 0, right: 0, width: 22, height: 22, borderRadius: 11, backgroundColor: COLORS.primary, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: COLORS.bg },
-  plusText: { color: COLORS.text, fontSize: 14, fontWeight: "700", marginTop: -1 },
-  storyRing: { width: 66, height: 66, borderRadius: 33, borderWidth: 3, borderColor: COLORS.accent, padding: 2, marginBottom: 4 },
-  storyAvatar: { width: "100%", height: "100%", borderRadius: 29, backgroundColor: COLORS.card, alignItems: "center", justifyContent: "center" },
-  storyInitial: { color: COLORS.text, fontSize: 20, fontWeight: "700" },
-  storyLabel: { fontSize: 11, color: COLORS.textSecondary, textAlign: "center" },
-  videoBadge: { position: "absolute", bottom: -2, right: -2, width: 22, height: 22, borderRadius: 11, backgroundColor: "#000", alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: COLORS.bg },
-  videoBadgeIcon: { fontSize: 11 },
-
-  highlightsWrap: { paddingBottom: 12, borderBottomWidth: 0.5, borderBottomColor: COLORS.border },
-  highlightsHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, marginBottom: 10 },
-  highlightsTitle: { fontSize: SIZES.md, ...FONTS.bold, color: COLORS.text },
-  highlightsSeeAll: { fontSize: SIZES.sm, color: COLORS.accent },
-  highlightsInner: { paddingHorizontal: 12, gap: 16 },
-  highlightItem: { alignItems: "center", width: 68 },
-  highlightRing: { width: 62, height: 62, borderRadius: 31, borderWidth: 2, borderColor: COLORS.border, alignItems: "center", justifyContent: "center", marginBottom: 4 },
-  highlightAvatar: { width: 54, height: 54, borderRadius: 27, backgroundColor: COLORS.card, alignItems: "center", justifyContent: "center" },
-  highlightEmoji: { fontSize: 24 },
-  highlightLabel: { fontSize: 11, color: COLORS.textSecondary, textAlign: "center" },
-
-  skeletonWrap: { padding: 12 },
-  skeletonCard: { backgroundColor: COLORS.card, borderRadius: SIZES.radiusLg, marginBottom: 16, overflow: "hidden" },
-  skeletonHeader: { flexDirection: "row", alignItems: "center", padding: 12, gap: 10 },
-  skeletonAvatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: COLORS.border },
-  skeletonLines: { gap: 6 },
-  skeletonLine: { height: 12, borderRadius: 6, backgroundColor: COLORS.border, width: 100 },
-  skeletonImage: { width: "100%", height: SCREEN_W - 48, backgroundColor: COLORS.border },
-  skeletonActions: { flexDirection: "row", gap: 12, padding: 12 },
-
-  emptyWrap: { alignItems: "center", paddingTop: 60, paddingHorizontal: 40 },
-  emptyCircle: { width: 80, height: 80, borderRadius: 40, backgroundColor: "rgba(124,108,247,0.08)", alignItems: "center", justifyContent: "center", marginBottom: 16, borderWidth: 1, borderColor: "rgba(124,108,247,0.15)" },
-  emptyIcon: { fontSize: 36 },
-  emptyTitle: { fontSize: SIZES.xl, fontWeight: "700", color: COLORS.text, marginBottom: 6 },
-  emptySub: { fontSize: SIZES.sm, color: COLORS.muted, textAlign: "center", marginBottom: 20 },
-  emptyBtn: { backgroundColor: COLORS.primary, paddingHorizontal: 24, paddingVertical: 10, borderRadius: 20 },
-  emptyBtnText: { color: "#fff", fontWeight: "700", fontSize: SIZES.md },
-
-  card: { backgroundColor: "rgba(26,26,46,0.5)", marginBottom: 8, paddingHorizontal: 12, borderRadius: SIZES.radius, marginHorizontal: 6, borderWidth: 0.5, borderColor: "rgba(124,108,247,0.08)", overflow: "hidden" },
-  cardHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 10 },
+  card: { marginBottom: SPACING.sm, borderRadius: RADIUS.xl, padding: SPACING.md, marginHorizontal: SPACING.sm, backgroundColor: GLASS.default.backgroundColor, borderWidth: 1, borderColor: GLASS.default.borderColor, ...SHADOWS.glass },
+  cardHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: SPACING.sm },
   cardHeaderLeft: { flexDirection: "row", alignItems: "center", gap: 10 },
-  cardAvatar: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
-  cardAvatarText: { fontWeight: "700", fontSize: 14 },
-  cardUsername: { fontSize: SIZES.md, fontWeight: "600", color: COLORS.text },
+  cardUsername: { fontSize: SIZES.md, fontWeight: "700", color: COLORS.text },
   cardTime: { fontSize: SIZES.xs, color: COLORS.muted },
-  menuBtn: { padding: 8 },
-  menuDots: { fontSize: 16, color: COLORS.text, fontWeight: "900", letterSpacing: 1 },
+  menuBtn: { padding: 4, width: 32, height: 32, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.03)", alignItems: "center", justifyContent: "center" },
+  menuDots: { fontSize: 14, color: COLORS.textSecondary, fontWeight: "900", letterSpacing: 1 },
 
-  imagePressable: { position: "relative" },
-  postImg: { width: SCREEN_W - 24, height: SCREEN_W - 24, borderRadius: SIZES.radius, backgroundColor: COLORS.card },
-  playOverlayIcon: { position: "absolute", inset: 0, alignItems: "center", justifyContent: "center" },
-  playCircle: { width: 56, height: 56, borderRadius: 28, backgroundColor: "rgba(0,0,0,0.6)", alignItems: "center", justifyContent: "center", borderWidth: 3, borderColor: "rgba(255,255,255,0.3)" },
-  playTriangle: { color: "#fff", fontSize: 22, marginLeft: 4 },
-  videoPlaceholder: { position: "absolute", inset: 0, alignItems: "center", justifyContent: "center", backgroundColor: COLORS.card },
-  videoPlaceholderIcon: { fontSize: 48, opacity: 0.3 },
+  mediaWrap: { position: "relative", borderRadius: RADIUS.lg, overflow: "hidden" },
+  postImg: { width: "100%", height: SCREEN_W - 40, borderRadius: RADIUS.lg, backgroundColor: COLORS.cardElevated },
+  playOverlay: { position: "absolute", inset: 0, alignItems: "center", justifyContent: "center" },
+  playCircle: { width: 60, height: 60, borderRadius: 30, backgroundColor: "rgba(0,0,0,0.5)", alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: "rgba(255,255,255,0.2)" },
+  playIcon: { color: "#fff", fontSize: 24, marginLeft: 4 },
 
   heartOverlay: { position: "absolute", inset: 0, alignItems: "center", justifyContent: "center", zIndex: 10 },
   heartBig: { fontSize: 80 },
 
-  contentWrap: { paddingVertical: 8 },
-  textContentNoImage: { paddingHorizontal: 4, paddingVertical: 14 },
-  textContentLarge: { fontSize: 16, lineHeight: 24 },
+  contentWrap: { paddingVertical: SPACING.sm },
+  textOnly: { paddingHorizontal: 4, paddingVertical: SPACING.md },
   contentText: { fontSize: SIZES.md, color: COLORS.text, lineHeight: 22 },
-  contentUser: { fontWeight: "700" },
+  contentUser: { fontWeight: "700", color: COLORS.primaryLight },
 
-  actionsBar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 6 },
-  actionsLeft: { flexDirection: "row", alignItems: "center", gap: 12 },
+  actionsBar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: SPACING.xs, marginTop: SPACING.xs },
+  actionsLeft: { flexDirection: "row", alignItems: "center", gap: 20 },
   actionBtn: { padding: 6 },
   actionIcon: { fontSize: 22 },
-  likedIcon: { transform: [{ scale: 1.1 }] },
-  bookmarkedIcon: { transform: [{ scale: 1.1 }] },
-  hashtag: { color: COLORS.accent, fontWeight: "600" },
-  mention: { color: COLORS.primary, fontWeight: "600" },
 
   likesText: { fontSize: SIZES.sm, fontWeight: "700", color: COLORS.text, paddingVertical: 2 },
-
   commentsPreview: { paddingVertical: 4, gap: 4 },
   commentRow: { flexDirection: "row", gap: 4, alignItems: "center" },
   commentUser: { fontSize: SIZES.sm, fontWeight: "700", color: COLORS.text },
-  commentText: { fontSize: SIZES.sm, color: COLORS.muted, flex: 1 },
+  commentText: { fontSize: SIZES.sm, color: COLORS.textTertiary, flex: 1 },
   viewAllComments: { fontSize: SIZES.sm, color: COLORS.muted, paddingVertical: 4 },
+  hashtag: { color: COLORS.accent, fontWeight: "600" },
+  mention: { color: COLORS.primaryLight, fontWeight: "600" },
 
-  loadingFooter: { flexDirection: "row", justifyContent: "center", gap: 6, paddingVertical: 20 },
+  loadingFooter: { flexDirection: "row", justifyContent: "center", gap: 6, paddingVertical: SPACING.xl },
   loadingDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.primary },
 });

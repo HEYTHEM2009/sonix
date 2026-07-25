@@ -1,11 +1,13 @@
-import React, { memo, useRef, useEffect } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, Animated } from "react-native";
+import React, { memo, useRef, useEffect, Suspense } from "react";
+import { View, Text, TouchableOpacity, StyleSheet, Animated, ActivityIndicator } from "react-native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
-import { COLORS, SIZES } from "../components/Theme";
+import { COLORS, SPACING, RADIUS, SHADOWS, LAYOUT } from "../design/DesignSystem";
+import TabIcon from "../design/ui/TabIcon";
 
 import LoginScreen from "../screens/LoginScreen";
 import RegisterScreen from "../screens/RegisterScreen";
@@ -52,51 +54,42 @@ import CreateReelScreen from "../screens/CreateReelScreen";
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
-const TAB_ICONS = {
-  Feed: { active: "🏠", inactive: "🏠" },
-  Explore: { active: "🔍", inactive: "🔍" },
-  Reels: { active: "🎬", inactive: "🎬" },
-  Messages: { active: "💬", inactive: "💬" },
-  Profile: { active: "👤", inactive: "👤" },
-};
+function CreateButton({ navigation }) {
+  const scaleAnim = useRef(new Animated.Value(0)).current;
+  const rotate = useRef(new Animated.Value(0)).current;
+  const ringAnim = useRef(new Animated.Value(0)).current;
 
-const TabBarIcon = memo(({ label, focused }) => {
-  const pulse = useRef(new Animated.Value(0)).current;
-  const glow = useRef(new Animated.Value(0)).current;
   useEffect(() => {
-    if (focused) {
+    Animated.loop(Animated.sequence([
       Animated.parallel([
-        Animated.spring(pulse, { toValue: 1, tension: 100, friction: 5, useNativeDriver: true }),
-        Animated.timing(glow, { toValue: 1, duration: 600, useNativeDriver: true }),
-      ]).start();
-    } else {
+        Animated.timing(scaleAnim, { toValue: 1, duration: 2500, useNativeDriver: true }),
+        Animated.timing(ringAnim, { toValue: 1, duration: 3000, useNativeDriver: true }),
+      ]),
       Animated.parallel([
-        Animated.timing(pulse, { toValue: 0, duration: 150, useNativeDriver: true }),
-        Animated.timing(glow, { toValue: 0, duration: 200, useNativeDriver: true }),
-      ]).start();
-    }
-  }, [focused]);
+        Animated.timing(scaleAnim, { toValue: 0, duration: 2500, useNativeDriver: true }),
+        Animated.timing(ringAnim, { toValue: 0, duration: 3000, useNativeDriver: true }),
+      ]),
+    ])).start();
+  }, [scaleAnim, ringAnim]);
 
-  const icon = TAB_ICONS[label];
+  const onPressIn = () => Animated.spring(rotate, { toValue: 1, damping: 15, stiffness: 250, useNativeDriver: true }).start();
+  const onPressOut = () => {
+    Animated.spring(rotate, { toValue: 0, damping: 15, stiffness: 250, useNativeDriver: true }).start();
+    navigation.navigate("Create");
+  };
+
   return (
-    <Animated.View style={[tabStyles.iconWrap, focused && tabStyles.iconWrapActive, {
-      transform: [{ scale: pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.15] }) }],
-    }]}>
-      <Text style={[tabStyles.icon, focused && tabStyles.iconActive]}>
-        {icon ? (focused ? icon.active : icon.inactive) : "•"}
-      </Text>
-      {focused && (
-        <>
-          <View style={tabStyles.activeDot} />
-          <Animated.View style={[tabStyles.activeGlow, {
-            opacity: glow.interpolate({ inputRange: [0, 1], outputRange: [0, 0.5] }),
-            transform: [{ scale: glow.interpolate({ inputRange: [0, 1], outputRange: [0.5, 1.2] }) }],
-          }]} />
-        </>
-      )}
-    </Animated.View>
+    <TouchableOpacity onPressIn={onPressIn} onPressOut={onPressOut} activeOpacity={0.8} style={styles.createBtn}>
+      <LinearGradient colors={COLORS.gradientPrimary} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.createGradient}>
+        <Animated.View style={{ transform: [{ rotate: rotate.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "90deg"] }) }] }}>
+          <Text style={styles.createIcon}>+</Text>
+        </Animated.View>
+      </LinearGradient>
+      <Animated.View style={[styles.createPulse, { opacity: scaleAnim.interpolate({ inputRange: [0, 1], outputRange: [0.3, 0] }), transform: [{ scale: scaleAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.5] }) }] }]} />
+      <Animated.View style={[styles.ringGlow, { opacity: ringAnim.interpolate({ inputRange: [0, 1], outputRange: [0.1, 0.4] }), transform: [{ scale: ringAnim.interpolate({ inputRange: [0, 1], outputRange: [0.85, 1.2] }) }, { rotate: ringAnim.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "180deg"] }) }] }]} />
+    </TouchableOpacity>
   );
-});
+}
 
 function CustomTabBar({ state, navigation }) {
   const insets = useSafeAreaInsets();
@@ -106,114 +99,39 @@ function CustomTabBar({ state, navigation }) {
   const floatAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(floatAnim, { toValue: 1, duration: 3000, useNativeDriver: true }),
-        Animated.timing(floatAnim, { toValue: 0, duration: 3000, useNativeDriver: true }),
-      ])
-    ).start();
-  }, []);
+    Animated.loop(Animated.sequence([
+      Animated.timing(floatAnim, { toValue: 1, duration: 3000, useNativeDriver: true }),
+      Animated.timing(floatAnim, { toValue: 0, duration: 3000, useNativeDriver: true }),
+    ])).start();
+  }, [floatAnim]);
 
   return (
-    <View style={[tabStyles.container, { paddingBottom: Math.max(insets.bottom + 4, 12) }]}>
-      <Animated.View style={[tabStyles.tabBar, {
-        transform: [{
-          translateY: floatAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -4] }),
-        }],
-      }]}>
-        {orderedTabs.map((route) => {
-          const originalIndex = tabs.indexOf(route);
-          const isFocused = state.index === originalIndex;
-          const isCreate = route.name === "Create";
-
-          if (isCreate) {
-            return <CreateButton key={route.name} navigation={navigation} routeName={route.name} />;
-          }
-
-          return (
-            <TouchableOpacity
-              key={route.name}
-              style={tabStyles.tab}
-              onPress={() => navigation.navigate(route.name)}
-              activeOpacity={0.7}
-            >
-              <TabBarIcon label={route.name} focused={isFocused} />
-            </TouchableOpacity>
-          );
-        })}
+    <View style={[styles.tabContainer, { paddingBottom: Math.max(insets.bottom + 8, 16) }]}>
+      <Animated.View style={[styles.tabBar, { transform: [{ translateY: floatAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -4] }) }] }]}>
+        <View style={styles.tabBarGradient}>
+          {orderedTabs.map((route) => {
+            const originalIndex = tabs.indexOf(route);
+            const isFocused = state.index === originalIndex;
+            if (route.name === "Create") return <CreateButton key={route.name} navigation={navigation} />;
+            return (
+              <TouchableOpacity key={route.name} style={styles.tab} onPress={() => navigation.navigate(route.name)} activeOpacity={0.7}>
+                <TabIcon label={route.name} focused={isFocused} />
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       </Animated.View>
     </View>
   );
 }
 
-function CreateButton({ navigation, routeName }) {
-  const pulse = useRef(new Animated.Value(0)).current;
-  const rotate = useRef(new Animated.Value(0)).current;
-  const goldGlow = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.parallel([
-          Animated.timing(pulse, { toValue: 1, duration: 2000, useNativeDriver: true }),
-          Animated.timing(goldGlow, { toValue: 1, duration: 3000, useNativeDriver: true }),
-        ]),
-        Animated.parallel([
-          Animated.timing(pulse, { toValue: 0, duration: 2000, useNativeDriver: true }),
-          Animated.timing(goldGlow, { toValue: 0, duration: 3000, useNativeDriver: true }),
-        ]),
-      ])
-    ).start();
-  }, []);
-
-  const onPressIn = () => {
-    Animated.spring(rotate, { toValue: 1, tension: 100, friction: 5, useNativeDriver: true }).start();
-  };
-  const onPressOut = () => {
-    Animated.spring(rotate, { toValue: 0, tension: 100, friction: 5, useNativeDriver: true }).start();
-    navigation.navigate(routeName);
-  };
-
-  return (
-    <TouchableOpacity
-      style={tabStyles.createBtn}
-      onPressIn={onPressIn}
-      onPressOut={onPressOut}
-      activeOpacity={0.8}
-    >
-      <Animated.View style={[tabStyles.createInner, {
-        transform: [{
-          rotate: rotate.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "90deg"] }),
-        }],
-        borderColor: goldGlow.interpolate({
-          inputRange: [0, 1],
-          outputRange: ["rgba(124,108,247,0.15)", "rgba(124,108,247,0.4)"],
-        }),
-      }]}>
-        <Text style={tabStyles.createIcon}>+</Text>
-      </Animated.View>
-      <Animated.View style={[tabStyles.createPulse, {
-        opacity: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.25, 0] }),
-        transform: [{ scale: pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.4] }) }],
-      }]} />
-      {/* Gold ring */}
-      <Animated.View style={[tabStyles.goldRing, {
-        opacity: goldGlow.interpolate({ inputRange: [0, 1], outputRange: [0.15, 0.45] }),
-        transform: [
-          { scale: goldGlow.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1.15] }) },
-          { rotate: goldGlow.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "180deg"] }) },
-        ],
-      }]} />
-    </TouchableOpacity>
-  );
+function SuspenseScreen({ children }) {
+  return <Suspense fallback={<View style={styles.suspense}><ActivityIndicator size="large" color={COLORS.primaryLight} /></View>}>{children}</Suspense>;
 }
 
 function HomeTabs() {
   return (
-    <Tab.Navigator
-      tabBar={(props) => <CustomTabBar {...props} />}
-      screenOptions={{ headerShown: false }}
-    >
+    <Tab.Navigator tabBar={(props) => <CustomTabBar {...props} />} screenOptions={{ headerShown: false }}>
       <Tab.Screen name="Feed" component={FeedScreen} />
       <Tab.Screen name="Explore" component={ExploreScreen} />
       <Tab.Screen name="Reels" component={ReelsScreen} />
@@ -226,18 +144,9 @@ function HomeTabs() {
 
 export default function AppNavigator() {
   const { user, loading, onboarded } = useAuth();
-
   if (loading) return null;
-
   return (
-    <Stack.Navigator
-      screenOptions={{
-        headerShown: false,
-        contentStyle: { backgroundColor: COLORS.bg },
-        animation: "slide_from_right",
-        animationDuration: 350,
-      }}
-    >
+    <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: COLORS.bg }, animation: "slide_from_right", animationDuration: 350 }}>
       {!user ? (
         onboarded ? (
           <>
@@ -266,17 +175,17 @@ export default function AppNavigator() {
           <Stack.Screen name="GroupChat" component={GroupChatScreen} />
           <Stack.Screen name="CreateGroup" component={CreateGroupScreen} />
           <Stack.Screen name="Comments" component={CommentsScreen} />
-          <Stack.Screen name="Camera" component={CameraScreen} options={{ animation: "slide_from_bottom" }} />
+          <Stack.Screen name="Camera" options={{ animation: "slide_from_bottom" }}>{() => <SuspenseScreen><CameraScreen /></SuspenseScreen>}</Stack.Screen>
           <Stack.Screen name="StoryViewer" component={StoryViewerScreen} options={{ animation: "fade" }} />
           <Stack.Screen name="Notifications" component={NotificationsScreen} />
           <Stack.Screen name="EditProfile" component={EditProfileScreen} />
           <Stack.Screen name="SavedPosts" component={SavedPostsScreen} />
-          <Stack.Screen name="ImageViewer" component={ImageViewerScreen} options={{ animation: "fade" }} />
+          <Stack.Screen name="ImageViewer" options={{ animation: "fade" }}>{() => <SuspenseScreen><ImageViewerScreen /></SuspenseScreen>}</Stack.Screen>
           <Stack.Screen name="SharePost" component={SharePostScreen} />
           <Stack.Screen name="LikeList" component={LikeListScreen} />
           <Stack.Screen name="EditPost" component={EditPostScreen} />
           <Stack.Screen name="Settings" component={SettingsScreen} />
-          <Stack.Screen name="CreateStory" component={CreateStoryScreen} options={{ animation: "slide_from_bottom" }} />
+          <Stack.Screen name="CreateStory" options={{ animation: "slide_from_bottom" }}>{() => <SuspenseScreen><CreateStoryScreen /></SuspenseScreen>}</Stack.Screen>
           <Stack.Screen name="VideoPost" component={VideoPostScreen} options={{ animation: "fade" }} />
           <Stack.Screen name="Highlights" component={HighlightsScreen} />
           <Stack.Screen name="BlockedUsers" component={BlockedUsersScreen} />
@@ -295,114 +204,35 @@ export default function AppNavigator() {
   );
 }
 
-const tabStyles = StyleSheet.create({
-  container: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: "transparent",
-  },
+const styles = StyleSheet.create({
+  tabContainer: { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: "transparent" },
   tabBar: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-around",
-    marginHorizontal: 12,
+    marginHorizontal: SPACING.lg,
     marginBottom: 4,
-    backgroundColor: COLORS.card,
-    borderRadius: 24,
-    height: 60,
-    paddingHorizontal: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 24,
-    elevation: 12,
-    borderWidth: 0.5,
-    borderColor: COLORS.border,
+    height: 68,
+    borderRadius: RADIUS.xxl,
+    backgroundColor: COLORS.tabBg,
+    borderWidth: 1,
+    borderColor: COLORS.tabBorder,
+    ...SHADOWS.floating,
+    overflow: "hidden",
   },
-  tab: {
+  tabBarGradient: {
     flex: 1,
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    height: 50,
+    justifyContent: "space-around",
+    paddingHorizontal: SPACING.sm,
+    backgroundColor: "rgba(10, 10, 26, 0.65)",
   },
-  iconWrap: {
-    alignItems: "center",
-    justifyContent: "center",
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-  },
-  iconWrapActive: {
-    backgroundColor: COLORS.card,
-  },
-  icon: {
-    fontSize: 20,
-    opacity: 0.35,
-  },
-  iconActive: {
-    opacity: 1,
-  },
-  activeDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: COLORS.accent,
-    marginTop: 2,
-    zIndex: 2,
-  },
-  activeGlow: {
-    position: "absolute",
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: COLORS.accent,
-    top: 2,
-  },
-  createBtn: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: COLORS.primary,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: -20,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4,
-    shadowRadius: 20,
-    elevation: 10,
-  },
-  createInner: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: COLORS.primary,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 2,
-    borderColor: "rgba(255,255,255,0.15)",
-  },
-  createIcon: {
-    fontSize: 28,
-    color: COLORS.text,
-    fontWeight: "300",
-    marginTop: -2,
-  },
-  createPulse: {
-    position: "absolute",
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: COLORS.primary,
-  },
-  goldRing: {
-    position: "absolute",
-    width: 66,
-    height: 66,
-    borderRadius: 33,
-    borderWidth: 1.5,
-    borderColor: COLORS.accent,
-  },
+  tab: { flex: 1, alignItems: "center", justifyContent: "center", height: 52 },
+  createBtn: { width: 54, height: 54, borderRadius: 27, alignItems: "center", justifyContent: "center", marginTop: -16 },
+  createGradient: { width: 54, height: 54, borderRadius: 27, alignItems: "center", justifyContent: "center", ...SHADOWS.glow },
+  createIcon: { fontSize: 30, color: COLORS.text, fontWeight: "300", marginTop: -2 },
+  createPulse: { position: "absolute", width: 54, height: 54, borderRadius: 27, backgroundColor: COLORS.primary },
+  ringGlow: { position: "absolute", width: 68, height: 68, borderRadius: 34, borderWidth: 1.5, borderColor: COLORS.accent },
+  suspense: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: COLORS.bg },
 });

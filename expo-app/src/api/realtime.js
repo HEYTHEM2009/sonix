@@ -275,11 +275,13 @@ class RealtimeManager {
     }
     this.reconnectAttempts = 0;
     if (this.netInfoUnsub) {
-      this.netInfoUnsub();
+      if (typeof this.netInfoUnsub === "function") this.netInfoUnsub();
+      else if (this.netInfoUnsub.remove) this.netInfoUnsub.remove();
       this.netInfoUnsub = null;
     }
     if (this.appStateUnsub) {
-      this.appStateUnsub();
+      if (typeof this.appStateUnsub === "function") this.appStateUnsub();
+      else if (this.appStateUnsub.remove) this.appStateUnsub.remove();
       this.appStateUnsub = null;
     }
     if (this.echo) {

@@ -27,7 +27,7 @@ class ReelService
         $cacheKey = 'reel_feed:'.$userId.':'.md5(json_encode($filters));
 
         return Cache::remember($cacheKey, 60, function () use ($userId, $filters) {
-            $query = Reel::with('user:id,username,avatar,is_private,is_pro')
+            $query = Reel::with('user:id,username,avatar')
                 ->withCount(['likes', 'comments'])
                 ->where('status', 'published')
                 ->where(function ($q) {
@@ -77,7 +77,7 @@ class ReelService
             $watchedReelIds = ReelWatchHistory::where('user_id', $userId)->pluck('reel_id')->toArray();
             $seen = array_merge($likedReelIds, $savedReelIds, $watchedReelIds);
 
-            $query = Reel::with('user:id,username,avatar,is_private,is_pro')
+            $query = Reel::with('user:id,username,avatar')
                 ->withCount(['likes', 'comments'])
                 ->where('reels.user_id', '!=', $userId)
                 ->where('status', 'published')
@@ -87,9 +87,13 @@ class ReelService
                 ->whereNotIn('reels.id', $seen);
 
             if ($preferredCreators->isNotEmpty()) {
-                $query->orderByRaw(
-                    'CASE WHEN reels.user_id IN ('.$preferredCreators->implode(',').') THEN 0 ELSE 1 END'
-                );
+                try {
+                    $query->orderByRaw(
+                        'CASE WHEN reels.user_id IN ('.$preferredCreators->implode(',').') THEN 0 ELSE 1 END'
+                    );
+                } catch (\Throwable $e) {
+                    $query->orderByDesc('reels.created_at');
+                }
             }
 
             $query->join('reel_analytics', 'reel_analytics.reel_id', '=', 'reels.id')
@@ -104,19 +108,27 @@ class ReelService
 
     public function trending(int $userId, int $perPage = 20): array
     {
-        $reels = Reel::with('user:id,username,avatar,is_private')
-            ->withCount(['likes', 'comments'])
-            ->join('reel_analytics', 'reel_analytics.reel_id', '=', 'reels.id')
-            ->orderByDesc('reel_analytics.trending_score')
-            ->paginate($perPage)
-            ->withQueryString();
+        try {
+            $reels = Reel::with('user:id,username,avatar')
+                ->withCount(['likes', 'comments'])
+                ->join('reel_analytics', 'reel_analytics.reel_id', '=', 'reels.id')
+                ->orderByDesc('reel_analytics.trending_score')
+                ->paginate($perPage)
+                ->withQueryString();
+        } catch (\Throwable $e) {
+            $reels = Reel::with('user:id,username,avatar')
+                ->withCount(['likes', 'comments'])
+                ->orderByDesc('created_at')
+                ->paginate($perPage)
+                ->withQueryString();
+        }
 
         return $this->decorateCollection($reels, $userId);
     }
 
     public function byHashtag(string $tag, int $userId, int $perPage = 20): array
     {
-        $reels = Reel::with('user:id,username,avatar,is_private')
+        $reels = Reel::with('user:id,username,avatar')
             ->withCount(['likes', 'comments'])
             ->whereHas('hashtags', fn ($q) => $q->where('tag', strtolower($tag)))
             ->orderByDesc('created_at')
@@ -128,10 +140,10 @@ class ReelService
 
     public function search(string $term, int $userId, int $perPage = 20): array
     {
-        $reels = Reel::with('user:id,username,avatar,is_private')
+        $reels = Reel::with('user:id,username,avatar')
             ->withCount(['likes', 'comments'])
-            ->where('caption', 'ilike', '%'.$term.'%')
-            ->orWhere('music_title', 'ilike', '%'.$term.'%')
+            ->where('caption', 'like', '%'.$term.'%')
+            ->orWhere('music_title', 'like', '%'.$term.'%')
             ->orderByDesc('created_at')
             ->paginate($perPage)
             ->withQueryString();
@@ -141,7 +153,7 @@ class ReelService
 
     public function saved(int $userId, int $perPage = 20): array
     {
-        $reels = Reel::with('user:id,username,avatar,is_private')
+        $reels = Reel::with('user:id,username,avatar')
             ->withCount(['likes', 'comments'])
             ->whereHas('saves', fn ($q) => $q->where('user_id', $userId))
             ->orderByDesc('created_at')
@@ -230,45 +242,47 @@ class ReelService
      */
     public function recomputeAnalytics(int $reelId): void
     {
-        $reel = Reel::withCount(['likes', 'comments', 'saves', 'shares'])->find($reelId);
-        if (! $reel) {
-            return;
+        try {
+            $reel = Reel::withCount(['likes', 'comments', 'saves', 'shares'])->find($reelId);
+            if (! $reel) {
+                return;
+            }
+
+            $watchTime = ReelWatchHistory::where('reel_id', $reelId)->sum('watch_seconds');
+            $completions = ReelWatchHistory::where('reel_id', $reelId)->where('completed', true)->count();
+            $totalViews = ReelWatchHistory::where('reel_id', $reelId)->count();
+            $completionRate = $totalViews > 0 ? round(($completions / $totalViews) * 100, 2) : 0;
+
+            $views = max($reel->views_count, $totalViews);
+
+            $ageHours = max(1, ($reel->created_at->diffInMinutes(now())) / 60);
+            $engagement = $reel->likes_count * 3 + $reel->comments_count * 2
+                + $reel->saves_count * 4 + $reel->shares_count * 5;
+            $trendingScore = round(($engagement + $views) / sqrt($ageHours), 2);
+
+            $recommendationScore = round(
+                $completionRate * 0.4 + min(100, $reel->saves_count * 2) * 0.3 + min(100, $engagement) * 0.3,
+                2
+            );
+
+            ReelAnalytics::updateOrCreate(
+                ['reel_id' => $reelId],
+                [
+                    'views_count' => $views,
+                    'likes_count' => $reel->likes_count,
+                    'comments_count' => $reel->comments_count,
+                    'shares_count' => $reel->shares_count,
+                    'saves_count' => $reel->saves_count,
+                    'watch_time_seconds' => $watchTime,
+                    'completion_rate' => $completionRate,
+                    'trending_score' => $trendingScore,
+                    'recommendation_score' => $recommendationScore,
+                    'last_viewed_at' => now(),
+                ]
+            );
+        } catch (\Throwable $e) {
+            Log::error('ReelService@recomputeAnalytics: '.$e->getMessage());
         }
-
-        $watchTime = ReelWatchHistory::where('reel_id', $reelId)->sum('watch_seconds');
-        $completions = ReelWatchHistory::where('reel_id', $reelId)->where('completed', true)->count();
-        $totalViews = ReelWatchHistory::where('reel_id', $reelId)->count();
-        $completionRate = $totalViews > 0 ? round(($completions / $totalViews) * 100, 2) : 0;
-
-        $views = max($reel->views_count, $totalViews);
-
-        // Trending score: weighted engagement over recency.
-        $ageHours = max(1, ($reel->created_at->diffInMinutes(now())) / 60);
-        $engagement = $reel->likes_count * 3 + $reel->comments_count * 2
-            + $reel->saves_count * 4 + $reel->shares_count * 5;
-        $trendingScore = round(($engagement + $views) / sqrt($ageHours), 2);
-
-        // Recommendation score blends completion rate and saves.
-        $recommendationScore = round(
-            $completionRate * 0.4 + min(100, $reel->saves_count * 2) * 0.3 + min(100, $engagement) * 0.3,
-            2
-        );
-
-        ReelAnalytics::updateOrCreate(
-            ['reel_id' => $reelId],
-            [
-                'views_count' => $views,
-                'likes_count' => $reel->likes_count,
-                'comments_count' => $reel->comments_count,
-                'shares_count' => $reel->shares_count,
-                'saves_count' => $reel->saves_count,
-                'watch_time_seconds' => $watchTime,
-                'completion_rate' => $completionRate,
-                'trending_score' => $trendingScore,
-                'recommendation_score' => $recommendationScore,
-                'last_viewed_at' => now(),
-            ]
-        );
     }
 
     public function creatorInsights(int $userId): array
@@ -333,7 +347,7 @@ class ReelService
      */
     public function drafts(int $userId, int $perPage = 20): array
     {
-        $reels = Reel::with('user:id,username,avatar,is_pro')
+        $reels = Reel::with('user:id,username,avatar')
             ->withCount(['likes', 'comments'])
             ->where('user_id', $userId)
             ->where('status', 'draft')
@@ -348,7 +362,7 @@ class ReelService
      */
     public function scheduled(int $userId, int $perPage = 20): array
     {
-        $reels = Reel::with('user:id,username,avatar,is_pro')
+        $reels = Reel::with('user:id,username,avatar')
             ->withCount(['likes', 'comments'])
             ->where('user_id', $userId)
             ->where('status', 'scheduled')
@@ -363,7 +377,7 @@ class ReelService
      */
     public function featured(int $userId, int $perPage = 20): array
     {
-        $reels = Reel::with('user:id,username,avatar,is_pro')
+        $reels = Reel::with('user:id,username,avatar')
             ->withCount(['likes', 'comments'])
             ->where('status', 'published')
             ->where('is_featured', true)
@@ -385,8 +399,8 @@ class ReelService
         }
         if ($term) {
             $query->where(function ($q) use ($term) {
-                $q->where('title', 'ilike', "%{$term}%")
-                    ->orWhere('artist', 'ilike', "%{$term}%");
+                $q->where('title', 'like', "%{$term}%")
+                    ->orWhere('artist', 'like', "%{$term}%");
             });
         }
 
@@ -411,13 +425,26 @@ class ReelService
 
     protected function decorateCollection($paginator, int $userId): array
     {
-        $likedIds = ReelLike::where('user_id', $userId)->pluck('reel_id')->toArray();
-        $savedIds = ReelSave::where('user_id', $userId)->pluck('reel_id')->toArray();
+        try {
+            $likedIds = ReelLike::where('user_id', $userId)->pluck('reel_id')->toArray();
+        } catch (\Throwable $e) {
+            $likedIds = [];
+        }
+
+        try {
+            $savedIds = ReelSave::where('user_id', $userId)->pluck('reel_id')->toArray();
+        } catch (\Throwable $e) {
+            $savedIds = [];
+        }
 
         $paginator->getCollection()->transform(function ($reel) use ($likedIds, $savedIds) {
             $reel->liked = in_array($reel->id, $likedIds, true);
             $reel->saved = in_array($reel->id, $savedIds, true);
-            $reel->hashtags = $reel->hashtags()->pluck('tag')->toArray();
+            try {
+                $reel->hashtags = $reel->hashtags()->pluck('tag')->toArray();
+            } catch (\Throwable $e) {
+                $reel->hashtags = [];
+            }
 
             return $reel;
         });

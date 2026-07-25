@@ -24,6 +24,12 @@
       "android": {
         "buildType": "app-bundle",
         "credentialsSource": "remote"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://sonix-production.up.railway.app/api",
+        "EXPO_PUBLIC_WS_HOST": "sonix-production.up.railway.app",
+        "EXPO_PUBLIC_WS_PORT": "443",
+        "EXPO_PUBLIC_REVERB_KEY": "sonix-reverb"
       }
     }
   },

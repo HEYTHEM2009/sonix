@@ -1,11 +1,20 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { View, Text, FlatList, TouchableOpacity, Alert, Image, StyleSheet, RefreshControl, Dimensions, ActivityIndicator } from "react-native";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, RefreshControl, Dimensions, Animated } from "react-native";
+
+const AnimatedFlatList = Animated.createAnimatedComponent(FlatList);
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
+import { useNetworkStatus } from "../hooks/useNetworkStatus";
 import client, { resolveUrl } from "../api/client";
-import { COLORS, SIZES, FONTS } from "../components/Theme";
-import Screen3D from "../components/3D/Screen3D";
+import { COLORS, SPACING, RADIUS, TYPOGRAPHY, SHADOWS, GLASS, LAYOUT } from "../design/DesignSystem";
+import Avatar from "../design/ui/Avatar";
+import Button, { IconButton } from "../design/ui/Button";
+import Card from "../design/ui/Card";
+import { ProfileSkeleton } from "../design/states/LoadingState";
+import ErrorState from "../design/states/ErrorState";
+import Header from "../design/ui/Header";
 
 const { width: SCREEN_W } = Dimensions.get("window");
 const COLS = 3;
@@ -20,10 +29,16 @@ export default function ProfileScreen({ navigation }) {
   const [requests, setRequests] = useState([]);
   const [showRequests, setShowRequests] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const { user, logout } = useAuth();
   const insets = useSafeAreaInsets();
+  const isOnline = useNetworkStatus();
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const headerOpacity = scrollY.interpolate({ inputRange: [0, 150], outputRange: [1, 0], extrapolate: "clamp" });
+  const headerScale = scrollY.interpolate({ inputRange: [-100, 0, 100], outputRange: [1.15, 1, 0.95], extrapolate: "clamp" });
 
   const load = useCallback(async () => {
+    setError(null);
     try {
       const [postsRes, statsRes, meRes] = await Promise.all([
         client.get(`/posts/user/${user.id}`),
@@ -33,203 +48,208 @@ export default function ProfileScreen({ navigation }) {
       setPosts(postsRes.data?.data || []);
       setStats(statsRes.data);
       setIsPrivate(!!meRes.data.is_private);
-    } catch (e) { console.warn("Profile load error", e?.response?.status); }
+    } catch (e) {
+      if (e?.response?.status !== 401) setError(t("loadError"));
+    }
     setLoading(false);
-  }, [user]);
+  }, [user, t]);
 
   useEffect(() => { load(); }, [load]);
 
   const loadRequests = async () => {
-    try { const res = await client.get("/follow/requests"); setRequests(res.data || []); setShowRequests(true); } catch (e) { console.warn("Load requests error", e?.response?.status); }
+    try { const res = await client.get("/follow/requests"); setRequests(res.data || []); setShowRequests(true); } catch (e) {}
   };
-
   const approveRequest = async (id) => {
-    try { await client.post(`/follow/approve/${id}`); setRequests((p) => p.filter((r) => r.id !== id)); load(); } catch (e) { console.warn("Approve error", e?.response?.status); }
+    try { await client.post(`/follow/approve/${id}`); setRequests((p) => p.filter((r) => r.id !== id)); load(); } catch (e) {}
   };
-
   const rejectRequest = async (id) => {
-    try { await client.post(`/follow/reject/${id}`); setRequests((p) => p.filter((r) => r.id !== id)); } catch (e) { console.warn("Reject error", e?.response?.status); }
+    try { await client.post(`/follow/reject/${id}`); setRequests((p) => p.filter((r) => r.id !== id)); } catch (e) {}
   };
-
   const togglePrivacy = async () => {
-    try { const res = await client.post("/users/toggle-privacy"); setIsPrivate(res.data.is_private); } catch (e) { console.warn("Toggle privacy error", e?.response?.status); }
-  };
-
-  const handleLogout = () => {
-    Alert.alert(t("logout"), t("areYouSure"), [
-      { text: t("cancel"), style: "cancel" },
-      { text: t("logout"), style: "destructive", onPress: logout },
-    ]);
+    try { const res = await client.post("/users/toggle-privacy"); setIsPrivate(res.data.is_private); } catch (e) {}
   };
 
   const header = useMemo(() => (
-    <View style={s.headerWrap}>
-      <View style={[s.topBar, { paddingTop: insets.top + 6 }]}>
-        <Text style={s.username}>{user?.username}</Text>
-          <View style={s.topBarRight}>
-            <TouchableOpacity onPress={() => navigation.navigate("Settings")} style={s.iconBtn}><Text style={s.icon}>⚙</Text></TouchableOpacity>
-            <TouchableOpacity onPress={handleLogout} style={s.iconBtn}><Text style={s.icon}>↗</Text></TouchableOpacity>
-          </View>
-      </View>
-
-      <View style={s.profileSection}>
-        <View style={s.avatarRow}>
-          <View style={s.avatarRing}>
-            <View style={s.avatarInner}>
-              {user?.avatar ? (
-                <Image source={{ uri: `${resolveUrl(user.avatar)}?t=${Date.now()}` }} style={{ width: 78, height: 78, borderRadius: 39 }} />
-              ) : (
-                <Text style={s.avatarLetter}>{user?.username?.[0]?.toUpperCase() || "?"}</Text>
-              )}
+    <View>
+      <Animated.View style={[styles.heroSection, { opacity: headerOpacity, transform: [{ scale: headerScale }] }]}>
+        <LinearGradient colors={[COLORS.gradientPremium[0] + "40", "transparent"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.heroGradient} />
+        <View style={[styles.heroContent, { paddingTop: insets.top + SPACING.xl }]}>
+          <View style={styles.heroTop}>
+            <Text style={styles.username}>{user?.username}</Text>
+            <View style={styles.topActions}>
+              <IconButton icon="⚙️" onPress={() => navigation.navigate("Settings")} color={COLORS.text} bgColor="rgba(255,255,255,0.05)" size={38} />
+              <IconButton icon="🚪" onPress={logout} color={COLORS.dangerLight} bgColor="rgba(255,255,255,0.03)" size={38} />
             </View>
           </View>
-          <View style={s.statsRow}>
-            <View style={s.statItem}>
-              <Text style={s.statNum}>{stats.posts}</Text>
-              <Text style={s.statLbl}>{t("posts")}</Text>
-            </View>
-            <TouchableOpacity onPress={() => navigation.navigate("Followers")} style={s.statItem}>
-              <Text style={s.statNum}>{stats.followers}</Text>
-              <Text style={s.statLbl}>{t("followers")}</Text>
-            </TouchableOpacity>
-        <TouchableOpacity onPress={() => navigation.navigate("Followers", { tab: "following" })} style={s.statItem}>
-          <Text style={s.statNum}>{stats.following}</Text>
-          <Text style={s.statLbl}>{t("following")}</Text>
-        </TouchableOpacity>
-          </View>
-        </View>
-
-        <Text style={s.name}>{user?.username}</Text>
-        {user?.bio ? <Text style={s.bio}>{user.bio}</Text> : null}
-        <Text style={s.privacy}>{isPrivate ? `🔒 ${t("private")}` : `🌐 ${t("public")}`}</Text>
-
-        <View style={s.btnRow}>
-          <TouchableOpacity style={s.editBtn} onPress={() => navigation.navigate("EditProfile")}>
-            <Text style={s.editBtnText}>{t("editProfile")}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={s.editBtn} onPress={togglePrivacy}>
-            <Text style={s.editBtnText}>{isPrivate ? t("makePublic") : t("makePrivate")}</Text>
-          </TouchableOpacity>
-          {isPrivate && (
-            <TouchableOpacity style={s.requestsBtn} onPress={loadRequests}>
-              <Text style={s.requestsBtnText}>{t("requests")} {requests.length > 0 ? `(${requests.length})` : ""}</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-
-        <TouchableOpacity style={s.savedRow} onPress={() => navigation.navigate("SavedPosts")}>
-          <Text style={s.savedIcon}>🔖</Text>
-          <Text style={s.savedLabel}>{t("saved")}</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={s.savedRow} onPress={() => navigation.navigate("Highlights")}>
-          <Text style={s.savedIcon}>✨</Text>
-          <Text style={s.savedLabel}>{t("highlights")}</Text>
-        </TouchableOpacity>
-
-        {showRequests && requests.length > 0 && (
-          <View style={s.requestsSection}>
-            {requests.map((r) => (
-              <View key={r.id} style={s.reqRow}>
-                <View style={s.reqAvatar}><Text style={s.reqAvatarText}>{r.follower?.username?.[0]?.toUpperCase() || "?"}</Text></View>
-                <Text style={s.reqName}>{r.follower?.username}</Text>
-                <View style={s.reqActions}>
-                  <TouchableOpacity onPress={() => approveRequest(r.id)} style={s.approveBtn}><Text style={s.btnCheck}>✓</Text></TouchableOpacity>
-                  <TouchableOpacity onPress={() => rejectRequest(r.id)} style={s.rejectBtn}><Text style={s.btnX}>✕</Text></TouchableOpacity>
-                </View>
+          <View style={styles.heroBody}>
+            <Avatar source={user?.avatar ? `${resolveUrl(user.avatar)}?t=${Date.now()}` : null} username={user?.username} size="hero" story elevated />
+            <View style={styles.heroStats}>
+              <View style={[styles.glassStat, { alignItems: "center" }]}>
+                <Text style={styles.statNum}>{stats.posts}</Text>
+                <Text style={styles.statLbl}>{t("posts")}</Text>
               </View>
-            ))}
+              <TouchableOpacity onPress={() => navigation.navigate("Followers")} style={styles.glassStat}>
+                <Text style={[styles.statNum, { textAlign: "center" }]}>{stats.followers}</Text>
+                <Text style={styles.statLbl}>{t("followers")}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => navigation.navigate("Followers", { tab: "following" })} style={styles.glassStat}>
+                <Text style={[styles.statNum, { textAlign: "center" }]}>{stats.following}</Text>
+                <Text style={styles.statLbl}>{t("following")}</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        )}
+          <Text style={styles.name}>{user?.name || user?.username}</Text>
+          {user?.bio && <Text style={styles.bio}>{user.bio}</Text>}
+          <View style={styles.privacyRow}>
+            <View style={[styles.privacyBadge, isPrivate && { backgroundColor: COLORS.accent + "25", borderColor: COLORS.accent + "40" }]}>
+              <Text style={[styles.privacyText, isPrivate && { color: COLORS.accent }]}>{isPrivate ? `🔒 ${t("private")}` : `🌐 ${t("public")}`}</Text>
+            </View>
+          </View>
+          <View style={styles.btnRow}>
+            <Button title={t("editProfile")} variant="primary" size="sm" onPress={() => navigation.navigate("EditProfile")} style={{ flex: 1 }} />
+            <Button title={isPrivate ? t("makePublic") : t("makePrivate")} variant="glass" size="sm" onPress={togglePrivacy} style={{ flex: 1 }} />
+            {isPrivate && (
+              <Button title={`${t("requests")}${requests.length > 0 ? ` (${requests.length})` : ""}`} variant="accent" size="sm" onPress={loadRequests} />
+            )}
+          </View>
+        </View>
+      </Animated.View>
+
+      <View style={styles.savedSection}>
+        <TouchableOpacity style={[styles.glassRow, { marginBottom: SPACING.sm }]} onPress={() => navigation.navigate("SavedPosts")}>
+          <Text style={styles.savedIcon}>🔖</Text>
+          <Text style={styles.savedLabel}>{t("saved")}</Text>
+          <Text style={styles.savedArrow}>→</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.glassRow} onPress={() => navigation.navigate("Highlights")}>
+          <Text style={styles.savedIcon}>✨</Text>
+          <Text style={styles.savedLabel}>{t("highlights")}</Text>
+          <Text style={styles.savedArrow}>→</Text>
+        </TouchableOpacity>
       </View>
 
-      {posts.length === 0 && (
-        <View style={s.emptyWrap}>
-          <Text style={s.emptyIcon}>📷</Text>
-          <Text style={s.emptyTitle}>{t("noPosts")}</Text>
+      {showRequests && requests.length > 0 && (
+        <Card glass style={{ marginHorizontal: SPACING.lg, marginBottom: SPACING.md }}>
+          {requests.map((r) => (
+            <View key={r.id} style={styles.reqRow}>
+              <Avatar source={null} username={r.follower?.username} size="sm" />
+              <Text style={styles.reqName}>{r.follower?.username}</Text>
+              <View style={styles.reqActions}>
+                <TouchableOpacity onPress={() => approveRequest(r.id)} style={styles.approveBtn}>
+                  <Text style={styles.btnCheck}>✓</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => rejectRequest(r.id)} style={styles.rejectBtn}>
+                  <Text style={styles.btnX}>✕</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ))}
+        </Card>
+      )}
+
+      {posts.length === 0 && !loading && (
+        <View style={styles.emptyPosts}>
+          <Text style={styles.emptyIcon}>📷</Text>
+          <Text style={styles.emptyTitle}>{t("noPosts")}</Text>
         </View>
       )}
     </View>
-  ), [user, stats, isPrivate, requests, showRequests, insets]);
+  ), [user, stats, isPrivate, requests, showRequests, insets, t, navigation, logout, loadRequests, approveRequest, rejectRequest, togglePrivacy, headerOpacity, headerScale]);
 
   if (loading) {
-    return (
-      <Screen3D style={{ alignItems: "center", justifyContent: "center" }}>
-        <ActivityIndicator color={COLORS.accent} size="large" />
-      </Screen3D>
-    );
+    return <View style={[styles.container, { paddingTop: insets.top }]}><ProfileSkeleton /></View>;
+  }
+
+  if (error) {
+    return <View style={[styles.container, { paddingTop: insets.top }]}><ErrorState message={error} onRetry={load} /></View>;
   }
 
   return (
-    <Screen3D>
-      <FlatList
-        style={{ flex: 1 }}
+    <View style={styles.container}>
+      <AnimatedFlatList
         data={posts}
         numColumns={COLS}
         keyExtractor={(p) => String(p.id)}
         ListHeaderComponent={header}
-        columnWrapperStyle={posts.length > 0 ? { gap: GAP } : null}
-        contentContainerStyle={{ paddingBottom: Math.max(insets.bottom + 20, 30) }}
+        columnWrapperStyle={posts.length > 0 ? { gap: GAP, paddingHorizontal: GAP / 2 } : null}
+        contentContainerStyle={{ paddingBottom: Math.max(insets.bottom + 80, 30) }}
+        onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true })}
+        scrollEventThrottle={16}
         refreshControl={<RefreshControl refreshing={false} onRefresh={load} tintColor={COLORS.text} colors={[COLORS.text]} />}
         renderItem={({ item: post }) => (
-          <TouchableOpacity style={s.cell}>
+          <TouchableOpacity style={styles.cell} activeOpacity={0.7}>
             {post.image ? (
-              <Image source={{ uri: resolveUrl(post.image) }} style={s.cellImg} resizeMode="cover" />
+              <Image source={{ uri: resolveUrl(post.image) }} style={styles.cellImg} resizeMode="cover" />
             ) : (
-              <View style={s.cellText}>
-                <Text style={s.cellTextContent} numberOfLines={4}>{post.content}</Text>
-              </View>
+              <View style={styles.cellTextWrap}><Text style={styles.cellText} numberOfLines={4}>{post.content}</Text></View>
             )}
           </TouchableOpacity>
         )}
       />
-    </Screen3D>
+    </View>
   );
 }
 
-const s = StyleSheet.create({
-  container: { flex: 1 },
-  headerWrap: { backgroundColor: "transparent" },
-  topBar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingBottom: 8 },
-  username: { fontSize: SIZES.xxl, ...FONTS.bold, color: COLORS.text },
-  topBarRight: { flexDirection: "row", gap: 12 },
-  iconBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: COLORS.card, alignItems: "center", justifyContent: "center", borderWidth: 0.5, borderColor: COLORS.border },
-  icon: { fontSize: 18, color: COLORS.textSecondary },
-  profileSection: { paddingHorizontal: 16, paddingBottom: 12 },
-  avatarRow: { flexDirection: "row", alignItems: "center", marginBottom: 12, gap: 20 },
-  avatarRing: { width: 86, height: 86, borderRadius: 43, borderWidth: 2.5, borderColor: COLORS.accent, alignItems: "center", justifyContent: "center" },
-  avatarInner: { width: 78, height: 78, borderRadius: 39, backgroundColor: COLORS.card, alignItems: "center", justifyContent: "center" },
-  avatarLetter: { color: COLORS.accent, fontSize: 32, ...FONTS.semiBold },
-  statsRow: { flex: 1, flexDirection: "row", justifyContent: "space-around" },
-  statItem: { alignItems: "center" },
-  statNum: { fontSize: 17, ...FONTS.bold, color: COLORS.text },
-  statLbl: { fontSize: 13, color: COLORS.muted },
-  name: { fontSize: SIZES.md, ...FONTS.semiBold, color: COLORS.text, marginBottom: 2 },
-  bio: { fontSize: 13, color: COLORS.textSecondary, lineHeight: 18, marginBottom: 2 },
-  privacy: { fontSize: 12, color: COLORS.accent, marginBottom: 10 },
-  btnRow: { flexDirection: "row", gap: 8 },
-  editBtn: { flex: 1, paddingVertical: 10, borderRadius: SIZES.radius, backgroundColor: COLORS.accent, alignItems: "center" },
-  editBtnText: { fontSize: 13, ...FONTS.semiBold, color: "#0d0d1a" },
-  requestsBtn: { flex: 1, paddingVertical: 8, borderRadius: SIZES.radius, backgroundColor: COLORS.primary, alignItems: "center" },
-  requestsBtnText: { fontSize: 13, ...FONTS.semiBold, color: "#fff" },
-  requestsSection: { marginTop: 12 },
-  reqRow: { flexDirection: "row", alignItems: "center", paddingVertical: 8, borderTopWidth: 0.5, borderTopColor: COLORS.border },
-  reqAvatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: COLORS.card, alignItems: "center", justifyContent: "center", marginRight: 10, borderWidth: 0.5, borderColor: COLORS.border },
-  reqAvatarText: { color: COLORS.text, ...FONTS.semiBold, fontSize: 14 },
-  reqName: { flex: 1, fontSize: 14, ...FONTS.semiBold, color: COLORS.text },
-  reqActions: { flexDirection: "row", gap: 8 },
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: COLORS.screenBg },
+  heroSection: { position: "relative", overflow: "hidden" },
+  heroGradient: { position: "absolute", top: 0, left: 0, right: 0, height: 300 },
+  heroContent: { paddingHorizontal: SPACING.lg, paddingBottom: SPACING.lg },
+  heroTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: SPACING.xl },
+  username: { ...TYPOGRAPHY.h2, color: COLORS.text },
+  topActions: { flexDirection: "row", gap: SPACING.sm },
+  heroBody: { flexDirection: "row", alignItems: "flex-start", gap: SPACING.xxl, marginBottom: SPACING.lg },
+  heroStats: { flex: 1, flexDirection: "row", justifyContent: "space-around", marginTop: SPACING.sm },
+
+  glassStat: {
+    alignItems: "center",
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    borderRadius: RADIUS.md,
+    backgroundColor: GLASS.default.backgroundColor,
+    borderWidth: 1,
+    borderColor: GLASS.default.borderColor,
+    minWidth: 70,
+  },
+  statNum: { ...TYPOGRAPHY.h3, color: COLORS.text, fontWeight: "800" },
+  statLbl: { ...TYPOGRAPHY.small, color: COLORS.textSecondary, marginTop: 2 },
+
+  name: { ...TYPOGRAPHY.bodyBold, color: COLORS.text, marginBottom: 2 },
+  bio: { ...TYPOGRAPHY.caption, color: COLORS.textSecondary, lineHeight: 18, marginBottom: SPACING.md },
+  privacyRow: { flexDirection: "row", marginBottom: SPACING.md },
+  privacyBadge: { paddingHorizontal: SPACING.md, paddingVertical: SPACING.xs, borderRadius: RADIUS.full, backgroundColor: GLASS.default.backgroundColor, borderWidth: 1, borderColor: GLASS.default.borderColor, alignSelf: "flex-start" },
+  privacyText: { ...TYPOGRAPHY.smallBold, color: COLORS.primaryLight },
+
+  btnRow: { flexDirection: "row", gap: SPACING.sm, marginBottom: SPACING.md },
+
+  savedSection: { paddingHorizontal: SPACING.lg, marginBottom: SPACING.md },
+  glassRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: SPACING.md,
+    backgroundColor: GLASS.default.backgroundColor,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    borderColor: GLASS.default.borderColor,
+  },
+  savedIcon: { fontSize: 18, marginRight: SPACING.md },
+  savedLabel: { ...TYPOGRAPHY.body, color: COLORS.text, flex: 1 },
+  savedArrow: { ...TYPOGRAPHY.body, color: COLORS.muted },
+
+  reqRow: { flexDirection: "row", alignItems: "center", paddingVertical: SPACING.sm, gap: SPACING.md },
+  reqName: { flex: 1, ...TYPOGRAPHY.bodyBold, color: COLORS.text },
+  reqActions: { flexDirection: "row", gap: SPACING.sm },
   approveBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: COLORS.success, alignItems: "center", justifyContent: "center" },
-  btnCheck: { color: "#fff", fontSize: 16, ...FONTS.bold },
-  rejectBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: COLORS.card, alignItems: "center", justifyContent: "center", borderWidth: 0.5, borderColor: COLORS.border },
-  btnX: { color: COLORS.danger, fontSize: 16, ...FONTS.bold },
-  emptyWrap: { alignItems: "center", paddingTop: 60 },
-  emptyIcon: { fontSize: 48, marginBottom: 12 },
-  emptyTitle: { fontSize: 16, color: COLORS.muted },
-  cell: { width: CELL, height: CELL, marginBottom: GAP },
+  btnCheck: { color: "#fff", fontSize: 16, fontWeight: "700" },
+  rejectBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.05)", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: GLASS.default.borderColor },
+  btnX: { color: COLORS.danger, fontSize: 16, fontWeight: "700" },
+
+  emptyPosts: { alignItems: "center", paddingTop: SPACING.huge },
+  emptyIcon: { fontSize: 48, marginBottom: SPACING.md },
+  emptyTitle: { ...TYPOGRAPHY.body, color: COLORS.muted },
+
+  cell: { width: CELL, height: CELL, marginBottom: GAP, borderRadius: 4, overflow: "hidden" },
   cellImg: { width: "100%", height: "100%" },
-  cellText: { width: "100%", height: "100%", backgroundColor: COLORS.card, alignItems: "center", justifyContent: "center", padding: 6 },
-  cellTextContent: { fontSize: 11, color: COLORS.textSecondary, textAlign: "center" },
-  savedRow: { flexDirection: "row", alignItems: "center", marginTop: 12, paddingVertical: 12, paddingHorizontal: 14, backgroundColor: COLORS.card, borderRadius: SIZES.radius, marginHorizontal: 0 },
-  savedIcon: { fontSize: 18, marginRight: 10 },
-  savedLabel: { fontSize: 14, ...FONTS.semiBold, color: COLORS.text },
+  cellTextWrap: { width: "100%", height: "100%", backgroundColor: COLORS.card, alignItems: "center", justifyContent: "center", padding: 6 },
+  cellText: { fontSize: 11, color: COLORS.textSecondary, textAlign: "center" },
 });

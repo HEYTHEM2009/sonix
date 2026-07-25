@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from "react-native";
-import { CameraView, useCameraPermissions } from "expo-camera";
+import { CameraView, useCameraPermissions, useMicrophonePermissions } from "expo-camera";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
@@ -9,6 +9,7 @@ import { COLORS, FONTS } from "../components/Theme";
 
 export default function CameraScreen({ navigation }) {
   const [permission, requestPermission] = useCameraPermissions();
+  const [micPermission, requestMicPermission] = useMicrophonePermissions();
   const [capturing, setCapturing] = useState(false);
   const [mode, setMode] = useState("photo");
   const [recording, setRecording] = useState(false);
@@ -58,6 +59,13 @@ export default function CameraScreen({ navigation }) {
         console.warn("Stop recording error", e);
       }
     } else {
+      if (!micPermission?.granted) {
+        const { granted } = await requestMicPermission();
+        if (!granted) {
+          Alert.alert(t("error"), t("micPermissionRequired") || "Microphone permission is required to record video.");
+          return;
+        }
+      }
       setRecording(true);
       try {
         const video = await cameraRef.current.recordAsync({ maxDuration: 30 });

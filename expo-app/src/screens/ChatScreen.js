@@ -13,7 +13,7 @@ import realtime from "../api/realtime";
 import { cacheMessages, getCachedMessages, addToOfflineQueue, getOfflineQueue, removeFromOfflineQueue } from "../api/cache";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
-import { COLORS, SIZES } from "../components/Theme";
+import { COLORS, SIZES, SPACING, RADIUS, TYPOGRAPHY, SHADOWS, GLASS } from "../design/DesignSystem";
 import Screen3D from "../components/3D/Screen3D";
 import AudioWaveform from "../components/AudioWaveform";
 import VideoBubble from "../components/chat/VideoBubble";
@@ -291,8 +291,8 @@ export default function ChatScreen({ route, navigation }) {
 
   if (!userId) {
     return (
-      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#0B0B12" }}>
-        <Text style={{ color: "#fff" }}>Conversation not found.</Text>
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: COLORS.bg }}>
+        <Text style={{ color: COLORS.text }}>Conversation not found.</Text>
       </View>
     );
   }
@@ -1228,69 +1228,69 @@ const s = StyleSheet.create({
   container: { flex: 1 },
 
   /* Header */
-  topBar: { paddingBottom: 10, paddingHorizontal: 12, borderBottomWidth: 0.5, borderBottomColor: "#2a2a3a", backgroundColor: "#0d0d1a", flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  backBtn: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
+  topBar: { paddingBottom: 10, paddingHorizontal: 12, borderBottomWidth: 1, borderBottomColor: GLASS.default.borderColor, backgroundColor: GLASS.default.backgroundColor, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  backBtn: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", backgroundColor: GLASS.default.backgroundColor, borderWidth: 1, borderColor: GLASS.default.borderColor },
   backText: { fontSize: 22, color: COLORS.text },
   headerCenter: { flexDirection: "row", alignItems: "center", gap: 10, flex: 1 },
-  avatarSmall: { width: 40, height: 40, borderRadius: 20, backgroundColor: COLORS.primary + "30", alignItems: "center", justifyContent: "center" },
+  avatarSmall: { width: 40, height: 40, borderRadius: 20, backgroundColor: COLORS.primaryGlow, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: GLASS.default.borderColor },
   avatarText: { color: COLORS.primary, fontWeight: "700", fontSize: 16 },
   onlineDot: { position: "absolute", bottom: 0, right: 0, width: 10, height: 10, borderRadius: 5, backgroundColor: "#00d26a", borderWidth: 2, borderColor: "#0d0d1a" },
-  name: { fontSize: 15, fontWeight: "600", color: COLORS.text },
-  statusText: { fontSize: 11, marginTop: 1 },
+  name: { ...TYPOGRAPHY.bodyBold, color: COLORS.text },
+  statusText: { ...TYPOGRAPHY.caption, marginTop: 1 },
   headerActions: { flexDirection: "row", gap: 2 },
-  headerActionBtn: { width: 38, height: 38, borderRadius: 19, alignItems: "center", justifyContent: "center" },
+  headerActionBtn: { width: 38, height: 38, borderRadius: 19, alignItems: "center", justifyContent: "center", backgroundColor: GLASS.default.backgroundColor, borderWidth: 1, borderColor: GLASS.default.borderColor },
   headerActionIcon: { fontSize: 18 },
 
   /* Menu */
-  dropdownMenu: { position: "absolute", top: 100, right: 12, backgroundColor: "#1e1e30", borderRadius: 16, padding: 4, zIndex: 100, shadowColor: "#000", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.5, shadowRadius: 16, elevation: 12, minWidth: 180, borderWidth: 1, borderColor: "#2a2a3a" },
-  menuItem: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 14, paddingHorizontal: 16, borderRadius: 12 },
+  dropdownMenu: { position: "absolute", top: 100, right: 12, ...GLASS.default, borderRadius: RADIUS.lg, padding: SPACING.xs, zIndex: 100, ...SHADOWS.glass, elevation: 12, minWidth: 180 },
+  menuItem: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 14, paddingHorizontal: 16, borderRadius: RADIUS.md },
   menuIcon: { fontSize: 18 },
-  menuText: { fontSize: 14, color: COLORS.text, fontWeight: "500" },
+  menuText: { ...TYPOGRAPHY.bodyBold, color: COLORS.text },
 
   /* Bars */
-  editBar: { flexDirection: "row", alignItems: "center", backgroundColor: "#1a1a30", paddingHorizontal: 16, paddingVertical: 10, gap: 10, borderBottomWidth: 1, borderBottomColor: "#2a2a3a" },
+  editBar: { flexDirection: "row", alignItems: "center", ...GLASS.default, paddingHorizontal: SPACING.md, paddingVertical: 10, gap: 10, borderBottomWidth: 1, borderBottomColor: GLASS.default.borderColor },
   editBarContent: { flex: 1 },
-  editBarLabel: { fontSize: 12, fontWeight: "600", color: COLORS.primary },
-  editBarText: { fontSize: 13, color: COLORS.muted },
+  editBarLabel: { ...TYPOGRAPHY.caption, fontWeight: "600", color: COLORS.primary },
+  editBarText: { ...TYPOGRAPHY.caption, color: COLORS.muted },
   editBarClose: { padding: 6 },
   editBarCloseText: { fontSize: 18, color: COLORS.muted },
 
-  replyBar: { flexDirection: "row", alignItems: "center", backgroundColor: "#1a1a30", paddingHorizontal: 12, paddingVertical: 10, gap: 8, borderBottomWidth: 1, borderBottomColor: "#2a2a3a" },
+  replyBar: { flexDirection: "row", alignItems: "center", ...GLASS.default, paddingHorizontal: 12, paddingVertical: 10, gap: 8, borderBottomWidth: 1, borderBottomColor: GLASS.default.borderColor },
   replyBarAccent: { width: 3, height: 36, borderRadius: 1.5, backgroundColor: COLORS.primary },
   replyBarContent: { flex: 1 },
-  replyBarName: { fontSize: 12, fontWeight: "700", color: COLORS.primary },
-  replyBarText: { fontSize: 12, color: COLORS.muted, marginTop: 1 },
+  replyBarName: { ...TYPOGRAPHY.caption, fontWeight: "700", color: COLORS.primary },
+  replyBarText: { ...TYPOGRAPHY.small, color: COLORS.muted, marginTop: 1 },
   replyBarClose: { fontSize: 18, color: COLORS.muted, padding: 6 },
 
-  vanishBar: { backgroundColor: "#FF6B3520", paddingHorizontal: 16, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: "#FF6B3540" },
-  vanishBarText: { fontSize: 12, color: "#FF6B35", fontWeight: "600", textAlign: "center" },
+  vanishBar: { ...GLASS.default, backgroundColor: GLASS.default.backgroundColor, paddingHorizontal: SPACING.md, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: COLORS.danger + "40", borderLeftWidth: 3, borderLeftColor: COLORS.danger },
+  vanishBarText: { ...TYPOGRAPHY.caption, color: COLORS.danger, fontWeight: "600", textAlign: "center" },
 
   /* Empty */
   emptyWrap: { alignItems: "center", paddingTop: 80 },
   emptyIcon: { fontSize: 56, marginBottom: 16 },
-  emptyText: { fontSize: SIZES.sm, color: COLORS.muted, textAlign: "center" },
+  emptyText: { ...TYPOGRAPHY.body, color: COLORS.muted, textAlign: "center" },
 
   /* Date Separator */
   dateSep: { flexDirection: "row", alignItems: "center", marginVertical: 16, gap: 10 },
-  dateSepLine: { flex: 1, height: 1, backgroundColor: "#2a2a3a" },
-  dateSepText: { fontSize: 11, color: COLORS.muted, fontWeight: "600" },
+  dateSepLine: { flex: 1, height: 1, backgroundColor: GLASS.default.borderColor },
+  dateSepText: { ...TYPOGRAPHY.caption, color: COLORS.muted, fontWeight: "600" },
 
   /* Bubble */
   bubbleWrap: { marginBottom: 4, maxWidth: "78%", overflow: "visible" },
   bubbleWrapMine: { alignSelf: "flex-end" },
   bubbleWrapTheirs: { alignSelf: "flex-start" },
   bubblePending: { opacity: 0.6 },
-  bubbleSelected: { backgroundColor: COLORS.primary + "22", borderRadius: 16, padding: 2 },
+  bubbleSelected: { backgroundColor: COLORS.primaryGlow, borderRadius: 16, padding: 2 },
 
-  replyPreview: { backgroundColor: "#1e1e30", borderRadius: 14, paddingHorizontal: 12, paddingVertical: 8, marginBottom: 3, borderLeftWidth: 3, borderLeftColor: COLORS.primary },
+  replyPreview: { ...GLASS.default, borderRadius: 14, paddingHorizontal: 12, paddingVertical: 8, marginBottom: 3, borderLeftWidth: 3, borderLeftColor: COLORS.primary },
   replyPreviewMine: { borderLeftColor: COLORS.accent },
   replyPreviewTheirs: { borderLeftColor: COLORS.primary },
-  replyName: { fontSize: 11, fontWeight: "700", color: COLORS.primary },
-  replyText: { fontSize: 11, color: COLORS.muted, marginTop: 1 },
+  replyName: { ...TYPOGRAPHY.caption, fontWeight: "700", color: COLORS.primary },
+  replyText: { ...TYPOGRAPHY.small, color: COLORS.muted, marginTop: 1 },
 
   bubble: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 20 },
   mine: { backgroundColor: COLORS.primary, borderBottomRightRadius: 4 },
-  theirs: { backgroundColor: "#1e1e30", borderBottomLeftRadius: 4 },
+  theirs: { ...GLASS.default, backgroundColor: GLASS.default.backgroundColor, borderBottomLeftRadius: 4 },
   bubblePendingBg: { backgroundColor: COLORS.primary + "99" },
   bubbleText: { fontSize: 14, lineHeight: 21, color: COLORS.text },
   bubbleTextMine: { color: "#fff" },
@@ -1303,25 +1303,25 @@ const s = StyleSheet.create({
   playOverlay: { position: "absolute", inset: 0, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(0,0,0,0.35)", borderRadius: 18 },
   playOverlayIcon: { fontSize: 44, color: "#fff" },
 
-  docBubble: { minWidth: 200 },
+  docBubble: { minWidth: 200, ...GLASS.default, backgroundColor: GLASS.default.backgroundColor },
   docRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 4 },
-  docIconWrap: { width: 38, height: 38, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center" },
+  docIconWrap: { width: 38, height: 38, borderRadius: 10, backgroundColor: COLORS.primaryGlow, alignItems: "center", justifyContent: "center" },
   docIcon: { fontSize: 18 },
   docInfo: { flex: 1 },
-  docName: { fontSize: 14, fontWeight: "600", color: COLORS.text },
-  docSize: { fontSize: 11, color: COLORS.muted, marginTop: 2 },
+  docName: { ...TYPOGRAPHY.bodyBold, color: COLORS.text },
+  docSize: { ...TYPOGRAPHY.small, color: COLORS.muted, marginTop: 2 },
   docOpen: { fontSize: 18, color: COLORS.text, fontWeight: "700" },
 
   voiceBubble: { flexDirection: "row", alignItems: "center", gap: 10, minWidth: 180 },
-  playBtn: { width: 34, height: 34, borderRadius: 17, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },
+  playBtn: { width: 34, height: 34, borderRadius: 17, backgroundColor: COLORS.primaryGlow, alignItems: "center", justifyContent: "center" },
   playBtnMine: { backgroundColor: "rgba(255,255,255,0.25)" },
   playIcon: { fontSize: 13, color: "#fff" },
   voiceDuration: { fontSize: 11, color: "rgba(255,255,255,0.6)", minWidth: 32, textAlign: "right" },
 
   bubbleMeta: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 3, paddingLeft: 4 },
   bubbleMetaMine: { justifyContent: "flex-end", paddingRight: 4 },
-  editedLabel: { fontSize: 10, color: COLORS.muted, fontStyle: "italic" },
-  bubbleTime: { fontSize: 10, color: COLORS.muted },
+  editedLabel: { ...TYPOGRAPHY.small, color: COLORS.muted, fontStyle: "italic" },
+  bubbleTime: { ...TYPOGRAPHY.small, color: COLORS.muted },
   bubbleTimeMine: { color: COLORS.muted },
   readIcon: { fontSize: 11, color: COLORS.muted },
   readIconBlue: { color: "#00d26a" },
@@ -1329,10 +1329,10 @@ const s = StyleSheet.create({
   /* Reactions */
   reactionsRow: { flexDirection: "row", flexWrap: "wrap", gap: 4, marginTop: 4 },
   reactionsRowMine: { justifyContent: "flex-end" },
-  reactionChip: { backgroundColor: "#1e1e30", borderRadius: 12, paddingHorizontal: 8, paddingVertical: 2, borderWidth: 1, borderColor: "#2a2a3a" },
+  reactionChip: { ...GLASS.default, borderRadius: 12, paddingHorizontal: 8, paddingVertical: 2 },
   reactionEmoji: { fontSize: 13 },
 
-  reactionsPicker: { flexDirection: "row", backgroundColor: "#1e1e30", borderRadius: 28, padding: 6, gap: 2, marginTop: 6, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 12, elevation: 8, zIndex: 10, borderWidth: 1, borderColor: "#2a2a3a" },
+  reactionsPicker: { flexDirection: "row", ...GLASS.default, borderRadius: 28, padding: 6, gap: 2, marginTop: 6, ...SHADOWS.glass, elevation: 8, zIndex: 10 },
   reactionsPickerMine: { alignSelf: "flex-end" },
   reactionsPickerTheirs: { alignSelf: "flex-start" },
   reactionOption: { width: 38, height: 38, borderRadius: 19, alignItems: "center", justifyContent: "center" },
@@ -1342,62 +1342,62 @@ const s = StyleSheet.create({
   reactAnimText: { fontSize: 60 },
 
   /* Typing */
-  typingWrap: { flexDirection: "row", paddingHorizontal: 16, paddingVertical: 6 },
-  typingBubble: { backgroundColor: "#1e1e30", borderRadius: 20, paddingHorizontal: 16, paddingVertical: 10 },
+  typingWrap: { flexDirection: "row", paddingHorizontal: SPACING.md, paddingVertical: 6 },
+  typingBubble: { ...GLASS.default, borderRadius: 20, paddingHorizontal: SPACING.md, paddingVertical: 10 },
   typingDots: { flexDirection: "row", gap: 4 },
   dot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: COLORS.primary },
 
   /* Emoji picker */
-  emojiPicker: { position: "absolute", left: 12, right: 12, flexDirection: "row", backgroundColor: "#1e1e30", borderRadius: 28, padding: 8, justifyContent: "center", gap: 4, zIndex: 20, borderWidth: 1, borderColor: "#2a2a3a" },
+  emojiPicker: { position: "absolute", left: 12, right: 12, flexDirection: "row", ...GLASS.default, borderRadius: 28, padding: 8, justifyContent: "center", gap: 4, zIndex: 20 },
   emojiBtn: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center" },
   emojiBtnText: { fontSize: 22 },
 
   /* Recording */
-  recordingBarOuter: { paddingHorizontal: 12, paddingTop: 12, backgroundColor: "#0d0d1a", borderTopWidth: 0.5, borderTopColor: "#2a2a3a" },
+  recordingBarOuter: { paddingHorizontal: 12, paddingTop: 12, ...GLASS.default, borderTopWidth: 1, borderTopColor: GLASS.default.borderColor },
   recordingBar: { flexDirection: "row", alignItems: "center", backgroundColor: COLORS.primary, borderRadius: 28, paddingHorizontal: 8, paddingVertical: 10, gap: 8 },
-  recDeleteBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },
+  recDeleteBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: COLORS.primaryGlow, alignItems: "center", justifyContent: "center" },
   recDeleteIcon: { fontSize: 16, color: "#fff", fontWeight: "700" },
-  recTimer: { fontSize: 14, fontWeight: "600", color: "#fff", minWidth: 40, textAlign: "center" },
-  recSendBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(255,255,255,0.25)", alignItems: "center", justifyContent: "center" },
+  recTimer: { ...TYPOGRAPHY.bodyBold, color: "#fff", minWidth: 40, textAlign: "center" },
+  recSendBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: COLORS.primaryGlow, alignItems: "center", justifyContent: "center" },
   recSendIcon: { color: "#fff", fontSize: 18, fontWeight: "700" },
 
   /* Input */
-  inputRow: { flexDirection: "row", alignItems: "flex-end", paddingHorizontal: 10, paddingTop: 8, borderTopWidth: 0.5, borderTopColor: "#2a2a3a", backgroundColor: "#0d0d1a", gap: 6 },
-  input: { flex: 1, minHeight: 38, maxHeight: 100, borderRadius: 20, backgroundColor: "#1e1e30", paddingHorizontal: 16, fontSize: 14, color: COLORS.text, paddingVertical: 9, borderWidth: 1, borderColor: "#2a2a3a" },
+  inputRow: { flexDirection: "row", alignItems: "flex-end", paddingHorizontal: 10, paddingTop: 8, borderTopWidth: 1, borderTopColor: GLASS.default.borderColor, ...GLASS.default, gap: 6 },
+  input: { flex: 1, minHeight: 38, maxHeight: 100, borderRadius: 20, ...GLASS.default, paddingHorizontal: SPACING.md, ...TYPOGRAPHY.body, paddingVertical: 9 },
   inputActionsRight: { flexDirection: "row", gap: 4, alignItems: "center" },
-  inputActionBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: "#1e1e30", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "#2a2a3a" },
+  inputActionBtn: { width: 38, height: 38, borderRadius: 19, ...GLASS.default, alignItems: "center", justifyContent: "center" },
   inputActionIcon: { fontSize: 18 },
-  sendBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: "#1e1e30", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "#2a2a3a" },
+  sendBtn: { width: 38, height: 38, borderRadius: 19, ...GLASS.default, alignItems: "center", justifyContent: "center" },
   sendBtnActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
   sendIcon: { color: "#fff", fontSize: 16 },
 
   /* Context Menu */
   ctxOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.7)", justifyContent: "center", alignItems: "center", paddingHorizontal: 20 },
-  ctxModal: { backgroundColor: "#1e1e30", borderRadius: 20, width: "100%", padding: 16, borderWidth: 1, borderColor: "#2a2a3a" },
-  ctxHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: "#3a3a4a", alignSelf: "center", marginBottom: 12 },
-  ctxBubblePreview: { backgroundColor: "#2a2a3a", borderRadius: 16, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 12 },
-  ctxBubbleMine: { backgroundColor: COLORS.primary + "40", borderBottomRightRadius: 4 },
-  ctxBubbleTheirs: { backgroundColor: "#2a2a3a", borderBottomLeftRadius: 4 },
-  ctxBubbleText: { fontSize: 13, color: COLORS.text, lineHeight: 19 },
-  ctxEmojiRow: { flexDirection: "row", justifyContent: "center", gap: 6, marginBottom: 12, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: "#2a2a3a" },
-  ctxEmojiBtn: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", backgroundColor: "#2a2a3a" },
+  ctxModal: { ...GLASS.default, borderRadius: 20, width: "100%", padding: SPACING.md },
+  ctxHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: COLORS.textTertiary, alignSelf: "center", marginBottom: 12 },
+  ctxBubblePreview: { ...GLASS.default, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 12 },
+  ctxBubbleMine: { backgroundColor: COLORS.primaryGlow, borderBottomRightRadius: 4 },
+  ctxBubbleTheirs: { ...GLASS.default, borderBottomLeftRadius: 4 },
+  ctxBubbleText: { ...TYPOGRAPHY.body, color: COLORS.text, lineHeight: 19 },
+  ctxEmojiRow: { flexDirection: "row", justifyContent: "center", gap: 6, marginBottom: 12, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: GLASS.default.borderColor },
+  ctxEmojiBtn: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", ...GLASS.default },
   ctxEmojiText: { fontSize: 20 },
   ctxOptions: { gap: 2 },
   ctxOption: { flexDirection: "row", alignItems: "center", gap: 14, paddingVertical: 13, paddingHorizontal: 8, borderRadius: 10 },
   ctxOptionIcon: { fontSize: 18, width: 24, textAlign: "center" },
-  ctxOptionLabel: { fontSize: 14, color: COLORS.text, fontWeight: "500" },
-  ctxOptionDanger: { backgroundColor: "#f8717115" },
-  ctxOptionDangerText: { color: "#f87171" },
+  ctxOptionLabel: { ...TYPOGRAPHY.body, color: COLORS.text, fontWeight: "500" },
+  ctxOptionDanger: { backgroundColor: COLORS.danger + "15" },
+  ctxOptionDangerText: { color: COLORS.danger },
 
   /* Sticker */
   stickerText: { fontSize: 64, lineHeight: 72 },
-  stickerModal: { backgroundColor: "#1e1e30", borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingTop: 12, paddingBottom: 24, maxHeight: "60%", borderWidth: 1, borderColor: "#2a2a3a" },
-  stickerHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: "#3a3a4a", alignSelf: "center", marginBottom: 8 },
-  stickerTitle: { fontSize: 16, fontWeight: "700", color: COLORS.text, textAlign: "center", marginBottom: 12 },
+  stickerModal: { ...GLASS.default, borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingTop: 12, paddingBottom: 24, maxHeight: "60%" },
+  stickerHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: COLORS.textTertiary, alignSelf: "center", marginBottom: 8 },
+  stickerTitle: { ...TYPOGRAPHY.h3, color: COLORS.text, textAlign: "center", marginBottom: 12 },
   stickerCategories: { paddingHorizontal: 12, marginBottom: 12 },
-  stickerCatBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: "#2a2a3a", marginRight: 8 },
+  stickerCatBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, ...GLASS.default, marginRight: 8 },
   stickerCatBtnActive: { backgroundColor: COLORS.primary },
-  stickerCatText: { fontSize: 13, fontWeight: "600", color: COLORS.muted },
+  stickerCatText: { ...TYPOGRAPHY.caption, fontWeight: "600", color: COLORS.muted },
   stickerCatTextActive: { color: "#fff" },
   stickerGrid: { paddingHorizontal: 8 },
   stickerItem: { flex: 1, alignItems: "center", justifyContent: "center", paddingVertical: 12, minWidth: "20%" },
@@ -1405,30 +1405,30 @@ const s = StyleSheet.create({
 
   /* Modals */
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center" },
-  vanishModal: { backgroundColor: "#1e1e30", borderRadius: 20, padding: 24, width: "80%", alignItems: "center", borderWidth: 1, borderColor: "#2a2a3a" },
-  vanishModalTitle: { fontSize: 16, fontWeight: "700", color: COLORS.text, marginBottom: 16 },
-  vanishOption: { width: "100%", paddingVertical: 14, borderRadius: 12, alignItems: "center", marginBottom: 4, backgroundColor: "#2a2a3a" },
+  vanishModal: { ...GLASS.default, borderRadius: 20, padding: 24, width: "80%", alignItems: "center" },
+  vanishModalTitle: { ...TYPOGRAPHY.h3, color: COLORS.text, marginBottom: 16 },
+  vanishOption: { width: "100%", paddingVertical: 14, borderRadius: RADIUS.md, alignItems: "center", marginBottom: 4, ...GLASS.default },
   vanishOptionActive: { backgroundColor: COLORS.primary },
-  vanishOptionText: { fontSize: 15, fontWeight: "600", color: COLORS.text },
+  vanishOptionText: { ...TYPOGRAPHY.bodyBold, color: COLORS.text },
   vanishOffBtn: { marginTop: 12, paddingVertical: 10 },
-  vanishOffText: { fontSize: 14, color: "#f87171", fontWeight: "600" },
+  vanishOffText: { ...TYPOGRAPHY.body, color: COLORS.danger, fontWeight: "600" },
 
-  forwardModal: { backgroundColor: "#1e1e30", borderRadius: 20, padding: 20, width: "85%", maxHeight: "60%", borderWidth: 1, borderColor: "#2a2a3a" },
-  forwardTitle: { fontSize: 16, fontWeight: "700", color: COLORS.text, marginBottom: 16, textAlign: "center" },
-  forwardRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12, borderBottomWidth: 0.5, borderBottomColor: "#2a2a3a" },
-  forwardAvatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: COLORS.primary + "30", alignItems: "center", justifyContent: "center" },
+  forwardModal: { ...GLASS.default, borderRadius: 20, padding: 20, width: "85%", maxHeight: "60%" },
+  forwardTitle: { ...TYPOGRAPHY.h3, color: COLORS.text, marginBottom: 16, textAlign: "center" },
+  forwardRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: GLASS.default.borderColor },
+  forwardAvatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: COLORS.primaryGlow, alignItems: "center", justifyContent: "center" },
   forwardAvatarText: { color: COLORS.primary, fontWeight: "700", fontSize: 16 },
-  forwardName: { fontSize: 14, fontWeight: "600", color: COLORS.text },
+  forwardName: { ...TYPOGRAPHY.bodyBold, color: COLORS.text },
   forwardCancel: { marginTop: 12, paddingVertical: 10, alignItems: "center" },
-  forwardCancelText: { fontSize: 14, color: COLORS.muted, fontWeight: "600" },
+  forwardCancelText: { ...TYPOGRAPHY.body, color: COLORS.muted, fontWeight: "600" },
 
-  infoModal: { backgroundColor: "#1e1e30", borderRadius: 20, padding: 24, width: "82%", borderWidth: 1, borderColor: "#2a2a3a" },
-  infoTitle: { fontSize: 16, fontWeight: "700", color: COLORS.text, marginBottom: 16, textAlign: "center" },
-  infoRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 10, borderBottomWidth: 0.5, borderBottomColor: "#2a2a3a" },
-  infoLabel: { fontSize: 13, color: COLORS.muted },
-  infoValue: { fontSize: 13, color: COLORS.text, fontWeight: "500", flex: 1, textAlign: "right" },
-  infoClose: { marginTop: 16, paddingVertical: 12, alignItems: "center", backgroundColor: COLORS.primary, borderRadius: 12 },
-  infoCloseText: { fontSize: 14, color: "#fff", fontWeight: "700" },
+  infoModal: { ...GLASS.default, borderRadius: 20, padding: 24, width: "82%" },
+  infoTitle: { ...TYPOGRAPHY.h3, color: COLORS.text, marginBottom: 16, textAlign: "center" },
+  infoRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: GLASS.default.borderColor },
+  infoLabel: { ...TYPOGRAPHY.caption, color: COLORS.muted },
+  infoValue: { ...TYPOGRAPHY.caption, color: COLORS.text, fontWeight: "500", flex: 1, textAlign: "right" },
+  infoClose: { marginTop: 16, paddingVertical: 12, alignItems: "center", backgroundColor: COLORS.primary, borderRadius: RADIUS.md },
+  infoCloseText: { ...TYPOGRAPHY.bodyBold, color: "#fff" },
 
   /* Image Viewer */
   imageViewerOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.95)", justifyContent: "center", alignItems: "center" },

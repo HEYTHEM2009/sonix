@@ -24,17 +24,6 @@ class ErrorBoundary extends Component {
   }
   render() {
     if (this.state.error) {
-      if (!__DEV__) {
-        return (
-          <View style={s.errorContainer}>
-            <Text style={s.errorTitle}>⚠️ Something went wrong</Text>
-            <Text style={s.errorSub}>The app hit an unexpected error. Please restart it.</Text>
-            <TouchableOpacity style={s.errorBtn} onPress={() => this.setState({ error: null })}>
-              <Text style={s.errorBtnText}>Try Again</Text>
-            </TouchableOpacity>
-          </View>
-        );
-      }
       return (
         <View style={s.errorContainer}>
           <Text style={s.errorTitle}>⚠️ Something went wrong</Text>

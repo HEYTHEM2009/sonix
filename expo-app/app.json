@@ -46,7 +46,8 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Allow the app to access your camera for stories and posts."
+          "cameraPermission": "Allow the app to access your camera for stories and posts.",
+          "microphonePermission": "Allow the app to access your microphone for recording reels and voice messages."
         }
       ],
       [

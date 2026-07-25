@@ -12,6 +12,8 @@ export function setAuthExpiredHandler(handler) {
 const client = axios.create({ baseURL: API, timeout: 30000 });
 
 let currentToken = null;
+let isRefreshing = false;
+let refreshSubscribers = [];
 
 client.interceptors.request.use(async (config) => {
   if (!currentToken) {
@@ -23,6 +25,15 @@ client.interceptors.request.use(async (config) => {
   return config;
 });
 
+function onRefreshed(newToken) {
+  refreshSubscribers.forEach((cb) => cb(newToken));
+  refreshSubscribers = [];
+}
+
+function addRefreshSubscriber(cb) {
+  refreshSubscribers.push(cb);
+}
+
 let last401 = 0;
 
 client.interceptors.response.use(
@@ -32,14 +43,46 @@ client.interceptors.response.use(
     const url = err.config?.url;
     const reqToken = err.config?.headers?.Authorization?.replace("Bearer ", "");
 
+    if (status === 401 && url?.includes("/auth/refresh")) {
+      currentToken = null;
+      await AsyncStorage.multiRemove(["token", "user"]);
+      if (onAuthExpired) onAuthExpired();
+      return Promise.reject(err);
+    }
+
     if (status === 401 && !url?.includes("/auth/")) {
       if (reqToken && reqToken !== currentToken) return Promise.reject(err);
       const now = Date.now();
       if (now - last401 > 3000) {
         last401 = now;
-        currentToken = null;
-        await AsyncStorage.multiRemove(["token", "user"]);
-        if (onAuthExpired) onAuthExpired();
+        if (!isRefreshing) {
+          isRefreshing = true;
+          try {
+            const oldToken = currentToken;
+            const res = await client.post("/auth/refresh");
+            const newToken = res.data.token;
+            currentToken = newToken;
+            await AsyncStorage.setItem("token", newToken);
+            onRefreshed(newToken);
+            isRefreshing = false;
+            err.config.headers.Authorization = `Bearer ${newToken}`;
+            return client(err.config);
+          } catch (refreshErr) {
+            isRefreshing = false;
+            refreshSubscribers = [];
+            currentToken = null;
+            await AsyncStorage.multiRemove(["token", "user"]);
+            if (onAuthExpired) onAuthExpired();
+            return Promise.reject(refreshErr);
+          }
+        } else {
+          return new Promise((resolve) => {
+            addRefreshSubscriber((newToken) => {
+              err.config.headers.Authorization = `Bearer ${newToken}`;
+              resolve(client(err.config));
+            });
+          });
+        }
       }
     }
 

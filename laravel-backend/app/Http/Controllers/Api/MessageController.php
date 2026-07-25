@@ -286,6 +286,9 @@ class MessageController extends Controller
 
     public function typing(Request $request)
     {
+        $request->validate([
+            'receiver_id' => 'required|integer|exists:users,id',
+        ]);
         $receiverId = (int) ($request->input('receiver_id') ?? $request->input('receiverId'));
         $isTyping = $request->boolean('typing');
         $user = $request->user();
@@ -500,6 +503,10 @@ class MessageController extends Controller
 
     public function search(Request $request, $userId)
     {
+        $request->validate([
+            'q' => 'required|string|max:200',
+            'per_page' => 'integer|min:1|max:100',
+        ]);
         $result = app(MessageService::class)->search((int) $userId, (string) $request->input('q', ''), (int) $request->input('per_page', 30));
 
         return response()->json($result);
@@ -507,6 +514,7 @@ class MessageController extends Controller
 
     public function saveDraft(Request $request, $userId)
     {
+        $request->validate(['content' => 'required|string|max:5000']);
         app(MessageService::class)->saveDraft($request->user()->id, (int) $userId, $request->input('content'));
 
         return response()->json(['saved' => true]);

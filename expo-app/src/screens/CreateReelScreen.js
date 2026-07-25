@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, Dimensions, ScrollView } from "react-native";
-import { CameraView, useCameraPermissions } from "expo-camera";
+import { CameraView, useCameraPermissions, useMicrophonePermissions } from "expo-camera";
 import { VideoView, useVideoPlayer } from "expo-video";
 import * as ImagePicker from "expo-image-picker";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -57,6 +57,7 @@ function PreviewScreen({ uri, onBack, onNext, insets }) {
 
 export default function CreateReelScreen({ navigation }) {
   const [permission, requestPermission] = useCameraPermissions();
+  const [micPermission, requestMicPermission] = useMicrophonePermissions();
   const [mode, setMode] = useState("video");
   const [recording, setRecording] = useState(false);
   const [facing, setFacing] = useState("back");
@@ -120,6 +121,15 @@ export default function CreateReelScreen({ navigation }) {
 
   const startRecording = async () => {
     if (!cameraRef.current || recording) return;
+
+    if (!micPermission?.granted) {
+      const { granted } = await requestMicPermission();
+      if (!granted) {
+        Alert.alert(t("error"), t("micPermissionRequired") || "Microphone permission is required to record video.");
+        return;
+      }
+    }
+
     try {
       setRecording(true);
       setMode("video");

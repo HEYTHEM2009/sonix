@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import client from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
-import { COLORS, SIZES, FONTS } from "../components/Theme";
+import { COLORS, SPACING, RADIUS, TYPOGRAPHY, SHADOWS, GLASS } from "../design/DesignSystem";
 import Screen3D from "../components/3D/Screen3D";
 
 export default function SettingsScreen({ navigation }) {
@@ -226,7 +226,7 @@ export default function SettingsScreen({ navigation }) {
             <Switch
               value={isPrivate}
               onValueChange={togglePrivacy}
-              trackColor={{ false: COLORS.input, true: COLORS.accent }}
+              trackColor={{ false: GLASS.default.borderColor, true: COLORS.accent }}
               thumbColor={COLORS.text}
               disabled={privacyLoading}
             />
@@ -241,7 +241,7 @@ export default function SettingsScreen({ navigation }) {
             <Switch
               value={isPro}
               onValueChange={togglePro}
-              trackColor={{ false: COLORS.input, true: "#FFD60A" }}
+               trackColor={{ false: GLASS.default.borderColor, true: "#FFD60A" }}
               thumbColor={COLORS.text}
               disabled={proLoading}
             />
@@ -261,7 +261,7 @@ export default function SettingsScreen({ navigation }) {
             <Switch
               value={notifPrefs?.push_enabled ?? true}
               onValueChange={() => toggleNotif("push_enabled")}
-              trackColor={{ false: COLORS.input, true: COLORS.accent }}
+              trackColor={{ false: GLASS.default.borderColor, true: COLORS.accent }}
               thumbColor={COLORS.text}
               disabled={notifLoading}
             />
@@ -276,7 +276,7 @@ export default function SettingsScreen({ navigation }) {
             <Switch
               value={notifPrefs?.email_enabled ?? false}
               onValueChange={() => toggleNotif("email_enabled")}
-              trackColor={{ false: COLORS.input, true: COLORS.accent }}
+              trackColor={{ false: GLASS.default.borderColor, true: COLORS.accent }}
               thumbColor={COLORS.text}
               disabled={notifLoading}
             />
@@ -291,7 +291,7 @@ export default function SettingsScreen({ navigation }) {
             <Switch
               value={notifPrefs?.like_notifications ?? true}
               onValueChange={() => toggleNotif("like_notifications")}
-              trackColor={{ false: COLORS.input, true: COLORS.accent }}
+              trackColor={{ false: GLASS.default.borderColor, true: COLORS.accent }}
               thumbColor={COLORS.text}
               disabled={notifLoading}
             />
@@ -306,7 +306,7 @@ export default function SettingsScreen({ navigation }) {
             <Switch
               value={notifPrefs?.comment_notifications ?? true}
               onValueChange={() => toggleNotif("comment_notifications")}
-              trackColor={{ false: COLORS.input, true: COLORS.accent }}
+              trackColor={{ false: GLASS.default.borderColor, true: COLORS.accent }}
               thumbColor={COLORS.text}
               disabled={notifLoading}
             />
@@ -321,7 +321,7 @@ export default function SettingsScreen({ navigation }) {
             <Switch
               value={notifPrefs?.follow_notifications ?? true}
               onValueChange={() => toggleNotif("follow_notifications")}
-              trackColor={{ false: COLORS.input, true: COLORS.accept }}
+               trackColor={{ false: GLASS.default.borderColor, true: COLORS.accent }}
               thumbColor={COLORS.text}
               disabled={notifLoading}
             />
@@ -336,7 +336,7 @@ export default function SettingsScreen({ navigation }) {
             <Switch
               value={notifPrefs?.message_notifications ?? true}
               onValueChange={() => toggleNotif("message_notifications")}
-              trackColor={{ false: COLORS.input, true: COLORS.accent }}
+              trackColor={{ false: GLASS.default.borderColor, true: COLORS.accent }}
               thumbColor={COLORS.text}
               disabled={notifLoading}
             />
@@ -375,7 +375,7 @@ export default function SettingsScreen({ navigation }) {
               value={activityStatus}
               onValueChange={toggleActivity}
               disabled={activityLoading}
-              trackColor={{ false: COLORS.input, true: COLORS.accent }}
+              trackColor={{ false: GLASS.default.borderColor, true: COLORS.accent }}
               thumbColor={COLORS.text}
             />
           </View>
@@ -488,31 +488,31 @@ export default function SettingsScreen({ navigation }) {
 }
 
 const s = StyleSheet.create({
-  wrap: { flex: 1 },
-  topBar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 12, paddingBottom: 8 },
-  backBtn: { fontSize: 22, color: COLORS.text },
-  title: { fontSize: SIZES.lg, ...FONTS.semiBold, color: COLORS.text },
-  section: { paddingHorizontal: 16, marginTop: 20 },
-  sectionTitle: { fontSize: 13, ...FONTS.bold, color: COLORS.muted, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 },
-  row: { flexDirection: "row", alignItems: "center", paddingVertical: 14, borderBottomWidth: 0.5, borderBottomColor: COLORS.border, gap: 12 },
+  wrap: { flex: 1, backgroundColor: COLORS.screenBg },
+  topBar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: SPACING.md, paddingBottom: SPACING.sm, ...GLASS.default, borderBottomWidth: 1, borderBottomColor: GLASS.default.borderColor },
+  backBtn: { fontSize: 22, color: COLORS.text, paddingHorizontal: 4 },
+  title: { ...TYPOGRAPHY.h2, color: COLORS.text },
+  section: { paddingHorizontal: SPACING.md, marginTop: 24 },
+  sectionTitle: { ...TYPOGRAPHY.caption, fontWeight: "600", color: COLORS.textTertiary, marginBottom: SPACING.sm, letterSpacing: 1 },
+  row: { flexDirection: "row", alignItems: "center", paddingVertical: 14, gap: SPACING.md, marginBottom: 2, borderRadius: RADIUS.md, paddingHorizontal: SPACING.sm },
   rowRtl: { flexDirection: "row-reverse" },
   rowIcon: { fontSize: 20, width: 30, textAlign: "center" },
   rowContent: { flex: 1 },
-  rowLabel: { fontSize: SIZES.lg, ...FONTS.medium, color: COLORS.text },
-  rowHint: { fontSize: 12, color: COLORS.muted, marginTop: 2 },
+  rowLabel: { ...TYPOGRAPHY.bodyBold, color: COLORS.text },
+  rowHint: { ...TYPOGRAPHY.small, color: COLORS.textTertiary, marginTop: 2 },
   rowArrow: { fontSize: 18, color: COLORS.muted },
-  expandSection: { backgroundColor: COLORS.card, borderRadius: SIZES.radius, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: COLORS.border },
-  input: { backgroundColor: COLORS.input, borderRadius: SIZES.radius, paddingHorizontal: 14, paddingVertical: 12, color: COLORS.text, fontSize: 14, marginBottom: 8, borderWidth: 1, borderColor: COLORS.border },
-  btn: { backgroundColor: COLORS.accent, borderRadius: SIZES.radius, paddingVertical: 12, alignItems: "center", marginTop: 4 },
-  btnText: { color: COLORS.text, ...FONTS.semiBold, fontSize: 14 },
-  aboutRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 10, borderBottomWidth: 0.5, borderBottomColor: COLORS.border },
-  aboutLabel: { fontSize: 14, color: COLORS.muted },
-  aboutValue: { fontSize: 14, color: COLORS.text },
-  deleteWarning: { color: COLORS.danger, fontSize: 12, marginBottom: 10, lineHeight: 16 },
-  langCurrent: { fontSize: 13, color: COLORS.accent, ...FONTS.medium },
-  langOption: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 14, paddingHorizontal: 12, borderRadius: SIZES.radius, marginBottom: 4 },
+  expandSection: { ...GLASS.default, borderRadius: RADIUS.md, padding: SPACING.md, marginBottom: 8 },
+  input: { ...GLASS.default, borderRadius: RADIUS.md, paddingHorizontal: 14, paddingVertical: 12, color: COLORS.text, ...TYPOGRAPHY.body, marginBottom: SPACING.sm },
+  btn: { backgroundColor: COLORS.accent, borderRadius: RADIUS.md, paddingVertical: 12, alignItems: "center", marginTop: SPACING.xs },
+  btnText: { color: "#fff", ...TYPOGRAPHY.bodyBold },
+  aboutRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: GLASS.default.borderColor },
+  aboutLabel: { ...TYPOGRAPHY.caption, color: COLORS.muted },
+  aboutValue: { ...TYPOGRAPHY.caption, color: COLORS.text },
+  deleteWarning: { color: COLORS.danger, ...TYPOGRAPHY.small, marginBottom: 10, lineHeight: 16 },
+  langCurrent: { ...TYPOGRAPHY.caption, color: COLORS.accent, fontWeight: "600" },
+  langOption: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 14, paddingHorizontal: SPACING.md, borderRadius: RADIUS.md, marginBottom: 4 },
   langActive: { backgroundColor: COLORS.accent + "20" },
-  langText: { fontSize: 16, color: COLORS.text },
-  langTextActive: { color: COLORS.accent, ...FONTS.semiBold },
-  checkMark: { fontSize: 18, color: COLORS.accent, ...FONTS.bold },
+  langText: { ...TYPOGRAPHY.body, color: COLORS.text },
+  langTextActive: { color: COLORS.accent, fontWeight: "600" },
+  checkMark: { fontSize: 18, color: COLORS.accent, fontWeight: "700" },
 });

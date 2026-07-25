@@ -1,89 +1,21 @@
 import { useState, useEffect, useCallback, memo, useRef } from "react";
-import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, RefreshControl, TextInput, Alert, Animated, I18nManager } from "react-native";
+import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, RefreshControl, Alert, Animated, I18nManager } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import { useRealtimeContext } from "../context/RealtimeContext";
+import { useNetworkStatus } from "../hooks/useNetworkStatus";
 import { blockUser } from "../utils/security";
 import client, { resolveUrl } from "../api/client";
-import { COLORS, SIZES } from "../components/Theme";
-import Screen3D from "../components/3D/Screen3D";
-
-const ConversationItem = memo(({ item, onPress, onLongPress, onDelete, onMute, onPin, onBlock, t, currentUser, onAvatarPress }) => {
-  const translateX = useRef(new Animated.Value(0)).current;
-  const lastX = useRef(0);
-
-  const handlePanEnd = (_, gestureState) => {
-    if (gestureState.dx < -100) {
-      Animated.spring(translateX, { toValue: -120, useNativeDriver: true }).start();
-    } else {
-      Animated.spring(translateX, { toValue: 0, useNativeDriver: true }).start();
-    }
-  };
-
-  const resetSwipe = () => {
-    Animated.spring(translateX, { toValue: 0, useNativeDriver: true }).start();
-  };
-
-  return (
-    <View style={s.rowWrap}>
-      <View style={s.swipeActions}>
-        <TouchableOpacity style={[s.swipeAction, { backgroundColor: COLORS.primary }]} onPress={() => { resetSwipe(); onPin(item.user.id); }}>
-          <Text style={s.swipeText}>{item.is_pinned ? "📌" : "📍"}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[s.swipeAction, { backgroundColor: "#F39C12" }]} onPress={() => { resetSwipe(); onMute(item.user.id); }}>
-          <Text style={s.swipeText}>{item.is_muted ? "🔔" : "🔕"}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[s.swipeAction, { backgroundColor: COLORS.danger }]} onPress={() => { resetSwipe(); onDelete(item.user.id, item.user.username); }}>
-          <Text style={s.swipeText}>🗑️</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[s.swipeAction, { backgroundColor: "#8E44EC" }]} onPress={() => { resetSwipe(); onBlock && onBlock(item.user.id, item.user.username); }}>
-          <Text style={s.swipeText}>🚫</Text>
-        </TouchableOpacity>
-      </View>
-      <Animated.View style={[s.row, { transform: [{ translateX }] }]}>
-        <View style={s.rowInner}>
-          <TouchableOpacity onPress={() => { if (onAvatarPress) onAvatarPress(item.user); }} activeOpacity={0.7}>
-            {item.user.avatar ? (
-              <Image source={{ uri: `${resolveUrl(item.user.avatar)}${item.user.id === currentUser?.id ? "?t=" + Date.now() : ""}` }} style={s.avatarImg} />
-            ) : (
-              <View style={[s.avatar, { backgroundColor: COLORS.primary + "30" }]}>
-                <Text style={[s.avatarText, { color: COLORS.primary }]}>{item.user.username?.[0]?.toUpperCase() || "?"}</Text>
-              </View>
-            )}
-            {item.user.is_online && <View style={s.onlineDot} />}
-          </TouchableOpacity>
-          <TouchableOpacity style={{ flex: 1 }} onPress={onPress} onLongPress={onLongPress} activeOpacity={0.7}>
-          <View style={s.info}>
-            <View style={s.nameRow}>
-              <View style={s.nameLeft}>
-                {item.is_pinned && <Text style={s.pinIcon}>📌</Text>}
-                <Text style={s.name} numberOfLines={1}>{item.user.username}</Text>
-              </View>
-              <View style={s.nameRight}>
-                {item.is_muted && <Text style={s.muteIcon}>🔕</Text>}
-                {item.last_message?.created_at && (
-                  <Text style={s.time}>{formatTime(item.last_message.created_at, t)}</Text>
-                )}
-              </View>
-            </View>
-            <View style={s.previewRow}>
-              <Text style={[s.preview, item.unread_count > 0 && { color: COLORS.text, fontWeight: "600" }]} numberOfLines={1}>
-                {item.last_message?.type === "image" ? `📷 ${t("photo")}` : item.last_message?.type === "voice" ? `🎤 ${t("voice")}` : item.last_message?.is_mine ? t("you") : ""}{item.last_message?.content || t("startConv")}
-              </Text>
-              {item.unread_count > 0 && (
-                <View style={s.badge}>
-                  <Text style={s.badgeText}>{item.unread_count > 9 ? "9+" : item.unread_count}</Text>
-                </View>
-              )}
-            </View>
-          </View>
-        </TouchableOpacity>
-        </View>
-      </Animated.View>
-    </View>
-  );
-});
+import { COLORS, SPACING, RADIUS, TYPOGRAPHY, SHADOWS, GLASS } from "../design/DesignSystem";
+import Avatar from "../design/ui/Avatar";
+import Badge from "../design/ui/Badge";
+import { SearchInput } from "../design/ui/Input";
+import { ScreenHeader } from "../design/ui/Header";
+import { MessageSkeleton } from "../design/states/LoadingState";
+import EmptyState from "../design/states/EmptyState";
+import ErrorState from "../design/states/ErrorState";
+import { OfflineBanner } from "../design/states/OfflineState";
 
 function formatTime(dateStr, t) {
   const d = new Date(dateStr);
@@ -99,29 +31,106 @@ function formatTime(dateStr, t) {
   return d.toLocaleDateString(I18nManager.isRTL ? "ar" : "en-US", { month: "short", day: "numeric" });
 }
 
+const SwipeActions = ({ children, onPin, onMute, onDelete, onBlock }) => {
+  const translateX = useRef(new Animated.Value(0)).current;
+
+  const handlePanEnd = (_, gs) => {
+    Animated.spring(translateX, { toValue: gs.dx < -80 ? -140 : 0, useNativeDriver: true }).start();
+  };
+  const resetSwipe = () => Animated.spring(translateX, { toValue: 0, useNativeDriver: true }).start();
+
+  const actions = [
+    { icon: "📌", color: COLORS.primary, onPress: () => { resetSwipe(); onPin(); } },
+    { icon: "🔕", color: "#F59E0B", onPress: () => { resetSwipe(); onMute(); } },
+    { icon: "🗑️", color: COLORS.danger, onPress: () => { resetSwipe(); onDelete(); } },
+    { icon: "🚫", color: "#8B5CF6", onPress: () => { resetSwipe(); onBlock(); } },
+  ];
+
+  return (
+    <View style={styles.swipeWrap}>
+      <View style={styles.swipeActions}>
+        {actions.map((a, i) => (
+          <TouchableOpacity key={i} style={[styles.swipeAction, { backgroundColor: a.color }]} onPress={a.onPress}>
+            <Text style={styles.swipeText}>{a.icon}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+      <Animated.View style={[{ transform: [{ translateX }], backgroundColor: COLORS.screenBg }]}>
+        {children}
+      </Animated.View>
+    </View>
+  );
+};
+
+const ConversationItem = memo(({ item, onPress, onLongPress, onDelete, onMute, onPin, onBlock, t, currentUser, onAvatarPress }) => (
+  <SwipeActions
+    onPin={() => onPin(item.user.id)}
+    onMute={() => onMute(item.user.id)}
+    onDelete={() => onDelete(item.user.id, item.user.username)}
+    onBlock={() => onBlock(item.user.id, item.user.username)}
+  >
+    <View style={styles.row}>
+      <Avatar
+        source={item.user.avatar ? `${resolveUrl(item.user.avatar)}${item.user.id === currentUser?.id ? "?t=" + Date.now() : ""}` : null}
+        username={item.user.username}
+        size="md"
+        online={item.user.is_online}
+        onPress={() => onAvatarPress?.(item.user)}
+      />
+      <TouchableOpacity style={styles.rowContent} onPress={onPress} onLongPress={onLongPress} activeOpacity={0.7}>
+        <View style={styles.nameRow}>
+          <View style={styles.nameLeft}>
+            {item.is_pinned && <Text style={styles.pinIcon}>📌</Text>}
+            <Text style={styles.name} numberOfLines={1}>{item.user.username}</Text>
+          </View>
+          <View style={styles.nameRight}>
+            {item.is_muted && <Text style={styles.muteIcon}>🔕</Text>}
+            {item.last_message?.created_at && <Text style={styles.time}>{formatTime(item.last_message.created_at, t)}</Text>}
+          </View>
+        </View>
+        <View style={styles.previewRow}>
+          <Text style={[styles.preview, item.unread_count > 0 && { color: COLORS.text, fontWeight: "600" }]} numberOfLines={1}>
+            {item.last_message?.type === "image" ? `📷 ${t("photo")}` : item.last_message?.type === "voice" ? `🎤 ${t("voice")}` : item.last_message?.is_mine ? `${t("you")}: ` : ""}{item.last_message?.content || t("startConv")}
+          </Text>
+          {item.unread_count > 0 && <Badge count={item.unread_count} variant="primary" />}
+        </View>
+      </TouchableOpacity>
+    </View>
+  </SwipeActions>
+));
+
 export default function MessagesScreen({ navigation }) {
   const { t } = useLanguage();
   const [conversations, setConversations] = useState([]);
   const [groups, setGroups] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
   const { realtime } = useRealtimeContext();
   const [unread, setUnread] = useState(0);
+  const isOnline = useNetworkStatus();
 
   const load = useCallback(async () => {
-    try { const res = await client.get("/messages/conversations"); setConversations(res.data || []); } catch (e) { console.warn("Conversations error", e?.response?.status); }
-    try { const res = await client.get("/groups"); setGroups(res.data || []); } catch (e) { console.warn("Groups error", e?.response?.status); }
-  }, []);
+    setError(null);
+    try {
+      const [convRes, grpRes] = await Promise.all([
+        client.get("/messages/conversations"),
+        client.get("/groups"),
+      ]);
+      setConversations(convRes.data || []);
+      setGroups(grpRes.data || []);
+    } catch (e) {
+      if (e?.response?.status !== 401) setError(t("loadError"));
+    }
+    setLoading(false);
+  }, [t]);
 
   useEffect(() => { load(); }, [load]);
-  useEffect(() => {
-    const unsub = navigation.addListener("focus", () => load());
-    return unsub;
-  }, [navigation, load]);
-
-  const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false); };
+  useEffect(() => { const unsub = navigation.addListener("focus", () => load()); return unsub; }, [navigation, load]);
+  const onRefresh = useCallback(async () => { setRefreshing(true); await load(); setRefreshing(false); }, [load]);
 
   const fetchUnread = useCallback(async () => {
     try { const res = await client.get("/messages/unread"); setUnread(res.data?.unread || 0); } catch (e) {}
@@ -129,33 +138,21 @@ export default function MessagesScreen({ navigation }) {
 
   useEffect(() => { fetchUnread(); }, [fetchUnread]);
 
-  /* ─── Realtime: new incoming messages bump conversations ─── */
   useEffect(() => {
     let mounted = true;
-    if (!user?.id) return undefined;
+    if (!user?.id) return;
     const myChannel = `messages.${user.id}`;
     const onSent = (event) => {
       if (!mounted) return;
-      const partnerId = event.sender_id === parseInt(user.id, 10)
-        ? event.receiver_id
-        : event.sender_id;
+      const partnerId = event.sender_id === parseInt(user.id, 10) ? event.receiver_id : event.sender_id;
       if (partnerId == null) return;
       setConversations((prev) => {
         const idx = prev.findIndex((c) => c.user && c.user.id === partnerId);
         if (idx < 0) return prev;
         const updated = prev.slice();
         const conv = { ...updated[idx] };
-        conv.last_message = {
-          id: event.id,
-          content: event.content,
-          type: event.type,
-          sender_id: event.sender_id,
-          created_at: event.created_at,
-          is_mine: event.sender_id === parseInt(user.id, 10),
-        };
+        conv.last_message = { id: event.id, content: event.content, type: event.type, sender_id: event.sender_id, created_at: event.created_at, is_mine: event.sender_id === parseInt(user.id, 10) };
         if (event.sender_id !== parseInt(user.id, 10)) conv.unread_count = (conv.unread_count || 0) + 1;
-        conv.is_pinned = conv.is_pinned || false;
-        conv.is_muted = conv.is_muted || false;
         updated.splice(idx, 1);
         updated.unshift(conv);
         return updated;
@@ -163,52 +160,28 @@ export default function MessagesScreen({ navigation }) {
       if (event.sender_id !== parseInt(user.id, 10)) fetchUnread();
     };
     (async () => {
-      try {
-        await realtime.init();
-        if (mounted) realtime.listen(myChannel, "message.sent", onSent);
-      } catch (e) {}
+      try { await realtime.init(); if (mounted) realtime.listen(myChannel, "message.sent", onSent); } catch (e) {}
     })();
-    return () => {
-      mounted = false;
-      try { realtime.leave(myChannel); } catch (e) {}
-    };
+    return () => { mounted = false; try { realtime.leave(myChannel); } catch (e) {} };
   }, [user?.id, realtime, fetchUnread]);
 
   const deleteConversation = (userId, username) => {
     Alert.alert(t("deleteConversation"), t("deleteConvConfirm").replace("{username}", username), [
       { text: t("cancel"), style: "cancel" },
-      { text: t("delete"), style: "destructive", onPress: async () => {
-        try { await client.delete(`/messages/conversation/${userId}`); load(); } catch (e) {}
-      }},
+      { text: t("delete"), style: "destructive", onPress: async () => { try { await client.delete(`/messages/conversation/${userId}`); load(); } catch (e) {} }},
     ]);
   };
-
-  const toggleMute = async (userId) => {
-    try { await client.post(`/messages/mute/${userId}`); load(); } catch (e) {}
-  };
-
-  const togglePin = async (userId) => {
-    try { await client.post(`/messages/pin/${userId}`); load(); } catch (e) {}
-  };
-
-  const blockConversation = async (userId, username) => {
+  const toggleMute = async (userId) => { try { await client.post(`/messages/mute/${userId}`); load(); } catch (e) {} };
+  const togglePin = async (userId) => { try { await client.post(`/messages/pin/${userId}`); load(); } catch (e) {} };
+  const blockConversation = (userId, username) => {
     Alert.alert(t("blockUser"), t("blockConfirm").replace("{username}", username), [
       { text: t("cancel"), style: "cancel" },
-      { text: t("block"), style: "destructive", onPress: async () => {
-        const res = await blockUser(userId);
-        if (!res || res.error) return;
-        setConversations((prev) => prev.filter((c) => c.user?.id !== userId));
-        setUnread(0);
-      }},
+      { text: t("block"), style: "destructive", onPress: async () => { const res = await blockUser(userId); if (!res || res.error) return; setConversations((prev) => prev.filter((c) => c.user?.id !== userId)); setUnread(0); }},
     ]);
   };
 
-  const groupFiltered = search
-    ? groups.filter((g) => g.name.toLowerCase().includes(search.toLowerCase()))
-    : groups;
-  const convFiltered = search
-    ? conversations.filter((c) => c.user?.username?.toLowerCase().includes(search.toLowerCase()))
-    : conversations;
+  const groupFiltered = search ? groups.filter((g) => g.name?.toLowerCase().includes(search.toLowerCase())) : groups;
+  const convFiltered = search ? conversations.filter((c) => c.user?.username?.toLowerCase().includes(search.toLowerCase())) : conversations;
 
   const data = [];
   if (groupFiltered.length > 0 && !search) {
@@ -220,34 +193,40 @@ export default function MessagesScreen({ navigation }) {
     convFiltered.forEach((c) => data.push({ type: "conv", ...c }));
   }
 
-  return (
-    <Screen3D style={[s.container, { paddingTop: insets.top }]}>
-      <View style={s.header}>
-        <Text style={s.title}>{t("messages")}</Text>
-        <View style={s.headerActions}>
-          <TouchableOpacity style={s.headerBtn} onPress={() => navigation.navigate("CreateGroup")}>
-            <Text style={s.headerBtnIcon}>👥</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={s.headerBtn} onPress={() => navigation.navigate("Users")}>
-            <Text style={s.headerBtnIcon}>✏️</Text>
-          </TouchableOpacity>
-        </View>
+  if (loading) {
+    return (
+      <View style={[styles.container, { paddingTop: insets.top }]}>
+        <ScreenHeader title={t("messages")} />
+        {[1, 2, 3, 4, 5].map((i) => <MessageSkeleton key={i} />)}
       </View>
+    );
+  }
 
-      <View style={s.searchWrap}>
-        <Text style={s.searchIcon}>🔍</Text>
-        <TextInput
-          style={s.searchInput}
+  if (error) {
+    return <View style={[styles.container, { paddingTop: insets.top }]}><ErrorState message={error} onRetry={load} /></View>;
+  }
+
+  return (
+    <View style={styles.container}>
+      <OfflineBanner />
+      <View style={[styles.headerWrap, { paddingTop: insets.top + SPACING.sm }]}>
+        <View style={styles.headerRow}>
+          <Text style={styles.title}>{t("messages")}</Text>
+          <View style={styles.headerActions}>
+            <TouchableOpacity style={styles.headerBtn} onPress={() => navigation.navigate("CreateGroup")}>
+              <Text style={styles.headerBtnIcon}>👥</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.headerBtn} onPress={() => navigation.navigate("Users")}>
+              <Text style={styles.headerBtnIcon}>✏️</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+        <SearchInput
           placeholder={t("searchConversations")}
-          placeholderTextColor={COLORS.muted}
           value={search}
           onChangeText={setSearch}
+          onClear={() => setSearch("")}
         />
-        {search.length > 0 && (
-          <TouchableOpacity onPress={() => setSearch("")}>
-            <Text style={s.clearBtn}>✕</Text>
-          </TouchableOpacity>
-        )}
       </View>
 
       <FlatList
@@ -256,31 +235,23 @@ export default function MessagesScreen({ navigation }) {
         contentContainerStyle={{ paddingBottom: Math.max(insets.bottom + 80, 100) }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} colors={[COLORS.primary]} />}
         ListEmptyComponent={
-          <View style={s.emptyWrap}>
-            <View style={s.emptyCircle}>
-              <Text style={s.emptyIcon}>💬</Text>
-            </View>
-            <Text style={s.emptyTitle}>{search ? t("noResults") : t("noMessages")}</Text>
-            <Text style={s.emptySub}>{search ? t("tryDifferentSearch") : t("startConversation")}</Text>
-          </View>
+          <EmptyState
+            icon="💬"
+            title={search ? t("noResults") : t("noMessages")}
+            message={search ? t("tryDifferentSearch") : t("startConversation")}
+          />
         }
         renderItem={({ item }) => {
-          if (item.type === "section") {
-            return <Text style={s.sectionHeader}>{item.label}</Text>;
-          }
+          if (item.type === "section") return <Text style={styles.sectionHeader}>{item.label}</Text>;
           if (item.type === "group") {
             return (
-              <TouchableOpacity style={s.groupRow} onPress={() => navigation.navigate("GroupChat", { groupId: item.id, groupName: item.name })} activeOpacity={0.7}>
-                <View style={s.groupAvatar}>
-                  <Text style={s.groupAvatarText}>👥</Text>
+              <TouchableOpacity style={styles.groupRow} onPress={() => navigation.navigate("GroupChat", { groupId: item.id, groupName: item.name })} activeOpacity={0.7}>
+                <View style={styles.groupAvatar}><Text style={styles.groupAvatarText}>👥</Text></View>
+                <View style={styles.groupInfo}>
+                  <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
+                  <Text style={styles.preview} numberOfLines={1}>{item.last_message ? `${item.last_message.username}: ${item.last_message.content}` : t("startConv")}</Text>
                 </View>
-                <View style={s.info}>
-                  <Text style={s.name} numberOfLines={1}>{item.name}</Text>
-                  <Text style={s.preview} numberOfLines={1}>
-                    {item.last_message ? `${item.last_message.username}: ${item.last_message.content}` : t("startConv")}
-                  </Text>
-                </View>
-                <Text style={s.memberCount}>{item.members_count}{t("members")}</Text>
+                <Text style={styles.memberCount}>{item.members_count}{t("members")}</Text>
               </TouchableOpacity>
             );
           }
@@ -309,52 +280,41 @@ export default function MessagesScreen({ navigation }) {
           );
         }}
       />
-    </Screen3D>
+    </View>
   );
 }
 
-const s = StyleSheet.create({
-  container: { flex: 1 },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingBottom: 8 },
-  title: { fontSize: SIZES.title, fontWeight: "900", color: COLORS.text, letterSpacing: -0.5 },
-  headerActions: { flexDirection: "row", gap: 8 },
-  headerBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: COLORS.primary + "20", alignItems: "center", justifyContent: "center" },
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: COLORS.screenBg },
+  headerWrap: { paddingHorizontal: SPACING.lg, paddingBottom: SPACING.md, backgroundColor: GLASS.default.backgroundColor, borderBottomWidth: 1, borderBottomColor: GLASS.default.borderColor },
+  headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: SPACING.md },
+  title: { ...TYPOGRAPHY.h2, color: COLORS.text },
+  headerActions: { flexDirection: "row", gap: SPACING.sm },
+  headerBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: GLASS.default.backgroundColor, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: GLASS.default.borderColor },
   headerBtnIcon: { fontSize: 18 },
-  searchWrap: { flexDirection: "row", alignItems: "center", marginHorizontal: 16, marginBottom: 8, backgroundColor: COLORS.input, borderRadius: SIZES.radius, paddingHorizontal: 12, height: 44, gap: 8 },
-  searchIcon: { fontSize: 16 },
-  searchInput: { flex: 1, color: COLORS.text, fontSize: SIZES.md },
-  clearBtn: { color: COLORS.muted, fontSize: 16, padding: 4 },
-  sectionHeader: { fontSize: SIZES.sm, fontWeight: "700", color: COLORS.muted, textTransform: "uppercase", letterSpacing: 1, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 4 },
-  groupRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 12, gap: 12 },
-  groupAvatar: { width: 52, height: 52, borderRadius: 26, backgroundColor: COLORS.primary + "25", alignItems: "center", justifyContent: "center" },
-  groupAvatarText: { fontSize: 24 },
-  memberCount: { fontSize: SIZES.xs, color: COLORS.muted },
-  rowWrap: { overflow: "hidden" },
-  swipeActions: { position: "absolute", right: 0, top: 0, bottom: 0, flexDirection: "row", alignItems: "center" },
-  swipeAction: { width: 32, height: 70, alignItems: "center", justifyContent: "center", marginLeft: 2 },
+
+  swipeWrap: { overflow: "hidden", marginBottom: 0 },
+  swipeActions: { position: "absolute", right: 0, top: 6, bottom: 6, flexDirection: "row", alignItems: "center", paddingRight: SPACING.md, gap: 2 },
+  swipeAction: { width: 40, height: "100%", alignItems: "center", justifyContent: "center", borderRadius: RADIUS.sm },
   swipeText: { fontSize: 18 },
-  row: { backgroundColor: COLORS.bg },
-  rowInner: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 12, gap: 12 },
-  avatarWrap: { position: "relative" },
-  avatar: { width: 52, height: 52, borderRadius: 26, alignItems: "center", justifyContent: "center" },
-  avatarImg: { width: 52, height: 52, borderRadius: 26 },
-  avatarText: { fontWeight: "700", fontSize: 20 },
-  onlineDot: { position: "absolute", bottom: 1, right: 1, width: 14, height: 14, borderRadius: 7, backgroundColor: COLORS.success, borderWidth: 3, borderColor: COLORS.bg },
-  info: { flex: 1 },
-  nameRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 4 },
+
+  row: { flexDirection: "row", alignItems: "center", paddingHorizontal: SPACING.lg, paddingVertical: SPACING.lg - 4, gap: SPACING.md, backgroundColor: COLORS.screenBg, marginHorizontal: SPACING.md, marginVertical: 2, borderRadius: RADIUS.md },
+  rowContent: { flex: 1 },
+  groupRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: SPACING.lg, paddingVertical: SPACING.md, gap: SPACING.md, marginHorizontal: SPACING.md, marginVertical: 2, borderRadius: RADIUS.md, backgroundColor: GLASS.default.backgroundColor, borderWidth: 1, borderColor: GLASS.default.borderColor },
+  groupAvatar: { width: 52, height: 52, borderRadius: 26, backgroundColor: COLORS.primaryGlow, alignItems: "center", justifyContent: "center" },
+  groupAvatarText: { fontSize: 24 },
+  groupInfo: { flex: 1 },
+  memberCount: { ...TYPOGRAPHY.small, color: COLORS.muted },
+
+  nameRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 3 },
   nameLeft: { flexDirection: "row", alignItems: "center", gap: 4, flex: 1 },
   nameRight: { flexDirection: "row", alignItems: "center", gap: 4 },
-  name: { fontSize: SIZES.lg, fontWeight: "600", color: COLORS.text, flex: 1 },
-  time: { fontSize: SIZES.xs, color: COLORS.muted },
+  name: { ...TYPOGRAPHY.bodyBold, color: COLORS.text, flex: 1 },
+  time: { ...TYPOGRAPHY.small, color: COLORS.muted },
   pinIcon: { fontSize: 12 },
   muteIcon: { fontSize: 12 },
+
   previewRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  preview: { fontSize: SIZES.sm, color: COLORS.muted, flex: 1 },
-  badge: { backgroundColor: COLORS.primary, borderRadius: 10, minWidth: 20, height: 20, alignItems: "center", justifyContent: "center", paddingHorizontal: 6, marginLeft: 8 },
-  badgeText: { color: COLORS.text, fontSize: SIZES.xs, fontWeight: "700" },
-  emptyWrap: { alignItems: "center", paddingTop: 80, paddingHorizontal: 40 },
-  emptyCircle: { width: 80, height: 80, borderRadius: 40, backgroundColor: COLORS.primary + "15", alignItems: "center", justifyContent: "center", marginBottom: 16 },
-  emptyIcon: { fontSize: 36 },
-  emptyTitle: { fontSize: SIZES.lg, fontWeight: "700", color: COLORS.text, marginBottom: 6 },
-  emptySub: { fontSize: SIZES.sm, color: COLORS.muted, textAlign: "center", lineHeight: 20 },
+  preview: { ...TYPOGRAPHY.caption, color: COLORS.textTertiary, flex: 1 },
+  sectionHeader: { ...TYPOGRAPHY.label, color: COLORS.textTertiary, paddingHorizontal: SPACING.lg, paddingTop: SPACING.lg, paddingBottom: SPACING.xs, letterSpacing: 1 },
 });
