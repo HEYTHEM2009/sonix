@@ -6,24 +6,38 @@ cat > /etc/nginx/sites-available/default <<NGINX
 server {
     listen ${PORT};
     server_name _;
-    root /app/laravel-backend/public;
-    index index.php index.html;
     client_max_body_size 50M;
     client_body_temp_path /tmp/nginx-upload;
 
-    location / {
-        try_files \$uri \$uri/ /index.php?\$query_string;
+    root /app/sonix-web;
+    index index.html;
+
+    location /api/ {
+        root /app/laravel-backend/public;
+        try_files \$uri /index.php?\$query_string;
+    }
+
+    location /storage/ {
+        alias /app/laravel-backend/storage/app/public/;
+        expires 30d;
+        add_header Cache-Control "public, immutable";
     }
 
     location ~ \.php$ {
+        root /app/laravel-backend/public;
         fastcgi_pass 127.0.0.1:9000;
         fastcgi_index index.php;
-        fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
         include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
         fastcgi_read_timeout 300;
         fastcgi_send_timeout 300;
         fastcgi_connect_timeout 300;
         fastcgi_buffering off;
+    }
+
+    location / {
+        try_files \$uri \$uri/ /index.html;
+        expires -1;
     }
 
     location ~ /\.ht { deny all; }
