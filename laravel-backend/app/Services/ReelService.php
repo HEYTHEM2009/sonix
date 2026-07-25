@@ -13,6 +13,7 @@ use App\Models\ReelWatchHistory;
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Encapsulates all Reels business logic: feed, recommendations, trending,
