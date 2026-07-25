@@ -1,11 +1,3 @@
-FROM node:20-alpine AS web-builder
-WORKDIR /app/sonix-web
-COPY sonix-web/package.json sonix-web/package-lock.json ./
-RUN npm ci
-COPY sonix-web/ .
-ENV VITE_API_URL=/api
-RUN npm run build
-
 FROM php:8.3-fpm
 
 RUN apt-get update && apt-get install -y \
@@ -26,7 +18,7 @@ COPY laravel-backend/ .
 
 RUN composer dump-autoload --optimize
 
-COPY --from=web-builder /app/sonix-web/dist /app/sonix-web
+COPY sonix-web/dist /app/sonix-web
 
 RUN mkdir -p public/uploads public/reels storage/framework/{cache,sessions,views} storage/logs bootstrap/cache /tmp/nginx-upload \
     && chmod -R 777 storage \

@@ -13,8 +13,14 @@ server {
     index index.html;
 
     location /api/ {
-        root /app/laravel-backend/public;
-        try_files \$uri /index.php?\$query_string;
+        include fastcgi_params;
+        fastcgi_pass 127.0.0.1:9000;
+        fastcgi_param SCRIPT_FILENAME /app/laravel-backend/public/index.php;
+        fastcgi_param REQUEST_URI \$uri?\$args;
+        fastcgi_read_timeout 300;
+        fastcgi_send_timeout 300;
+        fastcgi_connect_timeout 300;
+        fastcgi_buffering off;
     }
 
     location /storage/ {
@@ -24,11 +30,10 @@ server {
     }
 
     location ~ \.php$ {
-        root /app/laravel-backend/public;
+        include fastcgi_params;
         fastcgi_pass 127.0.0.1:9000;
         fastcgi_index index.php;
-        include fastcgi_params;
-        fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
+        fastcgi_param SCRIPT_FILENAME /app/laravel-backend/public/index.php;
         fastcgi_read_timeout 300;
         fastcgi_send_timeout 300;
         fastcgi_connect_timeout 300;
