@@ -26,6 +26,7 @@ class EnsureFeatureTables extends Command
             '2026_07_12_000001_add_vanish_and_edit_fields_to_messages',
             '2026_07_12_000013_create_recent_searches_table',
             '2026_07_18_000001_create_reels_v2_tables',
+            '2026_07_19_000012_create_email_verification_tokens_table',
             '2026_07_26_000001_fix_reels_missing_columns',
         ];
 
@@ -235,6 +236,16 @@ class EnsureFeatureTables extends Command
                 $table->unique(['user_id', 'reel_comment_id']);
             });
             $this->info('Created reel_comment_likes table');
+        }
+
+        // Email verification tokens table
+        if (! Schema::hasTable('email_verification_tokens')) {
+            Schema::create('email_verification_tokens', function (Blueprint $table) {
+                $table->string('email')->primary();
+                $table->string('token', 6);
+                $table->timestamp('expires_at')->nullable();
+            });
+            $this->info('Created email_verification_tokens table');
         }
 
         // Group chat tables
