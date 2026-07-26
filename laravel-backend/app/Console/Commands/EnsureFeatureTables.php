@@ -25,6 +25,8 @@ class EnsureFeatureTables extends Command
             '2026_07_12_000001_create_missing_feature_tables',
             '2026_07_12_000001_add_vanish_and_edit_fields_to_messages',
             '2026_07_12_000013_create_recent_searches_table',
+            '2026_07_18_000001_create_reels_v2_tables',
+            '2026_07_26_000001_fix_reels_missing_columns',
         ];
 
         foreach ($staleMigrations as $migration) {
@@ -275,8 +277,121 @@ class EnsureFeatureTables extends Command
             $groupTablesCreated++;
         }
 
-        if ($created > 0 || $groupTablesCreated > 0) {
-            $this->info("Successfully created {$created} missing table(s) and {$groupTablesCreated} group table(s)");
+        // Reel v2 tables (reel_analytics, reel_saves, etc.)
+        $reelV2Created = 0;
+        if (! Schema::hasTable('reel_saves')) {
+            Schema::create('reel_saves', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('user_id')->constrained()->onDelete('cascade');
+                $table->foreignId('reel_id')->constrained()->onDelete('cascade');
+                $table->timestamps();
+                $table->unique(['user_id', 'reel_id']);
+            });
+            $this->info('Created reel_saves table');
+            $reelV2Created++;
+        }
+        if (! Schema::hasTable('reel_shares')) {
+            Schema::create('reel_shares', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('user_id')->nullable()->constrained()->onDelete('set null');
+                $table->foreignId('reel_id')->constrained()->onDelete('cascade');
+                $table->string('platform')->nullable();
+                $table->timestamps();
+            });
+            $this->info('Created reel_shares table');
+            $reelV2Created++;
+        }
+        if (! Schema::hasTable('reel_hashtags')) {
+            Schema::create('reel_hashtags', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('reel_id')->constrained()->onDelete('cascade');
+                $table->string('tag', 100);
+                $table->timestamps();
+                $table->unique(['reel_id', 'tag']);
+            });
+            $this->info('Created reel_hashtags table');
+            $reelV2Created++;
+        }
+        if (! Schema::hasTable('reel_mentions')) {
+            Schema::create('reel_mentions', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('reel_id')->constrained()->onDelete('cascade');
+                $table->foreignId('user_id')->constrained()->onDelete('cascade');
+                $table->timestamps();
+                $table->unique(['reel_id', 'user_id']);
+            });
+            $this->info('Created reel_mentions table');
+            $reelV2Created++;
+        }
+        if (! Schema::hasTable('reel_watch_history')) {
+            Schema::create('reel_watch_history', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('user_id')->constrained()->onDelete('cascade');
+                $table->foreignId('reel_id')->constrained()->onDelete('cascade');
+                $table->integer('watch_seconds')->default(0);
+                $table->integer('percent_watched')->default(0);
+                $table->boolean('completed')->default(false);
+                $table->timestamps();
+            });
+            $this->info('Created reel_watch_history table');
+            $reelV2Created++;
+        }
+        if (! Schema::hasTable('reel_analytics')) {
+            Schema::create('reel_analytics', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('reel_id')->constrained()->onDelete('cascade');
+                $table->unsignedBigInteger('views_count')->default(0);
+                $table->unsignedBigInteger('likes_count')->default(0);
+                $table->unsignedBigInteger('comments_count')->default(0);
+                $table->unsignedBigInteger('shares_count')->default(0);
+                $table->unsignedBigInteger('saves_count')->default(0);
+                $table->unsignedBigInteger('watch_time_seconds')->default(0);
+                $table->decimal('completion_rate', 5, 2)->default(0);
+                $table->decimal('trending_score', 10, 2)->default(0);
+                $table->decimal('recommendation_score', 10, 2)->default(0);
+                $table->timestamp('last_viewed_at')->nullable();
+                $table->timestamps();
+                $table->unique('reel_id');
+            });
+            $this->info('Created reel_analytics table');
+            $reelV2Created++;
+        }
+
+        // Missing reels columns (status, is_published, scheduled_at, is_featured)
+        $reelColumnsAdded = 0;
+        if (Schema::hasTable('reels')) {
+            if (! Schema::hasColumn('reels', 'status')) {
+                Schema::table('reels', function (Blueprint $table) {
+                    $table->string('status')->default('published');
+                });
+                $this->info('Added status column to reels');
+                $reelColumnsAdded++;
+            }
+            if (! Schema::hasColumn('reels', 'is_published')) {
+                Schema::table('reels', function (Blueprint $table) {
+                    $table->boolean('is_published')->default(true);
+                });
+                $this->info('Added is_published column to reels');
+                $reelColumnsAdded++;
+            }
+            if (! Schema::hasColumn('reels', 'scheduled_at')) {
+                Schema::table('reels', function (Blueprint $table) {
+                    $table->timestamp('scheduled_at')->nullable();
+                });
+                $this->info('Added scheduled_at column to reels');
+                $reelColumnsAdded++;
+            }
+            if (! Schema::hasColumn('reels', 'is_featured')) {
+                Schema::table('reels', function (Blueprint $table) {
+                    $table->boolean('is_featured')->default(false);
+                });
+                $this->info('Added is_featured column to reels');
+                $reelColumnsAdded++;
+            }
+        }
+
+        if ($created > 0 || $groupTablesCreated > 0 || $reelV2Created > 0 || $reelColumnsAdded > 0) {
+            $this->info("Created {$created} table(s), {$groupTablesCreated} group table(s), {$reelV2Created} reel v2 table(s), added {$reelColumnsAdded} reel column(s)");
         } else {
             $this->info('All feature tables already exist');
         }
