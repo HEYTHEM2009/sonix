@@ -1,13 +1,12 @@
-# Stage 1: Build frontend with Node
 FROM node:20-alpine AS frontend-builder
-WORKDIR /app/sonix-web
-COPY sonix-web/package.json sonix-web/package-lock.json* ./
-RUN npm install
-COPY sonix-web/ .
+WORKDIR /build/sonix-web
+COPY sonix-web/package.json sonix-web/package-lock.json ./
+RUN npm ci
+COPY sonix-web/ ./
 RUN npm run build
 
-# Stage 2: PHP + Nginx backend
 FROM php:8.4-fpm
+
 RUN apt-get update && apt-get install -y \
     git curl zip unzip libpng-dev libonig-dev libxml2-dev \
     libpq-dev libzip-dev nginx supervisor \
@@ -18,13 +17,15 @@ RUN apt-get update && apt-get install -y \
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 WORKDIR /app/laravel-backend
+
 COPY laravel-backend/composer.json laravel-backend/composer.lock ./
 RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist
+
 COPY laravel-backend/ .
+
 RUN composer dump-autoload --optimize
 
-# Copy built frontend from Stage 1
-COPY --from=frontend-builder /app/sonix-web/dist /app/sonix-web
+COPY --from=frontend-builder /build/sonix-web/dist /app/sonix-web
 
 RUN mkdir -p public/uploads public/reels storage/framework/{cache,sessions,views} storage/logs bootstrap/cache /tmp/nginx-upload \
     && chmod -R 777 storage \
@@ -44,9 +45,12 @@ RUN echo "upload_max_filesize = 50M" >> /usr/local/etc/php/conf.d/uploads.ini \
     && echo "cgi.fix_pathinfo = 0" >> /usr/local/etc/php/conf.d/uploads.ini
 
 COPY nginx-site.conf /etc/nginx/sites-available/default
+
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 EXPOSE 80
+
 COPY docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
 CMD ["/usr/local/bin/docker-entrypoint.sh"]
