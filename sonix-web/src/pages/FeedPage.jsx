@@ -9,7 +9,8 @@ export default function FeedPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    client.get("/reels?trending=1")
+    client
+      .get("/reels?trending=1")
       .then((res) => {
         const data = res.data?.data || res.data?.reels || [];
         setReels(Array.isArray(data) ? data : data.data || []);
@@ -24,14 +25,18 @@ export default function FeedPage() {
       <div className="snx-feed">
         {loading ? (
           <div className="snx-feed__grid">
-            {[1,2,3,4,5,6].map((i) => (
+            {[1, 2, 3, 4, 5, 6].map((i) => (
               <div key={i} className="snx-feed__placeholder" />
             ))}
           </div>
         ) : (
           <div className="snx-feed__grid">
             {reels.map((reel) => (
-              <div key={reel.id} className="snx-feed__reel" onClick={() => navigate(`/reel/${reel.id}`)}>
+              <div
+                key={reel.id}
+                className="snx-feed__reel"
+                onClick={() => navigate(`/reel/${reel.id}`)}
+              >
                 {reel.thumbnail_url ? (
                   <img src={reel.thumbnail_url} alt={reel.caption || "Reel"} loading="lazy" />
                 ) : (

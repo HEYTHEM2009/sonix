@@ -1,3 +1,15 @@
+/* ============================================
+   SONIX RESPONSIVE DESIGN SYSTEM
+   Breakpoints:
+     xs:  0-374px   (iPhone SE, small Android)
+     sm:  375-413px  (iPhone 12/13/14, Galaxy S21)
+     md:  414-479px  (iPhone Plus/Max, large Androids)
+     lg:  480-767px  (Large phones, small tablets)
+     tab: 768-1023px (iPad Mini, tablets)
+     dk:  1024px+    (Desktop)
+   ============================================ */
+
+/* ---- CSS VARIABLES ---- */
 :root {
   --snx-blue: #0095f6;
   --snx-blue-hover: #1877f2;
@@ -14,6 +26,7 @@
   --snx-safe-top: env(safe-area-inset-top, 0px);
 }
 
+/* ---- APP SHELL ---- */
 .snx-app {
   min-height: 100vh;
   min-height: 100dvh;
@@ -28,6 +41,9 @@
   }
 }
 
+/* ============================================
+   HEADER
+   ============================================ */
 .snx-header {
   position: fixed;
   top: 0;
@@ -101,6 +117,7 @@
   color: #ed4956;
 }
 
+/* ---- BOTTOM NAV (MOBILE) ---- */
 @media (max-width: 767px) {
   .snx-header {
     top: auto;
@@ -113,18 +130,24 @@
     padding-left: 8px;
     padding-right: 8px;
   }
-  .snx-header__logo { display: none; }
+
+  .snx-header__logo {
+    display: none;
+  }
+
   .snx-header__nav {
     width: 100%;
     justify-content: space-around;
     gap: 0;
   }
+
   .snx-header__nav-link {
     padding: 10px;
     flex-direction: column;
     gap: 2px;
     font-size: 10px;
   }
+
   .snx-header__logout {
     font-size: 0;
     padding: 10px;
@@ -132,12 +155,16 @@
     align-items: center;
     justify-content: center;
   }
+
   .snx-header__logout::before {
     content: "⏻";
     font-size: 20px;
   }
 }
 
+/* ============================================
+   LOGIN PAGE
+   ============================================ */
 .snx-login {
   min-height: 100vh;
   min-height: 100dvh;
@@ -238,16 +265,30 @@
   padding: 0;
 }
 
+/* ---- LOGIN RESPONSIVE ---- */
 @media (max-width: 374px) {
-  .snx-login__card { padding: 28px 20px; border-radius: 10px; }
-  .snx-login__title { font-size: 26px; }
-  .snx-login__input { padding: 10px 12px; font-size: 16px; }
+  .snx-login__card {
+    padding: 28px 20px;
+    border-radius: 10px;
+  }
+  .snx-login__title {
+    font-size: 26px;
+  }
+  .snx-login__input {
+    padding: 10px 12px;
+    font-size: 16px; /* prevents iOS zoom */
+  }
 }
 
 @media (min-width: 768px) {
-  .snx-login__card { padding: 48px 40px; }
+  .snx-login__card {
+    padding: 48px 40px;
+  }
 }
 
+/* ============================================
+   FEED PAGE
+   ============================================ */
 .snx-feed {
   max-width: 935px;
   margin: 0 auto;
@@ -305,16 +346,37 @@
   justify-content: center;
 }
 
+/* ---- FEED RESPONSIVE ---- */
 @media (max-width: 374px) {
-  .snx-feed__grid { grid-template-columns: repeat(2, 1fr); gap: 3px; }
-  .snx-feed { padding: 8px; }
+  .snx-feed__grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 3px;
+  }
+  .snx-feed {
+    padding: 8px;
+  }
 }
 
 @media (min-width: 375px) and (max-width: 767px) {
-  .snx-feed__grid { grid-template-columns: repeat(3, 1fr); gap: 3px; }
-  .snx-feed { padding: 8px; }
+  .snx-feed__grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 3px;
+  }
+  .snx-feed {
+    padding: 8px;
+  }
 }
 
+@media (min-width: 768px) and (max-width: 1023px) {
+  .snx-feed__grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+  }
+}
+
+/* ============================================
+   EXPLORE PAGE
+   ============================================ */
 .snx-explore {
   max-width: 935px;
   margin: 0 auto;
@@ -368,17 +430,33 @@
   text-shadow: 0 1px 3px rgba(0,0,0,0.6);
 }
 
+/* ---- EXPLORE RESPONSIVE ---- */
 @media (max-width: 374px) {
-  .snx-explore__grid { grid-template-columns: repeat(2, 1fr); gap: 3px; }
-  .snx-explore { padding: 8px; }
-  .snx-explore__title { font-size: 18px; }
+  .snx-explore__grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 3px;
+  }
+  .snx-explore {
+    padding: 8px;
+  }
+  .snx-explore__title {
+    font-size: 18px;
+  }
 }
 
 @media (min-width: 375px) and (max-width: 767px) {
-  .snx-explore__grid { grid-template-columns: repeat(3, 1fr); gap: 3px; }
-  .snx-explore { padding: 8px; }
+  .snx-explore__grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 3px;
+  }
+  .snx-explore {
+    padding: 8px;
+  }
 }
 
+/* ============================================
+   PROFILE PAGE
+   ============================================ */
 .snx-profile {
   max-width: 935px;
   margin: 0 auto;
@@ -403,7 +481,9 @@
   flex-shrink: 0;
 }
 
-.snx-profile__details { flex: 1; }
+.snx-profile__details {
+  flex: 1;
+}
 
 .snx-profile__username {
   font-size: 20px;
@@ -418,7 +498,9 @@
   font-size: 14px;
 }
 
-.snx-profile__stat-num { font-weight: 700; }
+.snx-profile__stat-num {
+  font-weight: 700;
+}
 
 .snx-profile__bio {
   color: var(--snx-text-secondary);
@@ -458,26 +540,65 @@
   object-fit: cover;
 }
 
+/* ---- PROFILE RESPONSIVE ---- */
 @media (max-width: 374px) {
-  .snx-profile__info { flex-direction: column; gap: 16px; text-align: center; padding: 0 8px 20px; }
-  .snx-profile__avatar { width: 80px; height: 80px; }
-  .snx-profile__stats { justify-content: center; gap: 20px; font-size: 13px; }
-  .snx-profile__bio { font-size: 13px; }
-  .snx-profile__grid { grid-template-columns: repeat(2, 1fr); gap: 3px; }
-  .snx-profile { padding: 16px 8px; }
+  .snx-profile__info {
+    flex-direction: column;
+    gap: 16px;
+    text-align: center;
+    padding: 0 8px 20px;
+  }
+  .snx-profile__avatar {
+    width: 80px;
+    height: 80px;
+  }
+  .snx-profile__stats {
+    justify-content: center;
+    gap: 20px;
+    font-size: 13px;
+  }
+  .snx-profile__bio {
+    font-size: 13px;
+  }
+  .snx-profile__grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 3px;
+  }
+  .snx-profile {
+    padding: 16px 8px;
+  }
 }
 
 @media (min-width: 375px) and (max-width: 767px) {
-  .snx-profile__info { flex-direction: column; gap: 20px; text-align: center; padding: 0 12px 20px; }
-  .snx-profile__avatar { width: 100px; height: 100px; }
-  .snx-profile__stats { justify-content: center; gap: 24px; }
-  .snx-profile__grid { grid-template-columns: repeat(3, 1fr); gap: 3px; }
+  .snx-profile__info {
+    flex-direction: column;
+    gap: 20px;
+    text-align: center;
+    padding: 0 12px 20px;
+  }
+  .snx-profile__avatar {
+    width: 100px;
+    height: 100px;
+  }
+  .snx-profile__stats {
+    justify-content: center;
+    gap: 24px;
+  }
+  .snx-profile__grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 3px;
+  }
 }
 
 @media (min-width: 768px) {
-  .snx-profile__info { gap: 48px; }
+  .snx-profile__info {
+    gap: 48px;
+  }
 }
 
+/* ============================================
+   REEL VIEWER PAGE
+   ============================================ */
 .snx-reel {
   max-width: 935px;
   margin: 0 auto;
@@ -582,33 +703,86 @@
   font-size: 16px;
 }
 
+/* ---- REEL RESPONSIVE ---- */
 @media (max-width: 767px) {
-  .snx-reel { padding: 0; max-width: 100%; }
-  .snx-reel__container { flex-direction: column; gap: 0; }
-  .snx-reel__player { max-width: 100%; width: 100%; border-radius: 0; min-height: 60vh; }
-  .snx-reel__sidebar { padding: 16px; }
+  .snx-reel {
+    padding: 0;
+    max-width: 100%;
+  }
+
+  .snx-reel__container {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .snx-reel__player {
+    max-width: 100%;
+    width: 100%;
+    border-radius: 0;
+    min-height: 60vh;
+  }
+
+  .snx-reel__sidebar {
+    padding: 16px;
+  }
 }
 
 @media (max-width: 374px) {
-  .snx-reel__sidebar { padding: 12px; }
-  .snx-reel__user-avatar { width: 32px; height: 32px; }
-  .snx-reel__user-name { font-size: 13px; }
-  .snx-reel__caption { font-size: 13px; }
+  .snx-reel__sidebar {
+    padding: 12px;
+  }
+  .snx-reel__user-avatar {
+    width: 32px;
+    height: 32px;
+  }
+  .snx-reel__user-name {
+    font-size: 13px;
+  }
+  .snx-reel__caption {
+    font-size: 13px;
+  }
 }
 
 @media (min-width: 768px) {
-  .snx-reel__container { gap: 32px; }
-  .snx-reel__player { max-width: 420px; }
+  .snx-reel__container {
+    gap: 32px;
+  }
+  .snx-reel__player {
+    max-width: 420px;
+  }
 }
 
+/* ============================================
+   LOADING SPINNER
+   ============================================ */
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
 
+/* ============================================
+   UTILITY
+   ============================================ */
+.snx-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  border: 0;
+}
+
+/* ============================================
+   DARK SCROLLBAR
+   ============================================ */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: #111; }
 ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
 
+/* ============================================
+   SAFE AREAS (iPhone X+)
+   ============================================ */
 @supports (padding-top: env(safe-area-inset-top)) {
   .snx-header {
     padding-left: calc(16px + env(safe-area-inset-left));

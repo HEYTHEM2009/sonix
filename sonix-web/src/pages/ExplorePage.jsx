@@ -30,14 +30,18 @@ export default function ExplorePage() {
         <h2 className="snx-explore__title">Explore</h2>
         {loading ? (
           <div className="snx-explore__grid">
-            {[1,2,3,4,5,6].map((i) => (
+            {[1, 2, 3, 4, 5, 6].map((i) => (
               <div key={i} className="snx-feed__placeholder" />
             ))}
           </div>
         ) : (
           <div className="snx-explore__grid">
             {reels.map((reel) => (
-              <div key={reel.id} className="snx-explore__reel" onClick={() => navigate(`/reel/${reel.id}`)}>
+              <div
+                key={reel.id}
+                className="snx-explore__reel"
+                onClick={() => navigate(`/reel/${reel.id}`)}
+              >
                 {reel.thumbnail_url ? (
                   <img src={reel.thumbnail_url} alt={reel.caption || "Reel"} loading="lazy" />
                 ) : (

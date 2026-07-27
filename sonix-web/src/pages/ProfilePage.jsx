@@ -44,7 +44,11 @@ export default function ProfilePage() {
       <Header />
       <div className="snx-profile">
         <div className="snx-profile__info">
-          <img className="snx-profile__avatar" src={profile?.avatar_url || `https://ui-avatars.com/api/?name=${profile?.username || "U"}&background=262626&color=f5f5f5&size=150`} alt={profile?.username} />
+          <img
+            className="snx-profile__avatar"
+            src={profile?.avatar_url || `https://ui-avatars.com/api/?name=${profile?.username || "U"}&background=262626&color=f5f5f5&size=150`}
+            alt={profile?.username}
+          />
           <div className="snx-profile__details">
             <h2 className="snx-profile__username">{profile?.username || "Unknown"}</h2>
             <div className="snx-profile__stats">
@@ -55,13 +59,19 @@ export default function ProfilePage() {
             {profile?.bio && <p className="snx-profile__bio">{profile.bio}</p>}
           </div>
         </div>
+
         <p className="snx-profile__reels-title">Reels</p>
+
         {reels.length === 0 ? (
           <p style={{ textAlign: "center", color: "#737373", padding: 40 }}>No reels yet</p>
         ) : (
           <div className="snx-profile__grid">
             {reels.map((reel) => (
-              <div key={reel.id} className="snx-profile__reel" onClick={() => navigate(`/reel/${reel.id}`)}>
+              <div
+                key={reel.id}
+                className="snx-profile__reel"
+                onClick={() => navigate(`/reel/${reel.id}`)}
+              >
                 {reel.thumbnail_url ? (
                   <img src={reel.thumbnail_url} alt={reel.caption || "Reel"} loading="lazy" />
                 ) : (
