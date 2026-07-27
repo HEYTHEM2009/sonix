@@ -10,6 +10,7 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\HandleCors;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -53,6 +54,18 @@ return Application::configure(basePath: dirname(__DIR__))
 
             if ($e instanceof AuthenticationException) {
                 return response()->json(['message' => 'Unauthenticated'], 401);
+            }
+
+            // Handle validation errors with 422 and field-level details.
+            if ($e instanceof ValidationException) {
+                $debug = config('app.debug');
+
+                $payload = [
+                    'message' => $debug ? $e->getMessage() : 'The given data was invalid.',
+                    'errors' => $e->errors(),
+                ];
+
+                return response()->json($payload, 422);
             }
 
             $status = method_exists($e, 'getStatusCode')
