@@ -5,36 +5,36 @@ import FeedPage from "./pages/FeedPage";
 import ReelViewerPage from "./pages/ReelViewerPage";
 import ExplorePage from "./pages/ExplorePage";
 import ProfilePage from "./pages/ProfilePage";
+import "./responsive.css";
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
-  if (loading) return <div style={{ background: "#000", minHeight: "100vh" }} />;
-  if (!user) return <Navigate to="/" replace />;
+  if (loading) return null;
+  if (!user) return <Navigate to="/" />;
   return children;
 }
 
 function PublicRoute({ children }) {
   const { user, loading } = useAuth();
-  if (loading) return <div style={{ background: "#000", minHeight: "100vh" }} />;
-  if (user) return <Navigate to="/feed" replace />;
+  if (loading) return null;
+  if (user) return <Navigate to="/feed" />;
   return children;
 }
 
 function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
+    <AuthProvider>
+      <BrowserRouter>
         <Routes>
           <Route path="/" element={<PublicRoute><LoginPage /></PublicRoute>} />
           <Route path="/feed" element={<ProtectedRoute><FeedPage /></ProtectedRoute>} />
           <Route path="/explore" element={<ProtectedRoute><ExplorePage /></ProtectedRoute>} />
-          <Route path="/reel/:id" element={<ProtectedRoute><ReelViewerPage /></ProtectedRoute>} />
-          <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
           <Route path="/profile/:id" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-          <Route path="*" element={<Navigate to="/feed" replace />} />
+          <Route path="/reel/:id" element={<ProtectedRoute><ReelViewerPage /></ProtectedRoute>} />
+          <Route path="*" element={<Navigate to="/" />} />
         </Routes>
-      </AuthProvider>
-    </BrowserRouter>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 

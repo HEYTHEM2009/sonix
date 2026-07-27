@@ -30,65 +30,47 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div style={{ background: "#000", minHeight: "100vh" }}>
+      <div className="snx-app">
         <Header />
-        <div style={{ display: "flex", justifyContent: "center", padding: 60, paddingTop: 100 }}>
-          <div style={{
-            width: 32, height: 32, border: "3px solid #333",
-            borderTopColor: "#0095f6", borderRadius: "50%",
-            animation: "spin 0.8s linear infinite"
-          }} />
+        <div style={{ display: "flex", justifyContent: "center", padding: 60 }}>
+          <div className="snx-reel__loader-spinner" />
         </div>
       </div>
     );
   }
 
   return (
-    <div style={{ background: "#000", minHeight: "100vh" }}>
+    <div className="snx-app">
       <Header />
-      <div style={{ paddingTop: 60 }}>
-        <div style={{ maxWidth: 935, margin: "0 auto", padding: "30px 20px 0" }}>
-          <div style={{ display: "flex", gap: 60, marginBottom: 44, alignItems: "center" }}>
-            <img src={profile?.avatar || `https://ui-avatars.com/api/?name=${profile?.username}&background=6366f1&color=fff&size=200`}
-              style={{ width: 150, height: 150, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} alt="" />
-            <div>
-              <h1 style={{ color: "#fff", fontSize: 20, fontWeight: 400, margin: "0 0 20px" }}>
-                {profile?.username || "Unknown"}
-              </h1>
-              <div style={{ display: "flex", gap: 40, marginBottom: 20 }}>
-                <div style={{ textAlign: "center" }}>
-                  <div style={{ color: "#fff", fontWeight: 600, fontSize: 16 }}>{reels.length}</div>
-                  <div style={{ color: "#888", fontSize: 14 }}>reels</div>
-                </div>
-                <div style={{ textAlign: "center" }}>
-                  <div style={{ color: "#fff", fontWeight: 600, fontSize: 16 }}>{profile?.followers_count || 0}</div>
-                  <div style={{ color: "#888", fontSize: 14 }}>followers</div>
-                </div>
-                <div style={{ textAlign: "center" }}>
-                  <div style={{ color: "#fff", fontWeight: 600, fontSize: 16 }}>{profile?.following_count || 0}</div>
-                  <div style={{ color: "#888", fontSize: 14 }}>following</div>
-                </div>
-              </div>
-              {profile?.bio && <p style={{ color: "#fff", fontSize: 14, margin: 0 }}>{profile.bio}</p>}
+      <div className="snx-profile">
+        <div className="snx-profile__info">
+          <img className="snx-profile__avatar" src={profile?.avatar_url || `https://ui-avatars.com/api/?name=${profile?.username || "U"}&background=262626&color=f5f5f5&size=150`} alt={profile?.username} />
+          <div className="snx-profile__details">
+            <h2 className="snx-profile__username">{profile?.username || "Unknown"}</h2>
+            <div className="snx-profile__stats">
+              <span><span className="snx-profile__stat-num">{reels.length}</span> reels</span>
+              <span><span className="snx-profile__stat-num">{profile?.followers_count || 0}</span> followers</span>
+              <span><span className="snx-profile__stat-num">{profile?.following_count || 0}</span> following</span>
             </div>
+            {profile?.bio && <p className="snx-profile__bio">{profile.bio}</p>}
           </div>
-          <div style={{
-            display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 4,
-            borderTop: "1px solid #222", paddingTop: 4
-          }}>
+        </div>
+        <p className="snx-profile__reels-title">Reels</p>
+        {reels.length === 0 ? (
+          <p style={{ textAlign: "center", color: "#737373", padding: 40 }}>No reels yet</p>
+        ) : (
+          <div className="snx-profile__grid">
             {reels.map((reel) => (
-              <div key={reel.id} onClick={() => navigate(`/reel/${reel.id}`)}
-                style={{ position: "relative", cursor: "pointer", aspectRatio: "9/16", overflow: "hidden", background: "#1a1a1a" }}>
+              <div key={reel.id} className="snx-profile__reel" onClick={() => navigate(`/reel/${reel.id}`)}>
                 {reel.thumbnail_url ? (
-                  <img src={reel.thumbnail_url} alt=""
-                    style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  <img src={reel.thumbnail_url} alt={reel.caption || "Reel"} loading="lazy" />
                 ) : (
-                  <video src={reel.video_url} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  <video src={reel.video_url} muted loading="lazy" />
                 )}
               </div>
             ))}
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

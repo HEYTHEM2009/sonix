@@ -10,7 +10,10 @@ export default function LoginPage() {
   const { login, register, user } = useAuth();
   const navigate = useNavigate();
 
-  if (user) { navigate("/feed", { replace: true }); return null; }
+  if (user) {
+    navigate("/feed", { replace: true });
+    return null;
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -31,69 +34,27 @@ export default function LoginPage() {
   };
 
   return (
-    <div style={{
-      minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center",
-      background: "#fafafa", padding: 20
-    }}>
-      <div style={{ maxWidth: 350, width: "100%" }}>
-        <div style={{
-          background: "#fff", border: "1px solid #dbdbdb", borderRadius: 1,
-          padding: "40px 40px 20px", marginBottom: 10
-        }}>
-          <h1 style={{
-            textAlign: "center", fontSize: 36, fontWeight: 700,
-            fontFamily: "'Instagram Sans', cursive", margin: "0 0 30px",
-            letterSpacing: "-0.5px"
-          }}>Sonix</h1>
-          {error && (
-            <div style={{
-              background: "#fedbdb", color: "#8b3a3a", padding: "8px 12px",
-              borderRadius: 4, fontSize: 13, marginBottom: 12, textAlign: "center"
-            }}>{error}</div>
+    <div className="snx-login">
+      <div className="snx-login__card">
+        <h1 className="snx-login__title">Sonix</h1>
+        {error && <div className="snx-login__error">{error}</div>}
+        <form onSubmit={handleSubmit}>
+          {!isLogin && (
+            <input className="snx-login__input" placeholder="Full Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
           )}
-          <form onSubmit={handleSubmit}>
-            {!isLogin && (
-              <input name="name" placeholder="Full Name"
-                value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
-                style={inputStyle} required />
-            )}
-            {!isLogin && (
-              <input name="username" placeholder="Username"
-                value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })}
-                style={inputStyle} required />
-            )}
-            <input name="email" type="email" placeholder="Email"
-              value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })}
-              style={inputStyle} required />
-            <input name="password" type="password" placeholder="Password"
-              value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })}
-              style={inputStyle} required minLength={6} />
-            <button type="submit" disabled={loading} style={{
-              width: "100%", padding: "7px 16px", background: loading ? "#b2dffc" : "#0095f6",
-              color: "#fff", border: "none", borderRadius: 8, fontWeight: 600, fontSize: 14,
-              cursor: loading ? "default" : "pointer", marginTop: 8
-            }}>
-              {loading ? "Loading..." : isLogin ? "Log In" : "Sign Up"}
-            </button>
-          </form>
-        </div>
-        <div style={{
-          background: "#fff", border: "1px solid #dbdbdb", borderRadius: 1,
-          padding: "20px 40px", textAlign: "center", fontSize: 14
-        }}>
-          <span>{isLogin ? "Don't have an account?" : "Already have an account?"}</span>{" "}
-          <button onClick={() => { setIsLogin(!isLogin); setError(""); }}
-            style={{ background: "none", border: "none", color: "#0095f6", fontWeight: 600, cursor: "pointer", fontSize: 14, padding: 0 }}>
-            {isLogin ? "Sign up" : "Log in"}
+          {!isLogin && (
+            <input className="snx-login__input" placeholder="Username" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} required />
+          )}
+          <input className="snx-login__input" type="email" placeholder="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
+          <input className="snx-login__input" type="password" placeholder="Password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required minLength={6} />
+          <button className="snx-login__btn" disabled={loading} type="submit">
+            {loading ? "Loading..." : isLogin ? "Log In" : "Sign Up"}
           </button>
+        </form>
+        <div className="snx-login__toggle">
+          {isLogin ? "Don't have an account?" : "Already have an account?"}{' '}<button className="snx-login__toggle-btn" onClick={() => { setIsLogin(!isLogin); setError(""); }}>{isLogin ? "Sign up" : "Log in"}</button>
         </div>
       </div>
     </div>
   );
 }
-
-const inputStyle = {
-  width: "100%", padding: "9px 0 7px 8px", marginBottom: 6,
-  border: "1px solid #dbdbdb", borderRadius: 4, fontSize: 12,
-  outline: "none", boxSizing: "border-box", background: "#fafafa"
-};
