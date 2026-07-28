@@ -178,6 +178,23 @@ class ReelController extends Controller
             return $this->error('Reel not found.', 404);
         }
 
+        // Debug: try raw find first
+        try {
+            $raw = \DB::table('reels')->where('id', $id)->first();
+            $eloquent = Reel::find($id);
+            $count = Reel::count();
+        } catch (\Throwable $e) {
+            return $this->error('DB error: '.$e->getMessage(), 500);
+        }
+
+        $debug = [
+            'raw_found' => !is_null($raw),
+            'raw_id' => $raw->id ?? null,
+            'eloquent_found' => !is_null($eloquent),
+            'total_reels' => $count,
+            'id_type' => gettype($id),
+        ];
+
         $reel = Reel::with('user:id,username,avatar,is_private')
             ->withCount(['likes', 'comments', 'saves', 'shares'])
             ->with(['comments' => function ($q) {
@@ -201,7 +218,8 @@ class ReelController extends Controller
             ->find($id);
 
         if (! $reel) {
-            return $this->error('Reel not found.', 404);
+            $debug['query_found'] = false;
+            return response()->json($debug, 404);
         }
 
         $reel->liked = $reel->isLikedBy();
