@@ -174,57 +174,43 @@ class ReelController extends Controller
 
     public function show($id)
     {
-        if (! Schema::hasTable('reels') || ! Schema::hasTable('reel_comments')) {
-            return $this->error('Reel not found.', 404);
-        }
-
-        // Debug: try raw find first
-        try {
-            $raw = \DB::table('reels')->where('id', $id)->first();
-            $eloquent = Reel::find($id);
-            $count = Reel::count();
-        } catch (\Throwable $e) {
-            return $this->error('DB error: '.$e->getMessage(), 500);
-        }
-
-        $debug = [
-            'raw_found' => !is_null($raw),
-            'raw_id' => $raw->id ?? null,
-            'eloquent_found' => !is_null($eloquent),
-            'total_reels' => $count,
-            'id_type' => gettype($id),
-        ];
-
         $reel = Reel::with('user:id,username,avatar,is_private')
             ->withCount(['likes', 'comments', 'saves', 'shares'])
-            ->with(['comments' => function ($q) {
-                $q->with(['user:id,username,avatar', 'replies' => function ($rq) {
-                    if (Schema::hasTable('reel_comment_likes')) {
-                        $rq->with('user:id,username,avatar')->withCount('likes');
-                    } else {
-                        $rq->with('user:id,username,avatar');
-                    }
-                    $rq->orderBy('created_at');
-                }]);
-                if (Schema::hasTable('reel_comment_likes')) {
-                    $q->withCount('likes');
-                }
-                $q->whereNull('parent_id')
-                    ->orderByDesc('created_at')
-                    ->limit(50);
-            }])
-            ->with('hashtags')
-            ->with('analytics')
             ->find($id);
 
         if (! $reel) {
-            $debug['query_found'] = false;
-            return response()->json($debug, 404);
+            return $this->error('Reel not found.', 404);
+        }
+
+        $reel->load(['comments' => function ($q) {
+            $q->with(['user:id,username,avatar', 'replies' => function ($rq) {
+                $rq->with('user:id,username,avatar');
+                if (Schema::hasTable('reel_comment_likes')) {
+                    $rq->withCount('likes');
+                }
+                $rq->orderBy('created_at');
+            }]);
+            if (Schema::hasTable('reel_comment_likes')) {
+                $q->withCount('likes');
+            }
+            $q->whereNull('parent_id')
+                ->orderByDesc('created_at')
+                ->limit(50);
+        }]);
+
+        if (Schema::hasTable('reel_hashtags')) {
+            $reel->load('hashtags');
+            $reel->hashtags = $reel->hashtags->pluck('tag');
+        } else {
+            $reel->hashtags = collect();
+        }
+
+        if (Schema::hasTable('reel_analytics')) {
+            $reel->load('analytics');
         }
 
         $reel->liked = $reel->isLikedBy();
         $reel->saved = $reel->isSavedBy();
-        $reel->hashtags = $reel->hashtags->pluck('tag');
 
         return $this->success($reel, 'OK');
     }
