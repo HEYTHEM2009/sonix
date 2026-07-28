@@ -174,31 +174,41 @@ class ReelController extends Controller
 
     public function show($id)
     {
-        try {
-            $reel = Reel::with('user:id,username,avatar,is_private')
-                ->withCount(['likes', 'comments', 'saves', 'shares'])
-                ->with(['comments' => function ($q) {
-                    $q->with(['user:id,username,avatar', 'replies' => function ($rq) {
-                        $rq->with('user:id,username,avatar')->withCount('likes')->orderBy('created_at');
-                    }])->withCount('likes')
-                        ->whereNull('parent_id')
-                        ->orderByDesc('created_at')
-                        ->limit(50);
-                }])
-                ->with('hashtags')
-                ->with('analytics')
-                ->findOrFail($id);
-
-            $reel->liked = $reel->isLikedBy();
-            $reel->saved = $reel->isSavedBy();
-            $reel->hashtags = $reel->hashtags->pluck('tag');
-
-            return $this->success($reel, 'OK');
-        } catch (\Throwable $e) {
-            Log::error('ReelController@show: '.$e->getMessage());
-
+        if (! Schema::hasTable('reels') || ! Schema::hasTable('reel_comments')) {
             return $this->error('Reel not found.', 404);
         }
+
+        $reel = Reel::with('user:id,username,avatar,is_private')
+            ->withCount(['likes', 'comments', 'saves', 'shares'])
+            ->with(['comments' => function ($q) {
+                $q->with(['user:id,username,avatar', 'replies' => function ($rq) {
+                    if (Schema::hasTable('reel_comment_likes')) {
+                        $rq->with('user:id,username,avatar')->withCount('likes');
+                    } else {
+                        $rq->with('user:id,username,avatar');
+                    }
+                    $rq->orderBy('created_at');
+                }]);
+                if (Schema::hasTable('reel_comment_likes')) {
+                    $q->withCount('likes');
+                }
+                $q->whereNull('parent_id')
+                    ->orderByDesc('created_at')
+                    ->limit(50);
+            }])
+            ->with('hashtags')
+            ->with('analytics')
+            ->find($id);
+
+        if (! $reel) {
+            return $this->error('Reel not found.', 404);
+        }
+
+        $reel->liked = $reel->isLikedBy();
+        $reel->saved = $reel->isSavedBy();
+        $reel->hashtags = $reel->hashtags->pluck('tag');
+
+        return $this->success($reel, 'OK');
     }
 
     public function update(Request $request, $id)
@@ -242,21 +252,37 @@ class ReelController extends Controller
 
     public function comment(Request $request, $id)
     {
-        $request->validate([
-            'content' => 'required|string|max:1000',
-            'parent_id' => 'nullable|integer|exists:reel_comments,id',
-        ]);
+        try {
+            if (! Schema::hasTable('reel_comments')) {
+                return $this->error('Comments are not available.', 500);
+            }
 
-        $reel = Reel::findOrFail($id);
-        $comment = $reel->comments()->create([
-            'user_id' => Auth::id(),
-            'content' => Sanitize::text($request->content),
-            'parent_id' => $request->parent_id,
-        ]);
+            $request->validate([
+                'content' => 'required|string|max:1000',
+                'parent_id' => 'nullable|integer|exists:reel_comments,id',
+            ]);
 
-        $this->reels->recomputeAnalytics($reel->id);
+            $reel = Reel::find($id);
+            if (! $reel) {
+                return $this->error('Reel not found.', 404);
+            }
 
-        return $this->success($comment->load('user'), 'Comment added.', 201);
+            $comment = $reel->comments()->create([
+                'user_id' => Auth::id(),
+                'content' => Sanitize::text($request->content),
+                'parent_id' => $request->parent_id,
+            ]);
+
+            $this->reels->recomputeAnalytics($reel->id);
+
+            return $this->success($comment->load('user'), 'Comment added.', 201);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return $this->error($e->getMessage(), 422, $e->errors());
+        } catch (\Throwable $e) {
+            Log::error('ReelController@comment: '.$e->getMessage());
+
+            return $this->error('Failed to post comment.', 500);
+        }
     }
 
     public function likeComment($commentId)
