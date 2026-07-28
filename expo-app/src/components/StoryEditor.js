@@ -89,13 +89,28 @@ const stickerDragStyles = StyleSheet.create({
   removeText: { color: "#fff", fontSize: 10, fontWeight: "bold" },
 });
 
+let _VideoView = null;
+let _useVideoPlayer = null;
+try {
+  const expoVideo = require("expo-video");
+  _VideoView = expoVideo.VideoView;
+  _useVideoPlayer = expoVideo.useVideoPlayer;
+} catch (_) {}
+
 function VideoPreview({ uri }) {
-  const player = useVideoPlayer(uri, (p) => {
+  if (!_VideoView || !_useVideoPlayer) {
+    return (
+      <View style={[s.previewImage, { backgroundColor: "#000", alignItems: "center", justifyContent: "center" }]}>
+        <Text style={{ color: "#fff", fontSize: 13 }}>Video preview unavailable</Text>
+      </View>
+    );
+  }
+  const player = _useVideoPlayer(uri, (p) => {
     p.loop = true;
     p.play();
   });
   return (
-    <VideoView style={[s.previewImage, { backgroundColor: "#000" }]} player={player} contentFit="contain" />
+    <_VideoView style={[s.previewImage, { backgroundColor: "#000" }]} player={player} contentFit="contain" />
   );
 }
 

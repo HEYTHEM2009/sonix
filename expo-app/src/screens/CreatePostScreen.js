@@ -129,6 +129,7 @@ export default function CreatePostScreen({ navigation }) {
         </TouchableOpacity>
       </View>
 
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <ScrollView style={s.scrollContent} contentContainerStyle={s.scrollContentContainer}>
         <View style={s.authorRow}>
           <View style={[s.authorAvatar, { backgroundColor: COLORS.primary + "30" }]}>
@@ -177,6 +178,7 @@ export default function CreatePostScreen({ navigation }) {
           </View>
         )}
       </ScrollView>
+      </KeyboardAvoidingView>
 
       {mentionResults.length > 0 && (
         <View style={s.mentionDropdown}>

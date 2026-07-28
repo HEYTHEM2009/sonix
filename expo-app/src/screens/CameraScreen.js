@@ -39,6 +39,11 @@ export default function CameraScreen({ navigation }) {
     setCapturing(true);
     try {
       const photo = await cameraRef.current.takePictureAsync({ quality: 0.7 });
+      if (!photo?.uri) {
+        Alert.alert(t("error"), t("failedToCapturePhoto") || "Failed to capture photo");
+        setCapturing(false);
+        return;
+      }
       const form = new FormData();
       form.append("image", { uri: photo.uri, type: "image/jpeg", name: "story.jpg" });
       await client.post("/stories", form, { headers: { "Content-Type": "multipart/form-data" } });

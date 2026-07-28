@@ -56,7 +56,7 @@ export default function ReelsScreen({ navigation }) {
   const likeReel = useCallback(async (reelId) => {
     try {
       const res = await reelsApi.toggleLike(reelId);
-      return res.data;
+      return res.data?.data || res.data;
     } catch (e) {
       console.warn("Like error:", e?.message);
       return null;
@@ -66,7 +66,7 @@ export default function ReelsScreen({ navigation }) {
   const saveReel = useCallback(async (reelId) => {
     try {
       const res = await reelsApi.toggleSave(reelId);
-      return res.data;
+      return res.data?.data || res.data;
     } catch (e) {
       console.warn("Save error:", e?.message);
       return null;

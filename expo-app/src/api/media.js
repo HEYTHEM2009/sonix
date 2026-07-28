@@ -1,3 +1,4 @@
+import { Image } from "react-native";
 import client, { resolveUrl } from "./client";
 
 /**
@@ -65,6 +66,7 @@ export function clearPrefetchCache() {
  * Prefetch next story media (images/videos).
  */
 export async function prefetchNextStories(stories, currentIndex) {
+  if (!stories || !Array.isArray(stories)) return;
   const nextIndex = currentIndex + 1;
   if (nextIndex >= stories.length) return;
 
@@ -75,11 +77,10 @@ export async function prefetchNextStories(stories, currentIndex) {
     nextStory.type === "video" ? nextStory.video : nextStory.image;
   if (!mediaPath) return;
 
-  // Only prefetch images (videos are too large)
   if (nextStory.type !== "video") {
     try {
       const url = resolveUrl(mediaPath);
-      await Image.prefetch(url);
+      if (url) await Image.prefetch(url);
     } catch (e) {
       // Prefetch failed, not critical
     }
@@ -117,9 +118,7 @@ export function isVideo(path) {
  * Format file size for display.
  */
 export function formatFileSize(bytes) {
-  if (bytes < 1024) return bytes + " B";
+  if (bytes < 1024)   return bytes + " B";
   if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
   return (bytes / (1024 * 1024)).toFixed(1) + " MB";
 }
-
-import { Image } from "react-native";

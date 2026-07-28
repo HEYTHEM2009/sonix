@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, Dimensions, ScrollView } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, Dimensions, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
 import { CameraView, useCameraPermissions, useMicrophonePermissions } from "expo-camera";
 import { VideoView, useVideoPlayer } from "expo-video";
 import * as ImagePicker from "expo-image-picker";
@@ -262,6 +262,7 @@ export default function CreateReelScreen({ navigation }) {
             <Text style={s.shareText}>{uploading ? t("sharing") : t("share")}</Text>
           </TouchableOpacity>
         </View>
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <View style={s.detailsWrap}>
           <TextInput
             style={s.input}
@@ -303,6 +304,7 @@ export default function CreateReelScreen({ navigation }) {
           {speed !== 1 && <Text style={s.metaInfo}>Speed: {speed}x</Text>}
           {filter > 0 && <Text style={s.metaInfo}>Filter: {FILTERS[filter].name}</Text>}
         </View>
+        </KeyboardAvoidingView>
 
         {showMusic && (
           <View style={s.musicSheet}>

@@ -89,6 +89,22 @@ class EnsureFeatureTables extends Command
             $this->info('profile_templates table already exists');
         }
 
+        // Create comments table
+        if (! Schema::hasTable('comments')) {
+            Schema::create('comments', function (Blueprint $table) {
+                $table->id();
+                $table->text('content');
+                $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+                $table->foreignId('post_id')->constrained()->cascadeOnDelete();
+                $table->foreignId('parent_id')->nullable()->constrained('comments')->cascadeOnDelete();
+                $table->timestamps();
+            });
+            $this->info('Created comments table');
+            $created++;
+        } else {
+            $this->info('comments table already exists');
+        }
+
         // Create support_messages table
         if (! Schema::hasTable('support_messages')) {
             Schema::create('support_messages', function (Blueprint $table) {

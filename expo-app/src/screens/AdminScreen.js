@@ -10,6 +10,8 @@ import {
   Modal,
   TextInput,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLanguage } from "../context/LanguageContext";
@@ -333,28 +335,28 @@ export default function AdminScreen() {
 function BadWordForm({ onClose, onDone }) {
   const [word, setWord] = useState("");
   return (
-    <>
+    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
       <Text style={styles.modalTitle}>Add blocked word</Text>
       <TextInput style={styles.input} value={word} onChangeText={setWord} placeholder="word" placeholderTextColor="#888" />
       <View style={styles.modalBtns}>
         <TouchableOpacity style={styles.btnGray} onPress={onClose}><Text style={styles.btnText}>Cancel</Text></TouchableOpacity>
         <TouchableOpacity style={styles.btnGreen} onPress={() => word.trim() && onDone(word.trim())}><Text style={styles.btnText}>Add</Text></TouchableOpacity>
       </View>
-    </>
+    </KeyboardAvoidingView>
   );
 }
 
 function NotifyForm({ onClose, onDone }) {
   const [msg, setMsg] = useState("");
   return (
-    <>
+    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
       <Text style={styles.modalTitle}>Broadcast notification</Text>
       <TextInput style={[styles.input, { height: 90 }]} multiline value={msg} onChangeText={setMsg} placeholder="Message to all users" placeholderTextColor="#888" />
       <View style={styles.modalBtns}>
         <TouchableOpacity style={styles.btnGray} onPress={onClose}><Text style={styles.btnText}>Cancel</Text></TouchableOpacity>
         <TouchableOpacity style={styles.btnGreen} onPress={() => msg.trim() && onDone(msg.trim())}><Text style={styles.btnText}>Send</Text></TouchableOpacity>
       </View>
-    </>
+    </KeyboardAvoidingView>
   );
 }
 

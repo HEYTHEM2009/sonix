@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import client from "../api/client";
 import { useLanguage } from "../context/LanguageContext";
@@ -28,6 +28,7 @@ export default function EditPostScreen({ route, navigation }) {
 
   return (
     <Screen3D>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <View style={s.topBar}>
         <TouchableOpacity onPress={() => navigation.goBack()}><Text style={s.cancelBtn}>{t("cancel")}</Text></TouchableOpacity>
         <Text style={s.title}>{t("editPost")}</Text>
@@ -44,6 +45,7 @@ export default function EditPostScreen({ route, navigation }) {
         multiline
         maxLength={5000}
       />
+      </KeyboardAvoidingView>
     </Screen3D>
   );
 }

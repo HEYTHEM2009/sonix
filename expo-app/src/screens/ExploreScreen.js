@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { View, Text, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity, Image, TextInput, Dimensions } from "react-native";
+import { View, Text, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity, Image, TextInput, Dimensions, KeyboardAvoidingView, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { COLORS, SIZES } from "../components/Theme";
@@ -96,6 +96,7 @@ export default function ExploreScreen({ navigation }) {
 
   return (
     <View style={[s.container, { paddingTop: insets.top }]}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <View style={s.topBar}>
         <Text style={s.logo}>{t("sonix")}</Text>
         <TouchableOpacity onPress={() => navigation.navigate("Notifications")}><Text style={s.bellIcon}>🔔</Text></TouchableOpacity>
@@ -125,6 +126,7 @@ export default function ExploreScreen({ navigation }) {
         contentContainerStyle={{ paddingBottom: 40 }}
         ListEmptyComponent={searching ? <ActivityIndicator style={{ marginTop: 20 }} color={COLORS.primary} /> : <Text style={s.empty}>{t("noResults")}</Text>}
       />
+      </KeyboardAvoidingView>
     </View>
   );
 }

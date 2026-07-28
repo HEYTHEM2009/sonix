@@ -2,12 +2,31 @@ import React, { useState, useRef, useEffect, useMemo } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, Modal, Animated, Keyboard, KeyboardAvoidingView, Platform, FlatList, Image, Dimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
-const loadMediaLibrary = () => import("expo-media-library");
-const loadFileSystem = () => import("expo-file-system/legacy");
+const loadMediaLibrary = () => import("expo-media-library").catch(() => null);
+const loadFileSystem = () => import("expo-file-system/legacy").catch(() => null);
 import client from "../api/client";
 import { COLORS, SIZES, FONTS } from "../components/Theme";
 import { useLanguage } from "../context/LanguageContext";
 const StoryEditor = React.lazy(() => import("../components/StoryEditor"));
+
+class StoryEditorErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { hasError: false }; }
+  static getDerivedStateFromError() { return { hasError: true }; }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: COLORS.bg, padding: 20 }}>
+          <Text style={{ fontSize: 48, marginBottom: 12 }}>⚠️</Text>
+          <Text style={{ fontSize: 16, color: COLORS.text, textAlign: "center", marginBottom: 8 }}>Story editor failed to load</Text>
+          <TouchableOpacity onPress={() => this.setState({ hasError: false })} style={{ backgroundColor: COLORS.primary, borderRadius: 8, paddingHorizontal: 20, paddingVertical: 10 }}>
+            <Text style={{ color: "#fff", fontWeight: "600" }}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+    return this.props.children;
+  }
+}
 import Screen3D from "../components/3D/Screen3D";
 
 const { width: SCREEN_W } = Dimensions.get("window");
@@ -26,6 +45,7 @@ export default function CreateStoryScreen({ navigation }) {
   const [recentAssets, setRecentAssets] = useState([]);
   const [assetsLoading, setAssetsLoading] = useState(true);
   const [hasPermission, setHasPermission] = useState(null);
+  const [libraryAvailable, setLibraryAvailable] = useState(true);
   const progressAnim = useRef(new Animated.Value(0)).current;
   const insets = useSafeAreaInsets();
 
@@ -35,7 +55,13 @@ export default function CreateStoryScreen({ navigation }) {
 
   const loadRecentAssets = async () => {
     try {
-      const MediaLibrary = await loadMediaLibrary();
+      const MediaLibraryModule = await loadMediaLibrary();
+      if (!MediaLibraryModule || !MediaLibraryModule.requestPermissionsAsync) {
+        setLibraryAvailable(false);
+        setAssetsLoading(false);
+        return;
+      }
+      const MediaLibrary = MediaLibraryModule;
       const { status } = await MediaLibrary.requestPermissionsAsync();
       setHasPermission(status === "granted");
       if (status !== "granted") {
@@ -58,7 +84,8 @@ export default function CreateStoryScreen({ navigation }) {
         creationTime: a.creationTime,
       })));
     } catch (e) {
-      console.warn("Failed to load assets:", e);
+      console.warn("Media library unavailable:", e?.message);
+      setLibraryAvailable(false);
     }
     setAssetsLoading(false);
   };
@@ -182,11 +209,13 @@ export default function CreateStoryScreen({ navigation }) {
       setUploadPhase(t("uploadingVideo"));
       try {
         const FS = await loadFileSystem();
-        const fileInfo = await FS.getInfoAsync(videoUri);
-        if (fileInfo.exists && fileInfo.size > 50 * 1024 * 1024) {
-          setUploading(false);
-          Alert.alert(t("error"), "Video too large (max 50MB)");
-          return;
+        if (FS && FS.getInfoAsync) {
+          const fileInfo = await FS.getInfoAsync(videoUri);
+          if (fileInfo.exists && fileInfo.size > 50 * 1024 * 1024) {
+            setUploading(false);
+            Alert.alert(t("error"), "Video too large (max 50MB)");
+            return;
+          }
         }
       } catch (_) {}
       const ext = videoUri.split(".").pop() || "mp4";
@@ -244,12 +273,16 @@ export default function CreateStoryScreen({ navigation }) {
             <Text style={s.title}>{t("editStory")}</Text>
             <View style={{ width: 40 }} />
           </View>
-          <StoryEditor
-            imageUri={mediaType === "image" ? media : null}
-            videoUri={mediaType === "video" ? media : null}
-            mediaType={mediaType}
-            onPost={postStory}
-          />
+          <StoryEditorErrorBoundary>
+            <React.Suspense fallback={<ActivityIndicator size="large" color={COLORS.primary} style={{ flex: 1 }} />}>
+              <StoryEditor
+                imageUri={mediaType === "image" ? media : null}
+                videoUri={mediaType === "video" ? media : null}
+                mediaType={mediaType}
+                onPost={postStory}
+              />
+            </React.Suspense>
+          </StoryEditorErrorBoundary>
         </KeyboardAvoidingView>
 
         <Modal visible={uploading} transparent animationType="fade" statusBarTranslucent>
@@ -354,6 +387,13 @@ export default function CreateStoryScreen({ navigation }) {
       {assetsLoading ? (
         <View style={s.loadingWrap}>
           <ActivityIndicator size="large" color={COLORS.primary} />
+        </View>
+      ) : !libraryAvailable ? (
+        <View style={s.loadingWrap}>
+          <Text style={s.emptyText}>{t("selectPhotoOrVideo") || "Use the buttons above to pick a photo or video"}</Text>
+          <TouchableOpacity style={s.grantBtn} onPress={pickImage}>
+            <Text style={s.grantBtnText}>{t("pickFromGallery") || "Pick from Gallery"}</Text>
+          </TouchableOpacity>
         </View>
       ) : !hasPermission ? (
         <View style={s.loadingWrap}>

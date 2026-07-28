@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { View, Text, TouchableOpacity, TextInput, StyleSheet, Alert, ActivityIndicator, ScrollView, Switch } from "react-native";
+import { View, Text, TouchableOpacity, TextInput, StyleSheet, Alert, ActivityIndicator, ScrollView, Switch, KeyboardAvoidingView, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import client from "../api/client";
 import { useAuth } from "../context/AuthContext";
@@ -150,6 +150,7 @@ export default function SettingsScreen({ navigation }) {
         <View style={{ width: 36 }} />
       </View>
 
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* LANGUAGE */}
         <View style={s.section}>
@@ -483,6 +484,7 @@ export default function SettingsScreen({ navigation }) {
 
         <View style={{ height: 60 }} />
       </ScrollView>
+      </KeyboardAvoidingView>
     </Screen3D>
   );
 }

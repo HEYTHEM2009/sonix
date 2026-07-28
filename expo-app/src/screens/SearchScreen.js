@@ -8,6 +8,8 @@ import {
   StyleSheet,
   ActivityIndicator,
   Dimensions,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLanguage } from "../context/LanguageContext";
@@ -141,6 +143,7 @@ export default function SearchScreen({ navigation }) {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <View style={styles.searchBar}>
         <Text style={styles.searchIcon}>🔍</Text>
         <TextInput
@@ -202,6 +205,7 @@ export default function SearchScreen({ navigation }) {
           }
         />
       )}
+      </KeyboardAvoidingView>
     </View>
   );
 }

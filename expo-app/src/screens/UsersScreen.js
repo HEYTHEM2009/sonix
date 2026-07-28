@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, Image } from "react-native";
+import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
@@ -250,6 +250,7 @@ export default function UsersScreen({ navigation }) {
 
   return (
     <Screen3D style={s.container}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       {/* Search Header */}
       <View style={[s.header, { paddingTop: insets.top + 6 }]}>
         <TextInput
@@ -353,6 +354,7 @@ export default function UsersScreen({ navigation }) {
           <Text style={s.empty}>{t("searchPeople")}</Text>
         </View>
       ) : null}
+      </KeyboardAvoidingView>
     </Screen3D>
   );
 }

@@ -31,8 +31,8 @@ function CommentItem({ comment, user, isRTL, isReel, onDelete, onReply }) {
     try {
       if (isReel) {
         const res = await client.post(`/reel-comments/${comment.id}/like`);
-        setLiked(res.data.liked);
-        setLikesCount(res.data.likes_count);
+        setLiked(res.data?.data?.liked ?? false);
+        setLikesCount(res.data?.data?.likes_count ?? 0);
       }
     } catch (e) { setLiked(!newLiked); setLikesCount((c) => newLiked ? c - 1 : c + 1); }
   };
@@ -138,10 +138,10 @@ export default function CommentsScreen({ route, navigation }) {
     try {
       if (isReel && reelId) {
         const res = await client.get(`/reels/${reelId}`);
-        setComments(res.data?.comments || []);
+        setComments(res.data?.data?.comments || []);
       } else if (postId) {
         const res = await client.get(`/posts/${postId}/comments`);
-        setComments(res.data || []);
+        setComments(res.data?.data || []);
       }
     } catch (e) { console.warn("Comments load error", e?.response?.status); }
     setLoading(false);

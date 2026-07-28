@@ -17,7 +17,7 @@ export default function LikeListScreen({ route, navigation }) {
     (async () => {
       try {
         const res = await client.get(`/likes/${postId}/users`);
-        setUsers(res.data);
+        setUsers(res.data?.data || []);
       } catch (e) { console.warn("Like list error", e?.response?.status); }
       setLoading(false);
     })();

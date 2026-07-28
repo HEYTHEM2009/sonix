@@ -63,7 +63,8 @@ export default function EditProfileScreen({ navigation }) {
       {loading ? (
         <ActivityIndicator color={COLORS.accent} style={{ marginTop: 40 }} />
       ) : (
-        <ScrollView contentContainerStyle={s.scroll}>
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+        <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
           <TouchableOpacity style={s.avatarWrap} onPress={pickAvatar}>
             <View style={s.avatar}>
               {avatar ? (
@@ -82,6 +83,7 @@ export default function EditProfileScreen({ navigation }) {
           <TextInput style={[s.input, s.bioInput]} value={bio} onChangeText={setBio} placeholder={t("bio")} placeholderTextColor={COLORS.muted} multiline maxLength={150} textAlignVertical="top" />
           <Text style={s.count}>{bio.length}/150</Text>
         </ScrollView>
+        </KeyboardAvoidingView>
       )}
     </Screen3D>
   );

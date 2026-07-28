@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Alert } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import client from "../api/client";
 import { useLanguage } from "../context/LanguageContext";
@@ -76,6 +76,7 @@ export default function ReportProblemScreen({ navigation }) {
         ))}
       </View>
 
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16 }}>
         {tab === "feedback" ? (
           <View>
@@ -165,6 +166,7 @@ export default function ReportProblemScreen({ navigation }) {
           </View>
         )}
       </ScrollView>
+      </KeyboardAvoidingView>
     </Screen3D>
   );
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { View, Text, Image, TouchableOpacity, StyleSheet, Dimensions, StatusBar, FlatList, Modal, TextInput, ActivityIndicator, Animated, Alert } from "react-native";
+import { View, Text, Image, TouchableOpacity, StyleSheet, Dimensions, StatusBar, FlatList, Modal, TextInput, ActivityIndicator, Animated, Alert, KeyboardAvoidingView, Platform, Keyboard } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useIsFocused } from "@react-navigation/native";
 import { WebView } from "react-native-webview";
@@ -28,6 +28,13 @@ function StoryMedia({ story, onEnd, isScreenFocused, webViewRef }) {
 
   if (story.type === "video") {
     const videoUrl = resolveUrl(story.video);
+    if (!videoUrl) {
+      return (
+        <View style={{ width, height: "100%", backgroundColor: "#000", alignItems: "center", justifyContent: "center" }}>
+          <Text style={{ color: "#fff", fontSize: 13 }}>Video unavailable</Text>
+        </View>
+      );
+    }
     const html = `<!DOCTYPE html>
 <html>
 <head>
@@ -97,15 +104,19 @@ function StoryMedia({ story, onEnd, isScreenFocused, webViewRef }) {
           <View style={{ position: "absolute", bottom: 80, left: 20, right: 20, backgroundColor: "rgba(248,113,113,0.9)", borderRadius: 12, padding: 12, alignItems: "center" }}>
             <Text style={{ color: "#fff", fontSize: 13, fontWeight: "600" }}>Video failed to load</Text>
             <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 11, marginTop: 4 }}>{videoError}</Text>
-          </View>
-        )}
+        </View>
+      )}
       </View>
     );
   }
   if (story.type === "text" && !story.image) {
     return <View style={[s.textStoryBg, { backgroundColor: story.bg_color || COLORS.bg }]} />;
   }
-  return <Image source={{ uri: resolveUrl(story.image) }} style={s.image} resizeMode="contain" />;
+  const imageUri = resolveUrl(story.image);
+  if (!imageUri) {
+    return <View style={[s.textStoryBg, { backgroundColor: story.bg_color || COLORS.bg }]} />;
+  }
+  return <Image source={{ uri: imageUri }} style={s.image} resizeMode="contain" />;
 }
 
 function DrawingOverlay({ drawingData }) {
@@ -337,7 +348,7 @@ function AnalyticsModal({ visible, storyId, onClose }) {
 }
 
 export default function StoryViewerScreen({ route, navigation }) {
-  const { stories, user: storyUser } = route?.params || {};
+  const { stories: initialStories, user: storyUser, onStoriesChanged } = route?.params || {};
   const { user: currentUser } = useAuth();
   const { t } = useLanguage();
   const [index, setIndex] = useState(0);
@@ -350,6 +361,7 @@ export default function StoryViewerScreen({ route, navigation }) {
   const [showReplyInput, setShowReplyInput] = useState(false);
   const [replyText, setReplyText] = useState("");
   const [deleting, setDeleting] = useState(false);
+  const [stories, setStories] = useState(initialStories || []);
   const timerRef = useRef(null);
   const pausedRef = useRef(false);
   const viewReported = useRef(new Set());
@@ -360,6 +372,13 @@ export default function StoryViewerScreen({ route, navigation }) {
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const webViewRef = useRef(null);
   const [muted, setMuted] = useState(true);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener("keyboardDidShow", (e) => setKeyboardHeight(e.endCoordinates.height));
+    const hideSub = Keyboard.addListener("keyboardDidHide", () => setKeyboardHeight(0));
+    return () => { showSub.remove(); hideSub.remove(); };
+  }, []);
 
   const indexRef = useRef(0);
   const advanceRef = useRef(null);
@@ -409,6 +428,7 @@ export default function StoryViewerScreen({ route, navigation }) {
   const isOwner = currentUser?.id === storyUser?.id;
 
   useEffect(() => {
+    clearInterval(timerRef.current);
     const interval = 100;
     const step = interval / dur;
     timerRef.current = setInterval(() => {
@@ -417,7 +437,7 @@ export default function StoryViewerScreen({ route, navigation }) {
           const next = p + step;
           if (next >= 1) {
             clearInterval(timerRef.current);
-            advance();
+            advanceRef.current?.();
             return 0;
           }
           return next;
@@ -425,7 +445,7 @@ export default function StoryViewerScreen({ route, navigation }) {
       }
     }, interval);
     return () => clearInterval(timerRef.current);
-  }, [index, advance, dur]);
+  }, [index, dur]);
 
   useEffect(() => {
     setMuted(true);
@@ -528,10 +548,12 @@ export default function StoryViewerScreen({ route, navigation }) {
           setDeleting(true);
           try {
             await client.delete(`/stories/${currentStory.id}`);
-            if (stories.length === 1) {
+            const newStories = stories.filter((s) => s.id !== currentStory.id);
+            setStories(newStories);
+            onStoriesChanged?.(newStories);
+            if (newStories.length === 0) {
               goBack();
             } else {
-              const newStories = stories.filter((_, i) => i !== index);
               if (index >= newStories.length) {
                 setIndex(Math.max(0, newStories.length - 1));
               }
@@ -659,7 +681,8 @@ export default function StoryViewerScreen({ route, navigation }) {
       )}
 
       {showReplyInput && (
-        <View style={[s.replyInputBar, { bottom: Math.max(insets.bottom + 20, 40) }]}>
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={0}>
+        <View style={[s.replyInputBar, { bottom: keyboardHeight > 0 ? keyboardHeight + 8 : Math.max(insets.bottom + 20, 40) }]}>
           <TextInput
             style={s.replyInput}
             value={replyText}
@@ -672,6 +695,7 @@ export default function StoryViewerScreen({ route, navigation }) {
             <Text style={s.sendText}>{t("send")}</Text>
           </TouchableOpacity>
         </View>
+        </KeyboardAvoidingView>
       )}
 
       <ViewerListModal visible={showViewers} storyId={currentStory?.id} onClose={() => setShowViewers(false)} />

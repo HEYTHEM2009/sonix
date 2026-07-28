@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, Image, Alert, ActivityIndicator } from "react-native";
+import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, Image, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import client, { resolveUrl } from "../api/client";
 import { useAuth } from "../context/AuthContext";
@@ -116,6 +116,7 @@ export default function CreateGroupScreen({ navigation }) {
 
   return (
     <Screen3D style={[s.container, { paddingTop: insets.top }]}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <View style={s.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}><Text style={s.backText}>←</Text></TouchableOpacity>
         <Text style={s.title}>{t("newGroup")}</Text>
@@ -154,6 +155,7 @@ export default function CreateGroupScreen({ navigation }) {
           }
         />
       )}
+      </KeyboardAvoidingView>
     </Screen3D>
   );
 }

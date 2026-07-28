@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image, Modal, TextInput, Alert, ActivityIndicator, ScrollView } from "react-native";
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image, Modal, TextInput, Alert, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import client, { resolveUrl } from "../api/client";
 import { useAuth } from "../context/AuthContext";
@@ -158,9 +158,9 @@ export default function HighlightsScreen({ route, navigation }) {
                 onLongPress={() => isOwner && deleteHighlight(h.id)}
               >
                 <View style={s.highlightCover}>
-                  {h.stories?.[0]?.image ? (
+                  {h.stories?.[0]?.image && resolveUrl(h.stories[0].image) ? (
                     <Image source={{ uri: resolveUrl(h.stories[0].image) }} style={s.coverImg} />
-                  ) : h.cover_image ? (
+                  ) : h.cover_image && resolveUrl(h.cover_image) ? (
                     <Image source={{ uri: resolveUrl(h.cover_image) }} style={s.coverImg} />
                   ) : (
                     <Text style={s.coverPlaceholder}>✨</Text>
@@ -190,7 +190,7 @@ export default function HighlightsScreen({ route, navigation }) {
       )}
 
       <Modal visible={showCreate} transparent animationType="slide" onRequestClose={() => setShowCreate(false)}>
-        <View style={s.modalOverlay}>
+        <KeyboardAvoidingView style={s.modalOverlay} behavior={Platform.OS === "ios" ? "padding" : undefined}>
           <View style={s.modalContent}>
             <View style={s.modalHandle} />
             <Text style={s.modalTitle}>{t("newHighlight")}</Text>
@@ -215,7 +215,7 @@ export default function HighlightsScreen({ route, navigation }) {
                     style={[s.storySelectRow, selectedStories.has(story.id) && s.storySelectActive]}
                     onPress={() => toggleStorySelection(story.id)}
                   >
-                    {story.image ? (
+                    {story.image && resolveUrl(story.image) ? (
                       <Image source={{ uri: resolveUrl(story.image) }} style={s.storyThumb} />
                     ) : (
                       <View style={[s.storyThumb, { backgroundColor: story.bg_color || COLORS.card, alignItems: "center", justifyContent: "center" }]}>
@@ -239,11 +239,11 @@ export default function HighlightsScreen({ route, navigation }) {
               {creating ? <ActivityIndicator color="#fff" /> : <Text style={s.createBtnText}>{t("create")}</Text>}
             </TouchableOpacity>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       <Modal visible={!!showEdit} transparent animationType="slide" onRequestClose={() => setShowEdit(null)}>
-        <View style={s.modalOverlay}>
+        <KeyboardAvoidingView style={s.modalOverlay} behavior={Platform.OS === "ios" ? "padding" : undefined}>
           <View style={s.modalContent}>
             <View style={s.modalHandle} />
             <Text style={s.modalTitle}>{t("editHighlight")}</Text>
@@ -260,7 +260,7 @@ export default function HighlightsScreen({ route, navigation }) {
               {creating ? <ActivityIndicator color="#fff" /> : <Text style={s.createBtnText}>{t("save")}</Text>}
             </TouchableOpacity>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       <Modal visible={!!showStoryPicker} transparent animationType="slide" onRequestClose={() => setShowStoryPicker(null)}>
@@ -275,7 +275,7 @@ export default function HighlightsScreen({ route, navigation }) {
                 <ScrollView style={s.storiesList} nestedScrollEnabled>
                   {showStoryPicker.stories.map((story) => (
                     <View key={story.id} style={s.storySelectRow}>
-                      {story.image ? (
+                      {story.image && resolveUrl(story.image) ? (
                         <Image source={{ uri: resolveUrl(story.image) }} style={s.storyThumb} />
                       ) : (
                         <View style={[s.storyThumb, { backgroundColor: COLORS.card, alignItems: "center", justifyContent: "center" }]}>
@@ -305,7 +305,7 @@ export default function HighlightsScreen({ route, navigation }) {
                     style={s.storySelectRow}
                     onPress={() => addStoryToHighlight(showStoryPicker.id, story.id)}
                   >
-                    {story.image ? (
+                    {story.image && resolveUrl(story.image) ? (
                       <Image source={{ uri: resolveUrl(story.image) }} style={s.storyThumb} />
                     ) : (
                       <View style={[s.storyThumb, { backgroundColor: COLORS.card, alignItems: "center", justifyContent: "center" }]}>
