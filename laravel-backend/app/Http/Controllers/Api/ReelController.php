@@ -174,12 +174,25 @@ class ReelController extends Controller
 
     public function show($id)
     {
-        $reel = Reel::with('user:id,username,avatar,is_private')
-            ->withCount(['likes', 'comments', 'saves', 'shares'])
-            ->find($id);
+        $reel = Reel::find($id);
 
         if (! $reel) {
             return $this->error('Reel not found.', 404);
+        }
+
+        $reel->load('user:id,username,avatar,is_private');
+
+        if (Schema::hasTable('reel_likes')) {
+            $reel->loadCount('likes');
+        }
+        if (Schema::hasTable('reel_comments')) {
+            $reel->loadCount('comments');
+        }
+        if (Schema::hasTable('reel_saves')) {
+            $reel->loadCount('saves');
+        }
+        if (Schema::hasTable('reel_shares')) {
+            $reel->loadCount('shares');
         }
 
         $reel->load(['comments' => function ($q) {

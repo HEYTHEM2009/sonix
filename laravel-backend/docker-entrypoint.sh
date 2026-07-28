@@ -8,6 +8,9 @@ if [ -z "$APP_KEY" ]; then
   php artisan key:generate --force
 fi
 
+# Ensure feature tables exist (handles reels v2, groups, etc.)
+php artisan app:ensure-feature-tables 2>&1 || echo "WARNING: Feature table check failed, continuing..."
+
 # Run migrations (idempotent)
 php artisan migrate --force
 
