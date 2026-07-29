@@ -173,6 +173,56 @@ class EnsureFeatureTables extends Command
             $missingMessageColumns++;
         }
 
+        if (! Schema::hasColumn('messages', 'delivered')) {
+            Schema::table('messages', function (Blueprint $table) {
+                $table->boolean('delivered')->default(false);
+            });
+            $this->info('Added delivered column to messages');
+            $missingMessageColumns++;
+        }
+        if (! Schema::hasColumn('messages', 'delivered_at')) {
+            Schema::table('messages', function (Blueprint $table) {
+                $table->timestamp('delivered_at')->nullable();
+            });
+            $this->info('Added delivered_at column to messages');
+            $missingMessageColumns++;
+        }
+        if (! Schema::hasColumn('messages', 'document')) {
+            Schema::table('messages', function (Blueprint $table) {
+                $table->string('document')->nullable();
+            });
+            $this->info('Added document column to messages');
+            $missingMessageColumns++;
+        }
+        if (! Schema::hasColumn('messages', 'duration')) {
+            Schema::table('messages', function (Blueprint $table) {
+                $table->integer('duration')->nullable();
+            });
+            $this->info('Added duration column to messages');
+            $missingMessageColumns++;
+        }
+        if (! Schema::hasColumn('messages', 'is_starred')) {
+            Schema::table('messages', function (Blueprint $table) {
+                $table->boolean('is_starred')->default(false);
+            });
+            $this->info('Added is_starred column to messages');
+            $missingMessageColumns++;
+        }
+        if (! Schema::hasColumn('messages', 'is_saved')) {
+            Schema::table('messages', function (Blueprint $table) {
+                $table->boolean('is_saved')->default(false);
+            });
+            $this->info('Added is_saved column to messages');
+            $missingMessageColumns++;
+        }
+        if (! Schema::hasColumn('messages', 'is_pinned')) {
+            Schema::table('messages', function (Blueprint $table) {
+                $table->boolean('is_pinned')->default(false);
+            });
+            $this->info('Added is_pinned column to messages');
+            $missingMessageColumns++;
+        }
+
         if ($missingMessageColumns > 0) {
             $this->info("Successfully added {$missingMessageColumns} missing column(s) to messages table");
         }
@@ -198,6 +248,42 @@ class EnsureFeatureTables extends Command
                 $table->text('two_factor_secret')->nullable();
             });
             $this->info('Added two_factor_secret column to users');
+            $missingUserColumns++;
+        }
+
+        if (! Schema::hasColumn('users', 'activity_status')) {
+            Schema::table('users', function (Blueprint $table) {
+                $table->boolean('activity_status')->default(true);
+            });
+            $this->info('Added activity_status column to users');
+            $missingUserColumns++;
+        }
+        if (! Schema::hasColumn('users', 'notification_prefs')) {
+            Schema::table('users', function (Blueprint $table) {
+                $table->json('notification_prefs')->nullable();
+            });
+            $this->info('Added notification_prefs column to users');
+            $missingUserColumns++;
+        }
+        if (! Schema::hasColumn('users', 'privacy_last_seen')) {
+            Schema::table('users', function (Blueprint $table) {
+                $table->boolean('privacy_last_seen')->default(true);
+            });
+            $this->info('Added privacy_last_seen column to users');
+            $missingUserColumns++;
+        }
+        if (! Schema::hasColumn('users', 'privacy_read_receipts')) {
+            Schema::table('users', function (Blueprint $table) {
+                $table->boolean('privacy_read_receipts')->default(true);
+            });
+            $this->info('Added privacy_read_receipts column to users');
+            $missingUserColumns++;
+        }
+        if (! Schema::hasColumn('users', 'privacy_typing')) {
+            Schema::table('users', function (Blueprint $table) {
+                $table->boolean('privacy_typing')->default(true);
+            });
+            $this->info('Added privacy_typing column to users');
             $missingUserColumns++;
         }
 

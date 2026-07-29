@@ -94,14 +94,23 @@ class UserController extends Controller
 
     public function toggleActivityStatus(Request $request)
     {
-        $user = $request->user();
-        $user->activity_status = ! $user->activity_status;
-        $user->save();
+        try {
+            $user = $request->user();
+            if (! Schema::hasColumn('users', 'activity_status')) {
+                return response()->json(['message' => 'Activity status column not available'], 500);
+            }
+            $user->activity_status = ! $user->activity_status;
+            $user->save();
 
-        return response()->json([
-            'activity_status' => $user->activity_status,
-            'message' => $user->activity_status ? 'Activity status is now visible' : 'Activity status is now hidden',
-        ]);
+            return response()->json([
+                'activity_status' => $user->activity_status,
+                'message' => $user->activity_status ? 'Activity status is now visible' : 'Activity status is now hidden',
+            ]);
+        } catch (\Throwable $e) {
+            \Log::error('UserController@toggleActivityStatus: '.$e->getMessage());
+
+            return response()->json(['message' => 'Failed to toggle activity status'], 500);
+        }
     }
 
     public function updateProfile(Request $request)
