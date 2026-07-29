@@ -103,7 +103,7 @@ class MessageController extends Controller
         } catch (\InvalidArgumentException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         } catch (\Throwable $e) {
-            \Log::error('MessageController@send: '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            report($e);
 
             return response()->json(['message' => 'An unexpected error occurred'], 500);
         }

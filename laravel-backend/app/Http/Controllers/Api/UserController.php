@@ -107,7 +107,7 @@ class UserController extends Controller
                 'message' => $user->activity_status ? 'Activity status is now visible' : 'Activity status is now hidden',
             ]);
         } catch (\Throwable $e) {
-            \Log::error('UserController@toggleActivityStatus: '.$e->getMessage());
+            report($e);
 
             return response()->json(['message' => 'Failed to toggle activity status'], 500);
         }
