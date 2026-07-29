@@ -27,33 +27,32 @@ class MessageService
 
     public function send(User $sender, array $data): Message
     {
-        $receiverId = (int) ($data['receiver_id'] ?? 0);
+        try {
+            $receiverId = (int) ($data['receiver_id'] ?? 0);
 
-        // Block checks: sender must not be blocked by receiver, and sender must not have blocked receiver.
-        if ($this->isBlocked($sender->id, $receiverId)) {
-            throw new \InvalidArgumentException('You cannot message this user.');
-        }
+            if ($this->isBlocked($sender->id, $receiverId)) {
+                throw new \InvalidArgumentException('You cannot message this user.');
+            }
 
-        // Flood protection: max 30 messages per 60 seconds per sender.
-        if (! $this->flood->allow("msg:{$sender->id}", 30, 60)) {
-            throw new TooManyRequestsHttpException(60, 'Too many messages sent. Please slow down.');
-        }
+            if (! $this->flood->allow("msg:{$sender->id}", 30, 60)) {
+                throw new TooManyRequestsHttpException(60, 'Too many messages sent. Please slow down.');
+            }
 
-        $message = new Message;
-        $message->sender_id = $sender->id;
-        $message->receiver_id = $receiverId;
-        $message->content = $data['content'] ?? null;
-        $message->type = $data['type'] ?? 'text';
-        $message->image = $data['image'] ?? null;
-        $message->voice = $data['voice'] ?? null;
-        $message->document = $data['document'] ?? null;
-        $message->reply_to = $data['reply_to'] ?? null;
-        $message->duration = $data['duration'] ?? null;
-        $message->is_read = false;
-        $message->delivered = false;
-        $message->is_deleted = false;
-        $message->deleted_for = [];
-        $message->save();
+            $message = new Message;
+            $message->sender_id = $sender->id;
+            $message->receiver_id = $receiverId;
+            $message->content = $data['content'] ?? null;
+            $message->type = $data['type'] ?? 'text';
+            $message->image = $data['image'] ?? null;
+            $message->voice = $data['voice'] ?? null;
+            $message->document = $data['document'] ?? null;
+            $message->reply_to = $data['reply_to'] ?? null;
+            $message->duration = $data['duration'] ?? null;
+            $message->is_read = false;
+            $message->delivered = false;
+            $message->is_deleted = false;
+            $message->deleted_for = [];
+            $message->save();
 
         $message->load('sender:id,username,avatar', 'replyMessage.sender:id,username');
 
@@ -79,7 +78,11 @@ class MessageService
             'type' => $message->type,
         ]);
 
-        return $message;
+            return $message;
+        } catch (\Throwable $e) {
+            \Log::error('MessageService@send error: '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            throw $e;
+        }
     }
 
     public function markDelivered(int $messageId, int $receiverId): void
