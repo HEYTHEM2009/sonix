@@ -205,6 +205,14 @@ class EnsureFeatureTables extends Command
             $this->info("Successfully added {$missingUserColumns} missing column(s) to users table");
         }
 
+        // Ensure parent_id on reel_comments (migration 000002 may have failed)
+        if (Schema::hasTable('reel_comments') && ! Schema::hasColumn('reel_comments', 'parent_id')) {
+            Schema::table('reel_comments', function (Blueprint $table) {
+                $table->foreignId('parent_id')->nullable()->constrained('reel_comments')->nullOnDelete();
+            });
+            $this->info('Added parent_id column to reel_comments');
+        }
+
         // Reel tables
         if (! Schema::hasTable('reels')) {
             Schema::create('reels', function (Blueprint $table) {

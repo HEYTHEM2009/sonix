@@ -197,21 +197,28 @@ class ReelController extends Controller
             }
 
             $hasLikesTable = Schema::hasTable('reel_comment_likes');
+            $hasParentId = Schema::hasColumn('reel_comments', 'parent_id');
 
-            $reel->load(['comments' => function ($q) use ($hasLikesTable) {
-                $q->with(['user:id,username,avatar', 'replies' => function ($rq) use ($hasLikesTable) {
-                    $rq->with('user:id,username,avatar');
+            $reel->load(['comments' => function ($q) use ($hasLikesTable, $hasParentId) {
+                if ($hasParentId) {
+                    $q->with(['user:id,username,avatar', 'replies' => function ($rq) use ($hasLikesTable) {
+                        $rq->with('user:id,username,avatar');
+                        if ($hasLikesTable) {
+                            $rq->withCount('likes');
+                        }
+                        $rq->orderBy('created_at');
+                    }]);
                     if ($hasLikesTable) {
-                        $rq->withCount('likes');
+                        $q->withCount('likes');
                     }
-                    $rq->orderBy('created_at');
-                }]);
-                if ($hasLikesTable) {
-                    $q->withCount('likes');
+                    $q->whereNull('parent_id')
+                        ->orderByDesc('created_at')
+                        ->limit(50);
+                } else {
+                    $q->with('user:id,username,avatar')
+                        ->orderByDesc('created_at')
+                        ->limit(50);
                 }
-                $q->whereNull('parent_id')
-                    ->orderByDesc('created_at')
-                    ->limit(50);
             }]);
 
             if (Schema::hasTable('reel_hashtags')) {
@@ -232,7 +239,7 @@ class ReelController extends Controller
         } catch (\Throwable $e) {
             \Log::error('ReelController@show: '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
 
-            return $this->error('Error: '.$e->getMessage().' ('.$e->getFile().':'.$e->getLine().')', 500);
+            return $this->error('An error occurred while loading the reel.', 500);
         }
     }
 
