@@ -180,7 +180,7 @@ class ReelController extends Controller
             return $this->error('Reel not found.', 404);
         }
 
-        $reel->load('user:id,username,avatar,is_private');
+        $reel->load('user:id,username,avatar');
 
         if (Schema::hasTable('reel_likes')) {
             $reel->loadCount('likes');
@@ -284,11 +284,15 @@ class ReelController extends Controller
                 return $this->error('Reel not found.', 404);
             }
 
-            $comment = $reel->comments()->create([
+            $data = [
                 'user_id' => Auth::id(),
                 'content' => Sanitize::text($request->content),
-                'parent_id' => $request->parent_id,
-            ]);
+            ];
+            if (Schema::hasColumn('reel_comments', 'parent_id')) {
+                $data['parent_id'] = $request->parent_id;
+            }
+
+            $comment = $reel->comments()->create($data);
 
             $this->reels->recomputeAnalytics($reel->id);
 
