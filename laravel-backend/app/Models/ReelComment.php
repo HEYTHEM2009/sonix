@@ -20,7 +20,7 @@ class ReelComment extends Model
 
     public function replies()
     {
-        return $this->hasMany(ReelComment::class, 'parent_id')->with('user:id,username,avatar')->withCount('likes')->orderBy('created_at');
+        return $this->hasMany(ReelComment::class, 'parent_id')->with('user:id,username,avatar')->orderBy('created_at');
     }
 
     public function likes()
