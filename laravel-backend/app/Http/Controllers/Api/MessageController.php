@@ -98,7 +98,15 @@ class MessageController extends Controller
             $data['content'] = $request->input('content', '');
         }
 
-        $message = app(MessageService::class)->send($request->user(), $data);
+        try {
+            $message = app(MessageService::class)->send($request->user(), $data);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        } catch (\Throwable $e) {
+            \Log::error('MessageController@send: '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
+
+            return response()->json(['message' => 'An unexpected error occurred'], 500);
+        }
 
         return response()->json($message, 201);
     }
