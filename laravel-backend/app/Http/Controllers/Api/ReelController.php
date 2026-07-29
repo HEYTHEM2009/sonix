@@ -174,73 +174,67 @@ class ReelController extends Controller
 
     public function show($id)
     {
-        try {
-            $reel = Reel::find($id);
+        $reel = Reel::find($id);
 
-            if (! $reel) {
-                return $this->error('Reel not found.', 404);
-            }
-
-            $reel->load('user:id,username,avatar');
-
-            if (Schema::hasTable('reel_likes')) {
-                $reel->loadCount('likes');
-            }
-            if (Schema::hasTable('reel_comments')) {
-                $reel->loadCount('comments');
-            }
-            if (Schema::hasTable('reel_saves')) {
-                $reel->loadCount('saves');
-            }
-            if (Schema::hasTable('reel_shares')) {
-                $reel->loadCount('shares');
-            }
-
-            $hasLikesTable = Schema::hasTable('reel_comment_likes');
-            $hasParentId = Schema::hasColumn('reel_comments', 'parent_id');
-
-            $reel->load(['comments' => function ($q) use ($hasLikesTable, $hasParentId) {
-                if ($hasParentId) {
-                    $q->with(['user:id,username,avatar', 'replies' => function ($rq) use ($hasLikesTable) {
-                        $rq->with('user:id,username,avatar');
-                        if ($hasLikesTable) {
-                            $rq->withCount('likes');
-                        }
-                        $rq->orderBy('created_at');
-                    }]);
-                    if ($hasLikesTable) {
-                        $q->withCount('likes');
-                    }
-                    $q->whereNull('parent_id')
-                        ->orderByDesc('created_at')
-                        ->limit(50);
-                } else {
-                    $q->with('user:id,username,avatar')
-                        ->orderByDesc('created_at')
-                        ->limit(50);
-                }
-            }]);
-
-            if (Schema::hasTable('reel_hashtags')) {
-                $reel->load('hashtags');
-                $reel->hashtags = $reel->hashtags->pluck('tag');
-            } else {
-                $reel->hashtags = collect();
-            }
-
-            if (Schema::hasTable('reel_analytics')) {
-                $reel->load('analytics');
-            }
-
-            $reel->liked = $reel->isLikedBy();
-            $reel->saved = $reel->isSavedBy();
-
-            return $this->success($reel, 'OK');
-        } catch (\Throwable $e) {
-            \Log::error('ReelController@show: '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
-
-            return $this->error('An error occurred while loading the reel.', 500);
+        if (! $reel) {
+            return $this->error('Reel not found.', 404);
         }
+
+        $reel->load('user:id,username,avatar');
+
+        if (Schema::hasTable('reel_likes')) {
+            $reel->loadCount('likes');
+        }
+        if (Schema::hasTable('reel_comments')) {
+            $reel->loadCount('comments');
+        }
+        if (Schema::hasTable('reel_saves')) {
+            $reel->loadCount('saves');
+        }
+        if (Schema::hasTable('reel_shares')) {
+            $reel->loadCount('shares');
+        }
+
+        $hasLikesTable = Schema::hasTable('reel_comment_likes');
+        $hasParentId = Schema::hasColumn('reel_comments', 'parent_id');
+
+        $reel->load(['comments' => function ($q) use ($hasLikesTable, $hasParentId) {
+            if ($hasParentId) {
+                $q->with(['user:id,username,avatar', 'replies' => function ($rq) use ($hasLikesTable) {
+                    $rq->with('user:id,username,avatar');
+                    if ($hasLikesTable) {
+                        $rq->withCount('likes');
+                    }
+                    $rq->orderBy('created_at');
+                }]);
+                if ($hasLikesTable) {
+                    $q->withCount('likes');
+                }
+                $q->whereNull('parent_id')
+                    ->orderByDesc('created_at')
+                    ->limit(50);
+            } else {
+                $q->with('user:id,username,avatar')
+                    ->orderByDesc('created_at')
+                    ->limit(50);
+            }
+        }]);
+
+        if (Schema::hasTable('reel_hashtags')) {
+            $reel->load('hashtags');
+            $reel->hashtags = $reel->hashtags->pluck('tag');
+        } else {
+            $reel->hashtags = collect();
+        }
+
+        if (Schema::hasTable('reel_analytics')) {
+            $reel->load('analytics');
+        }
+
+        $reel->liked = $reel->isLikedBy();
+        $reel->saved = $reel->isSavedBy();
+
+        return $this->success($reel, 'OK');
     }
 
     public function update(Request $request, $id)
