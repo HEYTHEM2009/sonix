@@ -27,15 +27,21 @@ export function AuthProvider({ children }) {
       if (t[1]) {
         try {
           setAuthToken(t[1]);
-          const res = await client.get("/users/me");
+          const res = await client.get("/users/me", { timeout: 45000 });
           if (res.status === 200) {
             setToken(t[1]);
             setUser(res.data);
             await AsyncStorage.setItem("user", JSON.stringify(res.data));
           }
-        } catch (_) {
-          setAuthToken(null);
-          await AsyncStorage.multiRemove(["token", "user"]);
+        } catch (err) {
+          if (err?.response?.status === 401) {
+            setAuthToken(null);
+            await AsyncStorage.multiRemove(["token", "user"]);
+          } else {
+            if (u[1]) {
+              try { setUser(JSON.parse(u[1])); setToken(t[1]); } catch (_) {}
+            }
+          }
         }
       }
     } catch (e) { console.warn("Auth load error", e); } finally { setLoading(false); }
