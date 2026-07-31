@@ -30,6 +30,9 @@ class MessageController extends Controller
         if ($request->hasFile('image')) {
             $rules['image'] = 'image|max:10240';
         }
+        if ($request->hasFile('video')) {
+            $rules['video'] = 'mimes:mp4,mov,webm|max:102400';
+        }
         if ($request->hasFile('voice')) {
             $rules['voice'] = 'mimes:mp3,wav,m4a,mp4,ogg,webm|max:10240';
         }
@@ -61,6 +64,20 @@ class MessageController extends Controller
                 \Log::error('Image upload failed', ['error' => $e->getMessage()]);
 
                 return response()->json(['message' => 'Failed to upload image'], 422);
+            }
+        } elseif ($request->hasFile('video')) {
+            try {
+                $path = StorageHelper::upload($request->file('video'), 'uploads');
+                if ($path) {
+                    $data['video'] = StorageHelper::getUrl($path);
+                    $data['type'] = 'video';
+                } else {
+                    return response()->json(['message' => 'Failed to upload video'], 422);
+                }
+            } catch (\Exception $e) {
+                \Log::error('Video upload failed', ['error' => $e->getMessage()]);
+
+                return response()->json(['message' => 'Failed to upload video'], 422);
             }
         } elseif ($request->hasFile('voice')) {
             try {

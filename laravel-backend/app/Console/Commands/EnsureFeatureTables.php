@@ -194,6 +194,13 @@ class EnsureFeatureTables extends Command
             $this->info('Added document column to messages');
             $missingMessageColumns++;
         }
+        if (! Schema::hasColumn('messages', 'video')) {
+            Schema::table('messages', function (Blueprint $table) {
+                $table->string('video')->nullable();
+            });
+            $this->info('Added video column to messages');
+            $missingMessageColumns++;
+        }
         if (! Schema::hasColumn('messages', 'duration')) {
             Schema::table('messages', function (Blueprint $table) {
                 $table->integer('duration')->nullable();
@@ -359,7 +366,7 @@ class EnsureFeatureTables extends Command
         } elseif (Schema::hasColumn('email_verification_tokens', 'token')) {
             // Fix token column width — bcrypt hashes are 60 chars
             $columnType = DB::select("SELECT data_type, character_maximum_length FROM information_schema.columns WHERE table_name = 'email_verification_tokens' AND column_name = 'token'");
-            if (!empty($columnType) && isset($columnType[0]->character_maximum_length) && $columnType[0]->character_maximum_length < 255) {
+            if (! empty($columnType) && isset($columnType[0]->character_maximum_length) && $columnType[0]->character_maximum_length < 255) {
                 DB::statement('ALTER TABLE email_verification_tokens ALTER COLUMN token TYPE varchar(255)');
                 $this->info('Fixed email_verification_tokens.token column to varchar(255)');
             }

@@ -15,6 +15,7 @@ use App\Models\User;
 use App\Models\UserBadge;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redis;
+use Illuminate\Support\Facades\Schema;
 
 class UserController extends Controller
 {

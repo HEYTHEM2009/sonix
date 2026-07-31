@@ -47,6 +47,8 @@ class MessageSent implements ShouldBroadcast
             'type' => $this->message->type,
             'image' => $this->message->image,
             'voice' => $this->message->voice,
+            'video' => $this->message->video,
+            'document' => $this->message->document,
             'sender_id' => $this->message->sender_id,
             'receiver_id' => $this->message->receiver_id,
             'created_at' => $this->message->created_at->toISOString(),
