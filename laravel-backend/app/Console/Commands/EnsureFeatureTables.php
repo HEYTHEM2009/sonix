@@ -46,6 +46,41 @@ class EnsureFeatureTables extends Command
             }
         }
 
+        // Mark migrations as already run when all their target tables exist.
+        // This heals databases where past failed deploys left migration records missing
+        // (otherwise `php artisan migrate` would re-run them and fail on existing tables).
+        $synced = 0;
+        $maxBatch = (int) DB::table('migrations')->max('batch');
+        foreach (glob($migrationsPath.'/*.php') as $file) {
+            $name = basename($file, '.php');
+            if (DB::table('migrations')->where('migration', $name)->exists()) {
+                continue;
+            }
+
+            $content = (string) file_get_contents($file);
+            if (! preg_match_all("/Schema::(?:create|table)\(['\"]([a-z0-9_]+)['\"]/", $content, $matches)) {
+                continue;
+            }
+
+            $missing = false;
+            foreach (array_unique($matches[1]) as $table) {
+                if (! Schema::hasTable($table)) {
+                    $missing = true;
+                    break;
+                }
+            }
+            if ($missing) {
+                continue;
+            }
+
+            DB::table('migrations')->insert(['migration' => $name, 'batch' => $maxBatch + 1]);
+            $this->info("Marked migration as already applied: {$name}");
+            $synced++;
+        }
+        if ($synced > 0) {
+            $this->info("Synced {$synced} migration record(s)");
+        }
+
         // Create profile_visitors table
         if (! Schema::hasTable('profile_visitors')) {
             Schema::create('profile_visitors', function (Blueprint $table) {
