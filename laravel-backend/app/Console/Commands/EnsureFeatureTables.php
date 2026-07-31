@@ -17,7 +17,8 @@ class EnsureFeatureTables extends Command
     {
         $created = 0;
 
-        // Remove stale migration records for tables that don't actually exist
+        // Remove stale migration records for migrations whose files no longer exist
+        // (keeps records for existing migrations so `php artisan migrate` does not re-run them)
         $staleMigrations = [
             '2026_07_11_000006_create_profile_visitors_table',
             '2026_07_11_000008_create_user_badges_table',
@@ -30,7 +31,14 @@ class EnsureFeatureTables extends Command
             '2026_07_26_000001_fix_reels_missing_columns',
         ];
 
+        $migrationsPath = database_path('migrations');
+
         foreach ($staleMigrations as $migration) {
+            $fileExists = count(glob($migrationsPath.'/'.$migration.'.php')) > 0;
+            if ($fileExists) {
+                continue;
+            }
+
             $exists = DB::table('migrations')->where('migration', $migration)->exists();
             if ($exists) {
                 DB::table('migrations')->where('migration', $migration)->delete();
