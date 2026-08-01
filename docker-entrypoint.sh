@@ -30,7 +30,7 @@ server {
     }
 
     location /app/ {
-        proxy_pass http://127.0.0.1:8080;
+        proxy_pass http://127.0.0.1:8081;
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection "upgrade";
@@ -41,7 +41,7 @@ server {
     }
 
     location /apps/ {
-        proxy_pass http://127.0.0.1:8080;
+        proxy_pass http://127.0.0.1:8081;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_read_timeout 3600s;
@@ -108,7 +108,7 @@ REDIS_PASSWORD=${REDIS_PASSWORD:-null}
 REDIS_PORT=${REDIS_PORT:-6379}
 
 REVERB_SERVER_HOST=127.0.0.1
-REVERB_SERVER_PORT=8080
+REVERB_SERVER_PORT=8081
 REVERB_HOST=${REVERB_HOST:-localhost}
 REVERB_PORT=${REVERB_PORT:-443}
 REVERB_SCHEME=${REVERB_SCHEME:-https}
