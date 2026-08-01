@@ -1,0 +1,9 @@
+.env
+.env.*
+!vendor
+vendor/laravel/reverb/tests
+.git
+.gitignore
+*.log
+tests
+docker-compose.yml
