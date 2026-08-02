@@ -12,6 +12,7 @@ import { downloadAsync, cacheDirectory } from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import { resolveUrl } from "../api/client";
 import { useLanguage } from "../context/LanguageContext";
+import { COLORS, RADIUS } from "../design/DesignSystem";
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
 
