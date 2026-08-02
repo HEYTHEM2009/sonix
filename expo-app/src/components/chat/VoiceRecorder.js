@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
-  View, Text, TouchableOpacity, StyleSheet, Animated, Alert, Vibration,
+  View, Text, TouchableOpacity, StyleSheet, Animated, Alert,
 } from "react-native";
 import { useLanguage } from "../../context/LanguageContext";
 import Icon from "../../design/ui/Icon";
@@ -72,7 +72,9 @@ const VoiceRecorder = ({ onSend, onCancel, onRecordingStateChange }) => {
       pausedRef.current = false;
       if (onRecordingStateChange) onRecordingStateChange(recorder);
       timerRef.current = setInterval(() => {
-        elapsedRef.current += 1;
+        if (!pausedRef.current) {
+          elapsedRef.current += 1;
+        }
         setElapsed(elapsedRef.current);
         setAmplitudes((prev) => {
           const next = [...prev.slice(1), deriveAmplitude(elapsedRef.current, pausedRef.current)];
@@ -124,6 +126,7 @@ const VoiceRecorder = ({ onSend, onCancel, onRecordingStateChange }) => {
     if (timerRef.current) clearInterval(timerRef.current);
     const duration = elapsedRef.current;
     let uri = null;
+    let nativeDurationMs = null;
     try {
       const uriBeforeStop = rec.uri || null;
       const result = await rec.stop();
@@ -131,15 +134,25 @@ const VoiceRecorder = ({ onSend, onCancel, onRecordingStateChange }) => {
         result && typeof result === "object" && typeof result.url === "string"
           ? result.url
           : null;
+      if (result && typeof result === "object" && typeof result.durationMillis === "number") {
+        nativeDurationMs = result.durationMillis;
+      }
       uri = urlFromResult || uriBeforeStop || null;
     } catch (e) {
       console.warn("VoiceRecorder stop error", e);
     }
     recorderRef.current = null;
     await releaseMic();
-    if (cancelledRef.current || duration <= 0 || !uri) return;
-    if (onSend) onSend(uri, duration);
-  }, [onSend, releaseMic]);
+    if (cancelledRef.current) return;
+    const finalDuration = nativeDurationMs
+      ? Math.max(1, Math.round(nativeDurationMs / 1000))
+      : duration;
+    if (finalDuration <= 0 || !uri) {
+      if (onCancel) onCancel();
+      return;
+    }
+    if (onSend) onSend(uri, finalDuration);
+  }, [onSend, onCancel, releaseMic]);
 
   const cancel = useCallback(async () => {
     const rec = recorderRef.current;
