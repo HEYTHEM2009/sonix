@@ -298,17 +298,39 @@ const MessageBubble = memo(({
       }
       if (isExpoGo()) { Alert.alert(t("error"), t("voicePlaybackRequiresDevBuild")); return; }
       const { createAudioPlayer } = require("expo-audio");
-      const uri = resolveUrl(item.voice);
+      const rawVoice = item.voice;
+      const uri = resolveUrl(rawVoice);
+      console.log("[VOICE_PLAY] item.id:", item.id, "item.duration:", item.duration, "rawVoice:", rawVoice, "resolvedUri:", uri);
+      try {
+        const headRes = await fetch(uri, { method: "HEAD" });
+        console.log("[VOICE_PLAY] HEAD status:", headRes.status, "content-type:", headRes.headers.get("content-type"), "content-length:", headRes.headers.get("content-length"));
+        if (headRes.status !== 200) {
+          Alert.alert("Voice Debug", `URL: ${uri}\nHEAD status: ${headRes.status}\nDuration: ${item.duration}s`);
+        }
+      } catch (headErr) {
+        console.log("[VOICE_PLAY] HEAD failed:", headErr?.message);
+        Alert.alert("Voice Debug", `URL: ${uri}\nHEAD error: ${headErr?.message}\nDuration: ${item.duration}s`);
+      }
       const player = createAudioPlayer(uri);
       if (soundRef.current) { try { soundRef.current.release(); } catch (_) {} }
       soundRef.current = player;
       player.addListener("playbackStatusUpdate", (status) => {
+        console.log("[VOICE_STATUS] isLoaded:", status.isLoaded, "currentTime:", status.currentTime, "duration:", status.duration, "didJustFinish:", status.didJustFinish, "error:", status.error);
+        if (!status.isLoaded && status.error) {
+          console.log("[VOICE_STATUS] LOAD ERROR:", JSON.stringify(status.error));
+          Alert.alert("Voice Error", `Failed to load audio.\nURL: ${uri}\nError: ${JSON.stringify(status.error)}`);
+        }
         if (status.didJustFinish) { setPlaying(false); setPosition(0); }
         else { setPosition(Math.floor((status.currentTime || 0) * 1000)); setDuration(Math.floor((status.duration || 0) * 1000)); }
       });
       player.play();
       setPlaying(true);
-    } catch (e) { console.warn("Voice play error", e); }
+      setTimeout(() => {
+        if (soundRef.current && !soundRef.current._loaded) {
+          console.log("[VOICE_STATUS] TIMEOUT: player did not load after 5s");
+        }
+      }, 5000);
+    } catch (e) { console.warn("[VOICE_PLAY_ERROR]", e); }
   };
 
   useEffect(() => {
@@ -889,6 +911,7 @@ export default function ChatScreen({ route, navigation }) {
     setUploading(true); setUploadProgress(0);
     try {
       const res = await uploadWithProgress("/messages", formData, setUploadProgress);
+      console.log("[VOICE_SEND_OK] res.data:", JSON.stringify({ id: res.data?.id, type: res.data?.type, voice: res.data?.voice, duration: res.data?.duration }));
       setMessages((prev) => prev.map((m) => m.id === tempId ? { ...(res.data || {}), pending: false } : m));
       await load();
     } catch (e) {

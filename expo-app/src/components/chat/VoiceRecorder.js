@@ -147,6 +147,7 @@ const VoiceRecorder = ({ onSend, onCancel, onRecordingStateChange }) => {
     const finalDuration = nativeDurationMs
       ? Math.max(1, Math.round(nativeDurationMs / 1000))
       : duration;
+    console.log("[VR_STOP] uri:", uri, "nativeDurationMs:", nativeDurationMs, "elapsedSec:", duration, "finalDuration:", finalDuration);
     if (finalDuration <= 0 || !uri) {
       if (onCancel) onCancel();
       return;
