@@ -271,7 +271,7 @@ export default function useMessages(partnerId, myIdOverride) {
         updateMessage(
           prev,
           (m) => m.id === messageId,
-          () => ({ is_deleted: true, content: "This message was deleted", image: null, voice: null })
+          () => ({ is_deleted: true, content: "This message was deleted", image: null, video: null, voice: null, document: null })
         )
       );
     } catch (e) {

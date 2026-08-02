@@ -11,40 +11,41 @@ import {
   Platform,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { COLORS, SIZES } from "../components/Theme";
+import { COLORS, SIZES, FONTS, SPACING, RADIUS, TYPOGRAPHY, SHADOWS, GLASS, LAYOUT } from "../design/DesignSystem";
 import { useLanguage } from "../context/LanguageContext";
 import { useAuth } from "../context/AuthContext";
+import Icon from "../design/ui/Icon";
 
 const { width } = Dimensions.get("window");
 
 const PAGES = [
   {
     key: "welcome",
-    emoji: "🎬",
+    icon: "videocam",
     title: "Welcome to Sonix",
     desc: "The open-source social platform for short videos, reels, stories and live community. Build your own Instagram-style app in days, not months.",
   },
   {
     key: "reels",
-    emoji: "✨",
+    icon: "sparkles",
     title: "Reels & Short Video",
     desc: "Vertical full-screen video feed with autoplay, likes, comments, saves, shares, hashtags, mentions and creator analytics.",
   },
   {
     key: "social",
-    emoji: "💬",
+    icon: "chatbubbles",
     title: "Real-time Social",
     desc: "Follow people, send direct & group messages, post stories, comment and get rich push-style notifications.",
   },
   {
     key: "admin",
-    emoji: "🛡️",
+    icon: "shield-checkmark",
     title: "Built-in Admin & Moderation",
     desc: "Full admin dashboard: users, reports, content removal, roles, settings, bad-word filters and analytics — ready to ship.",
   },
   {
     key: "opensource",
-    emoji: "🚀",
+    icon: "rocket",
     title: "Yours to Own",
     desc: "100% original source. Laravel API + React Native/Expo. Deploy anywhere. No locked features. Start building now.",
   },
@@ -79,7 +80,7 @@ export default function OnboardingScreen({ navigation }) {
   const renderItem = ({ item }) => (
     <View style={[styles.page, { width }]}>
       <View style={styles.emojiWrap}>
-        <Text style={styles.emoji}>{item.emoji}</Text>
+        <Icon name={item.icon} size="hero" color={COLORS.primaryLight} />
       </View>
       <Text style={styles.title}>{item.title}</Text>
       <Text style={styles.desc}>{item.desc}</Text>
@@ -151,42 +152,30 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingVertical: 14,
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.md,
   },
-  brand: { color: COLORS.primary, fontSize: 22, fontWeight: "800", letterSpacing: 0.5 },
-  skip: { color: COLORS.textSecondary, fontSize: 14, fontWeight: "600" },
+  brand: { color: COLORS.primary, fontSize: 22, ...FONTS.black, letterSpacing: 0.5 },
+  skip: { color: COLORS.textSecondary, fontSize: 14, ...FONTS.semiBold },
   page: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 36,
   },
-  emojiWrap: {
-    width: 110,
-    height: 110,
-    borderRadius: 55,
-    backgroundColor: "rgba(124,108,247,0.12)",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 34,
-  },
-  emoji: { fontSize: 52 },
-  title: { color: COLORS.text, fontSize: SIZES.title, fontWeight: "800", textAlign: "center", marginBottom: 16 },
+  emojiWrap: { ...GLASS.default, width: 110, height: 110, borderRadius: RADIUS.full, alignItems: "center", justifyContent: "center", marginBottom: 34, borderWidth: 0 },
+  title: { color: COLORS.text, fontSize: SIZES.title, ...FONTS.black, textAlign: "center", marginBottom: SPACING.lg },
   desc: { color: COLORS.textSecondary, fontSize: SIZES.lg, textAlign: "center", lineHeight: 24 },
-  dots: { flexDirection: "row", justifyContent: "center", alignItems: "center", marginVertical: 18 },
-  dot: { width: 9, height: 9, borderRadius: 5, backgroundColor: COLORS.primary, marginHorizontal: 5 },
-  footer: { paddingHorizontal: 24 },
+  dots: { flexDirection: "row", justifyContent: "center", alignItems: "center", marginVertical: SPACING.lg },
+  dot: { width: 9, height: 9, borderRadius: RADIUS.xs, backgroundColor: COLORS.primary, marginHorizontal: SPACING.xs },
+  footer: { paddingHorizontal: SPACING.xxl },
   btn: {
     backgroundColor: COLORS.primary,
-    borderRadius: SIZES.radiusLg,
+    borderRadius: RADIUS.xl,
     height: 52,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: COLORS.primary,
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
-    elevation: 8,
+    ...SHADOWS.lg,
   },
-  btnText: { color: "#fff", fontSize: SIZES.lg, fontWeight: "700" },
+  btnText: { color: COLORS.text, fontSize: SIZES.lg, ...FONTS.bold },
 });

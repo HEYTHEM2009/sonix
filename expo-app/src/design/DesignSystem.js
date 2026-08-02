@@ -63,6 +63,14 @@ export const COLORS = {
   gradientOverlay: ["transparent", "rgba(0, 0, 0, 0.9)"],
   gradientAurora: ["#7C6FFF", "#00D4AA", "#F0A500"],
   gradientGlass: ["rgba(124, 111, 255, 0.08)", "rgba(0, 212, 170, 0.04)"],
+  gradientBubbleMine: ["#7C6FFF", "#9E94FF", "#B8B0FF", "#7C6FFF"],
+  gradientBubbleGlow: ["rgba(124, 111, 255, 0.4)", "rgba(158, 148, 255, 0.15)", "transparent"],
+  gradientBubbleReflect: ["rgba(255,255,255,0.12)", "rgba(255,255,255,0.02)", "transparent"],
+  gradientStatusSent: ["#6B7280", "#9CA3B8"],
+  gradientStatusRead: ["#00D26A", "#34D399"],
+  gradientStatusFailed: ["#EF4444", "#F87171"],
+  gradientPremiumBubble: ["#7C6FFF", "#9E94FF", "#B388FF", "#7C6FFF"],
+  gradientParticle: ["#7C6FFF", "#00D4AA"],
 
   dynamicIsland: "rgba(10, 10, 26, 0.85)",
   tabBg: "rgba(10, 10, 26, 0.7)",
@@ -80,6 +88,7 @@ export const COLORS = {
   ruby: "#EF4444",
   sapphire: "#60A5FA",
 
+  celestial: "#60A5FA",
   screenBg: "#050510",
   safeAreaBg: "#050510",
 };
@@ -189,6 +198,24 @@ export const RADIUS = {
   xxl: 24,
   xxxl: 32,
   full: 999,
+};
+
+export const STATUS_COLORS = {
+  sending: COLORS.textTertiary,
+  sent: COLORS.muted,
+  delivered: COLORS.textSecondary,
+  read: "#00D26A",
+  failed: COLORS.danger,
+};
+
+export const BUBBLE = {
+  maxWidth: "78%",
+  paddingH: 16,
+  paddingV: 12,
+  radius: 22,
+  radiusMineBottom: 4,
+  radiusTheirsBottom: 4,
+  marginBottom: 6,
 };
 
 export const SIZES = {

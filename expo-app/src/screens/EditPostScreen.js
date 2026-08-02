@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityInd
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import client from "../api/client";
 import { useLanguage } from "../context/LanguageContext";
-import { COLORS, SIZES } from "../components/Theme";
+import { COLORS, SIZES, FONTS, SPACING, RADIUS, TYPOGRAPHY, SHADOWS, GLASS, LAYOUT } from "../design/DesignSystem";
 import Screen3D from "../components/3D/Screen3D";
 
 export default function EditPostScreen({ route, navigation }) {
@@ -52,10 +52,10 @@ export default function EditPostScreen({ route, navigation }) {
 
 const s = StyleSheet.create({
   wrap: { flex: 1 },
-  topBar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 12, paddingVertical: 8, borderBottomWidth: 0.5, borderBottomColor: COLORS.border },
+  topBar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm, borderBottomWidth: 0.5, borderBottomColor: COLORS.border, ...GLASS.default },
   cancelBtn: { color: COLORS.muted, fontSize: SIZES.lg },
-  title: { fontSize: SIZES.lg, fontWeight: "600", color: COLORS.text },
-  saveBtn: { backgroundColor: COLORS.primary, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 6 },
-  saveText: { color: COLORS.text, fontWeight: "600", fontSize: 14 },
-  input: { flex: 1, color: COLORS.text, fontSize: 15, paddingHorizontal: 16, paddingTop: 16, textAlignVertical: "top" },
+  title: { fontSize: SIZES.lg, ...FONTS.semiBold, color: COLORS.text },
+  saveBtn: { backgroundColor: COLORS.primary, borderRadius: RADIUS.sm, paddingHorizontal: SPACING.lg, paddingVertical: SPACING.xs },
+  saveText: { color: COLORS.text, ...FONTS.semiBold, fontSize: 14 },
+  input: { flex: 1, color: COLORS.text, fontSize: 15, paddingHorizontal: SPACING.lg, paddingTop: SPACING.lg, textAlignVertical: "top" },
 });

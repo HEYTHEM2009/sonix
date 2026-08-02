@@ -1,7 +1,8 @@
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLanguage } from "../context/LanguageContext";
-import { COLORS, SIZES, FONTS } from "../components/Theme";
+import { COLORS, SIZES, FONTS, SPACING, RADIUS, TYPOGRAPHY, SHADOWS, GLASS, LAYOUT } from "../design/DesignSystem";
+import Icon from "../design/ui/Icon";
 import Screen3D from "../components/3D/Screen3D";
 
 const CONTENT = {
@@ -36,13 +37,13 @@ export default function PrivacyScreen({ navigation }) {
     <Screen3D style={[s.wrap, { paddingTop: insets.top }]}>
       <View style={s.topBar}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={s.backBtn}>←</Text>
+          <Icon name="arrow-back" size={20} color={COLORS.text} />
         </TouchableOpacity>
         <Text style={s.title}>{t("privacyPolicy")}</Text>
         <View style={{ width: 36 }} />
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40 }}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: SPACING.lg, paddingBottom: SPACING.huge }}>
         <Text style={s.date}>Last updated: July 2026</Text>
         {sections.map((sec, i) => (
           <View key={i} style={s.section}>
@@ -57,11 +58,11 @@ export default function PrivacyScreen({ navigation }) {
 
 const s = StyleSheet.create({
   wrap: { flex: 1 },
-  topBar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 12, paddingBottom: 8 },
+  topBar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: SPACING.md, paddingBottom: SPACING.sm, ...GLASS.default },
   backBtn: { fontSize: 22, color: COLORS.text },
   title: { fontSize: SIZES.lg, ...FONTS.semiBold, color: COLORS.text },
-  date: { fontSize: 12, color: COLORS.muted, marginBottom: 20, marginTop: 8 },
-  section: { marginBottom: 20 },
-  heading: { fontSize: 16, ...FONTS.semiBold, color: COLORS.text, marginBottom: 6 },
+  date: { fontSize: 12, color: COLORS.muted, marginBottom: SPACING.xl, marginTop: SPACING.sm },
+  section: { ...GLASS.elevated, borderRadius: RADIUS.md, padding: SPACING.md, marginBottom: SPACING.lg },
+  heading: { fontSize: 16, ...FONTS.semiBold, color: COLORS.text, marginBottom: SPACING.xs },
   body: { fontSize: 14, color: COLORS.muted, lineHeight: 22 },
 });

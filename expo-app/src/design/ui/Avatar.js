@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { View, Text, Image, StyleSheet, TouchableOpacity, Animated } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { COLORS, RADIUS, SHADOWS } from "../DesignSystem";
+import { COLORS, RADIUS, SHADOWS, SPACING } from "../DesignSystem";
 
 const SIZES = {
   xs: 24,
@@ -58,7 +58,7 @@ export default function Avatar({
       ) : (
         renderAvatar()
       )}
-      {online && <View style={[styles.onlineDot, { width: dim * 0.22, height: dim * 0.22, borderRadius: dim * 0.11, right: 1, bottom: 1, borderWidth: 2.5 }]} />}
+      {online && <View style={[styles.onlineDot, { width: dim * 0.24, height: dim * 0.24, borderRadius: dim * 0.12, right: 1.5, bottom: 1.5, borderWidth: 2.5 }]} />}
     </View>
   );
 
@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
   storyGradient: { alignItems: "center", justifyContent: "center" },
   storyInner: { backgroundColor: COLORS.bg, alignItems: "center", justifyContent: "center" },
   image: { resizeMode: "cover" },
-  placeholder: { backgroundColor: COLORS.primaryGlow, alignItems: "center", justifyContent: "center" },
-  letter: { color: COLORS.primaryLight, fontWeight: "700" },
-  onlineDot: { position: "absolute", backgroundColor: COLORS.success, borderColor: COLORS.bg },
+  placeholder: { backgroundColor: COLORS.primaryGlow, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: COLORS.glassBorder },
+  letter: { color: COLORS.primaryLight, fontWeight: "700", textAlign: "center", textAlignVertical: "center" },
+  onlineDot: { position: "absolute", backgroundColor: COLORS.success, borderColor: COLORS.bg, shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.5, shadowRadius: 4, elevation: 4 },
 });

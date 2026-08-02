@@ -4,7 +4,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import client from "../api/client";
-import { COLORS, SIZES } from "../components/Theme";
+import Icon from "../design/ui/Icon";
+import { COLORS, SIZES, FONTS, SPACING, RADIUS, TYPOGRAPHY, SHADOWS, GLASS, LAYOUT } from "../design/DesignSystem";
 import Screen3D from "../components/3D/Screen3D";
 
 export default function NotificationsScreen({ navigation }) {
@@ -27,7 +28,7 @@ export default function NotificationsScreen({ navigation }) {
   return (
     <Screen3D style={s.container}>
       <View style={[s.topBar, { paddingTop: insets.top + 6 }]}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}><Text style={s.backText}>←</Text></TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn} hitSlop={{top:8, bottom:8, left:8, right:8}}><Icon name="arrow-back" size={20} color={COLORS.text} /></TouchableOpacity>
         <Text style={s.title}>{t("notifications")}</Text>
         <View style={{ width: 36 }} />
       </View>
@@ -41,7 +42,7 @@ export default function NotificationsScreen({ navigation }) {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.text} colors={[COLORS.text]} />}
           ListEmptyComponent={
             <View style={s.emptyWrap}>
-              <Text style={s.emptyIcon}>🔔</Text>
+              <Text style={s.emptyIcon}>N</Text>
               <Text style={s.emptyTitle}>{t("noNotifications")}</Text>
             </View>
           }
@@ -66,18 +67,18 @@ export default function NotificationsScreen({ navigation }) {
 
 const s = StyleSheet.create({
   container: { flex: 1 },
-  topBar: { paddingBottom: 10, paddingHorizontal: 12, borderBottomWidth: 0.5, borderBottomColor: COLORS.border, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  backBtn: { width: 36, height: 36, alignItems: "center", justifyContent: "center" },
-  backText: { fontSize: 22, color: COLORS.text },
-  title: { fontSize: SIZES.md, fontWeight: "600", color: COLORS.text },
+  topBar: { paddingBottom: SPACING.sm, paddingHorizontal: SPACING.md, borderBottomWidth: 0.5, borderBottomColor: COLORS.border, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  backBtn: { width: 36, height: 36, alignItems: "center", justifyContent: "center", borderRadius: RADIUS.md, backgroundColor: GLASS.bg },
+  backText: { ...TYPOGRAPHY.h3, color: COLORS.text },
+  title: { fontSize: SIZES.md, ...FONTS.semiBold, color: COLORS.text },
   emptyWrap: { alignItems: "center", paddingTop: 80 },
-  emptyIcon: { fontSize: 40, marginBottom: 10 },
-  emptyTitle: { fontSize: 16, color: COLORS.muted },
-  card: { flexDirection: "row", padding: 12, borderBottomWidth: 0.5, borderBottomColor: COLORS.border, gap: 10, alignItems: "center" },
-  unread: { backgroundColor: COLORS.cardHover },
-  avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: COLORS.input, alignItems: "center", justifyContent: "center" },
-  avatarText: { color: COLORS.text, fontWeight: "600", fontSize: 15 },
-  msg: { flex: 1, fontSize: 13, color: COLORS.textSecondary, lineHeight: 18 },
-  user: { fontWeight: "700", color: COLORS.text },
-  time: { fontSize: 11, color: COLORS.muted },
+  emptyIcon: { fontSize: 40, marginBottom: SPACING.sm, color: COLORS.muted, ...FONTS.bold },
+  emptyTitle: { ...TYPOGRAPHY.body, color: COLORS.muted },
+  card: { flexDirection: "row", padding: SPACING.md, borderBottomWidth: 0.5, borderBottomColor: COLORS.border, gap: SPACING.sm, alignItems: "center", backgroundColor: GLASS.bg },
+  unread: { backgroundColor: COLORS.surfaceLight },
+  avatar: { width: 40, height: 40, borderRadius: RADIUS.full, backgroundColor: COLORS.primary, alignItems: "center", justifyContent: "center" },
+  avatarText: { ...TYPOGRAPHY.bodyBold, color: COLORS.text },
+  msg: { flex: 1, ...TYPOGRAPHY.caption, color: COLORS.textSecondary },
+  user: { ...FONTS.bold, color: COLORS.text },
+  time: { ...TYPOGRAPHY.small, color: COLORS.muted },
 });

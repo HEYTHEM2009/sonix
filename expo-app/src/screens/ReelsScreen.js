@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Share,
   Alert,
+  NativeModules,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as FileSystem from "expo-file-system";
@@ -18,7 +19,8 @@ import reelsApi from "../api/reels";
 import { useReels } from "../hooks/useReels";
 import { resolveUrl } from "../api/client";
 import ReelItem from "../components/ReelItem";
-import { COLORS } from "../components/Theme";
+import { COLORS, SIZES, FONTS, SPACING, RADIUS, TYPOGRAPHY, SHADOWS, GLASS, LAYOUT } from "../design/DesignSystem";
+import Icon from "../design/ui/Icon";
 
 const { height: SCREEN_H } = Dimensions.get("window");
 
@@ -128,6 +130,11 @@ export default function ReelsScreen({ navigation }) {
 
   const handleDownload = useCallback(async (reel) => {
     try {
+      const hasNative = !!(NativeModules?.ExpoMediaLibraryNext || NativeModules?.ExpoMediaLibrary);
+      if (!hasNative) {
+        Alert.alert("Not supported", "Saving videos is not supported in Expo Go. Update Expo Go or use a development build.");
+        return;
+      }
       const MediaLibrary = await import("expo-media-library");
       const { status } = await MediaLibrary.requestPermissionsAsync();
       if (status !== "granted") {
@@ -147,7 +154,7 @@ export default function ReelsScreen({ navigation }) {
   if (loading && reels.length === 0) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#fff" />
+        <ActivityIndicator size="large" color={COLORS.text} />
         <Text style={styles.loadingText}>{t("loading") || "Loading..."}</Text>
       </View>
     );
@@ -163,7 +170,7 @@ export default function ReelsScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <View style={[styles.tabBar, { paddingTop: insets.top + 6 }]}>
+      <View style={[styles.tabBar, { paddingTop: insets.top + SPACING.xs }]}>
         {TABS.map((tb) => (
           <TouchableOpacity
             key={tb.key}
@@ -186,7 +193,7 @@ export default function ReelsScreen({ navigation }) {
         onPress={() => navigation.navigate("CreateReel")}
         activeOpacity={0.7}
       >
-        <Text style={styles.cameraFabIcon}>📷</Text>
+        <Text style={styles.cameraFabIcon}>+</Text>
       </TouchableOpacity>
 
       <FlatList
@@ -228,7 +235,7 @@ export default function ReelsScreen({ navigation }) {
         contentContainerStyle={reels.length === 0 ? { flex: 1 } : undefined}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyIcon}>🎬</Text>
+            <Icon name="diamond-outline" size={60} color={COLORS.muted} />
             <Text style={styles.emptyTitle}>{t("noReels") || "No Reels Yet"}</Text>
             <Text style={styles.emptySub}>{t("noReelsSub") || "Be the first to share a reel!"}</Text>
           </View>
@@ -236,7 +243,7 @@ export default function ReelsScreen({ navigation }) {
         ListFooterComponent={
           hasMore && reels.length > 0 ? (
             <View style={styles.footerLoader}>
-              <ActivityIndicator size="small" color="#fff" />
+              <ActivityIndicator size="small" color={COLORS.text} />
             </View>
           ) : null
         }
@@ -246,45 +253,46 @@ export default function ReelsScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#000" },
+  container: { flex: 1, backgroundColor: COLORS.bg },
   tabBar: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-around",
-    paddingHorizontal: 8,
-    paddingBottom: 8,
-    backgroundColor: "rgba(0,0,0,0.65)",
+    paddingHorizontal: SPACING.sm,
+    paddingBottom: SPACING.sm,
+    ...GLASS.elevated,
     zIndex: 20,
   },
-  tabItem: { paddingVertical: 6, paddingHorizontal: 8 },
-  tabItemActive: { borderBottomWidth: 2, borderBottomColor: "#fff" },
-  tabLabel: { color: "#aaa", fontSize: 13, fontWeight: "600" },
-  tabLabelActive: { color: "#fff", fontWeight: "700" },
+  tabItem: { paddingVertical: SPACING.xs, paddingHorizontal: SPACING.sm },
+  tabItemActive: { borderBottomWidth: 2, borderBottomColor: COLORS.primary },
+  tabLabel: { color: COLORS.muted, fontSize: SIZES.sm, ...FONTS.semiBold },
+  tabLabelActive: { color: COLORS.text, ...FONTS.bold },
   cameraFab: {
     position: "absolute",
     top: 50,
-    right: 12,
+    right: SPACING.md,
     zIndex: 30,
     width: 42,
     height: 42,
-    borderRadius: 21,
-    backgroundColor: "rgba(0,0,0,0.55)",
+    borderRadius: RADIUS.full,
+    backgroundColor: COLORS.surface,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.25)",
+    borderColor: COLORS.glassBorder,
     alignItems: "center",
     justifyContent: "center",
+    ...SHADOWS.glass,
   },
-  cameraFabIcon: { fontSize: 20 },
+  cameraFabIcon: { fontSize: SIZES.xxl },
   loadingContainer: {
     flex: 1,
-    backgroundColor: "#000",
+    backgroundColor: COLORS.bg,
     alignItems: "center",
     justifyContent: "center",
   },
-  loadingText: { color: "#999", marginTop: 12, fontSize: 14 },
+  loadingText: { color: COLORS.muted, marginTop: SPACING.md, fontSize: SIZES.md },
   emptyContainer: { flex: 1, alignItems: "center", justifyContent: "center", paddingBottom: 100 },
-  emptyIcon: { fontSize: 60, marginBottom: 16 },
-  emptyTitle: { fontSize: 20, fontWeight: "700", color: "#fff", marginBottom: 8 },
-  emptySub: { fontSize: 14, color: "#888", textAlign: "center" },
-  footerLoader: { paddingVertical: 20, alignItems: "center" },
+  emptyIcon: { fontSize: 60, marginBottom: SPACING.lg },
+  emptyTitle: { fontSize: SIZES.xxl, ...FONTS.bold, color: COLORS.text, marginBottom: SPACING.sm },
+  emptySub: { fontSize: SIZES.md, color: COLORS.muted, textAlign: "center" },
+  footerLoader: { paddingVertical: SPACING.xl, alignItems: "center" },
 });

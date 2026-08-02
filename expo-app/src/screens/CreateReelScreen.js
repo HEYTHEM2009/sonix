@@ -7,7 +7,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import client from "../api/client";
-import { COLORS, FONTS, SIZES } from "../components/Theme";
+import { COLORS, FONTS, SIZES, SPACING, RADIUS, TYPOGRAPHY, SHADOWS, GLASS, LAYOUT } from "../design/DesignSystem";
+import Icon from "../design/ui/Icon";
 import Screen3D from "../components/3D/Screen3D";
 
 const { width: SCREEN_W } = Dimensions.get("window");
@@ -40,15 +41,15 @@ const FILTERS = [
 function PreviewScreen({ uri, onBack, onNext, insets }) {
   const player = useVideoPlayer(uri, (p) => { p.loop = true; p.play(); });
   return (
-    <View style={{ flex: 1, backgroundColor: "#000" }}>
+    <View style={{ flex: 1, backgroundColor: COLORS.black }}>
       <VideoView player={player} style={{ flex: 1 }} contentFit="cover" nativeControls />
-      <View style={[{ position: "absolute", top: 0, left: 0, right: 0, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 12, paddingTop: insets.top + 6, paddingBottom: 8, backgroundColor: "rgba(0,0,0,0.6)" }]}>
-        <TouchableOpacity onPress={onBack} style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center" }}>
-          <Text style={{ fontSize: 16, color: "#fff", fontWeight: "700" }}>✕</Text>
+      <View style={[{ position: "absolute", top: 0, left: 0, right: 0, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: SPACING.md, paddingTop: insets.top + 6, paddingBottom: SPACING.sm, backgroundColor: COLORS.overlay }]}>
+        <TouchableOpacity onPress={onBack} style={{ width: 36, height: 36, borderRadius: RADIUS.full, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center" }}>
+          <Icon name="close" size={16} color={COLORS.text} />
         </TouchableOpacity>
-        <Text style={{ fontSize: 17, fontWeight: "700", color: "#fff" }}>Preview</Text>
-        <TouchableOpacity style={{ backgroundColor: COLORS.primary, borderRadius: 20, paddingHorizontal: 20, height: 36, alignItems: "center", justifyContent: "center" }} onPress={onNext}>
-          <Text style={{ color: "#fff", fontWeight: "700", fontSize: 15 }}>Next</Text>
+        <Text style={{ fontSize: 17, ...FONTS.bold, color: COLORS.text }}>Preview</Text>
+        <TouchableOpacity style={{ backgroundColor: COLORS.primary, borderRadius: RADIUS.xl, paddingHorizontal: SPACING.xl, height: 36, alignItems: "center", justifyContent: "center" }} onPress={onNext}>
+          <Text style={{ color: COLORS.text, ...FONTS.bold, fontSize: 15 }}>Next</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -235,14 +236,13 @@ export default function CreateReelScreen({ navigation }) {
   if (!permission.granted) {
     return (
       <View style={[s.center, { paddingTop: insets.top }]}>
-        <Text style={{ color: "#fff", fontSize: 15, marginBottom: 16, textAlign: "center" }}>{t("cameraPermissionRequired")}</Text>
+        <Text style={{ color: COLORS.text, fontSize: 15, marginBottom: SPACING.lg, textAlign: "center" }}>{t("cameraPermissionRequired")}</Text>
         <TouchableOpacity style={s.grantBtn} onPress={requestPermission}><Text style={s.grantText}>{t("grantPermission")}</Text></TouchableOpacity>
       </View>
     );
   }
 
   const formatTime = (sec) => `${Math.floor(sec / 60).toString().padStart(2, "0")}:${(sec % 60).toString().padStart(2, "0")}`;
-  const flashIcon = flash === "off" ? "⚡" : flash === "on" ? "⚡🔥" : "⚡A";
 
   if (step === "preview" && videoUri) {
     return (
@@ -255,7 +255,7 @@ export default function CreateReelScreen({ navigation }) {
       <Screen3D style={s.container}>
         <View style={[s.topBar, { paddingTop: insets.top + 6 }]}>
           <TouchableOpacity onPress={() => { setStep("capture"); setVideoUri(null); }} style={s.backBtn}>
-            <Text style={s.backText}>✕</Text>
+            <Icon name="close" size={16} color={COLORS.text} />
           </TouchableOpacity>
           <Text style={s.title}>New Reel</Text>
           <TouchableOpacity style={[s.shareBtn]} onPress={submitReel} disabled={uploading}>
@@ -274,9 +274,12 @@ export default function CreateReelScreen({ navigation }) {
             textAlignVertical="top"
           />
           <TouchableOpacity style={s.musicPicker} onPress={openMusic}>
-            <Text style={s.musicPickerText}>
-              {musicTitle ? "🎵 " + musicTitle : "🎵 " + (t("pickMusic") || "Pick from Music Library")}
-            </Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: SPACING.sm }}>
+              <Icon name="musical-note" size={16} color={COLORS.text} />
+              <Text style={s.musicPickerText}>
+                {musicTitle || (t("pickMusic") || "Pick from Music Library")}
+              </Text>
+            </View>
           </TouchableOpacity>
 
           <View style={s.statusRow}>
@@ -316,7 +319,10 @@ export default function CreateReelScreen({ navigation }) {
                   style={s.musicItem}
                   onPress={() => { setMusicTitle(`${m.title} — ${m.artist || "Unknown"}`); setShowMusic(false); }}
                 >
-                  <Text style={s.musicItemTitle}>🎵 {m.title}</Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                    <Icon name="musical-note" size={14} color={COLORS.text} />
+                    <Text style={s.musicItemTitle}>{m.title}</Text>
+                  </View>
                   <Text style={s.musicItemArtist}>{m.artist} · {m.genre}</Text>
                 </TouchableOpacity>
               ))}
@@ -326,13 +332,13 @@ export default function CreateReelScreen({ navigation }) {
             </TouchableOpacity>
           </View>
         )}
-        {uploading && <ActivityIndicator style={{ marginTop: 20 }} color={COLORS.primary} size="large" />}
+        {uploading && <ActivityIndicator style={{ marginTop: SPACING.xl }} color={COLORS.primary} size="large" />}
       </Screen3D>
     );
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#000" }}>
+    <View style={{ flex: 1, backgroundColor: COLORS.black }}>
       <CameraView
         ref={cameraRef}
         style={{ flex: 1 }}
@@ -341,34 +347,30 @@ export default function CreateReelScreen({ navigation }) {
         mode={mode}
       />
 
-      {/* Filter overlay */}
       {filter > 0 && (
         <View style={[StyleSheet.absoluteFill, FILTERS[filter].style, { zIndex: 5 }]} pointerEvents="none" />
       )}
 
-      {/* Countdown overlay */}
       {countdown !== null && (
-        <View style={[StyleSheet.absoluteFill, { zIndex: 20, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(0,0,0,0.5)" }]}>
+        <View style={[StyleSheet.absoluteFill, { zIndex: 20, alignItems: "center", justifyContent: "center", backgroundColor: COLORS.overlay }]}>
           <Text style={s.countdownText}>{countdown}</Text>
         </View>
       )}
 
-      {/* Top controls */}
       <View style={[s.topControls, { top: insets.top + 12 }]}>
         <TouchableOpacity style={s.controlBtn} onPress={() => navigation.goBack()}>
-          <Text style={s.controlIcon}>✕</Text>
+          <Icon name="close" size={18} color={COLORS.text} />
         </TouchableOpacity>
         <View style={s.topRight}>
           <TouchableOpacity style={[s.controlBtn, flash !== "off" && s.controlBtnActive]} onPress={toggleFlash}>
-            <Text style={s.controlIcon}>{flashIcon}</Text>
+            <Icon name={flash === "off" ? "flash-off" : "flash"} size={18} color={flash !== "off" ? COLORS.gold : COLORS.text} />
           </TouchableOpacity>
           <TouchableOpacity style={s.controlBtn} onPress={() => setFacing(facing === "back" ? "front" : "back")}>
-            <Text style={s.controlIcon}>🔄</Text>
+            <Icon name="camera-reverse" size={18} color={COLORS.text} />
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* Recording indicator */}
       {recording && (
         <View style={[s.recordIndicator, { top: insets.top + 60 }]}>
           <View style={s.recordDot} />
@@ -377,7 +379,6 @@ export default function CreateReelScreen({ navigation }) {
         </View>
       )}
 
-      {/* Speed controls - left side */}
       <View style={[speedStyles.speedBar, { top: SCREEN_W * 0.35 }]}>
         {SPEEDS.map((sp) => (
           <TouchableOpacity
@@ -390,7 +391,6 @@ export default function CreateReelScreen({ navigation }) {
         ))}
       </View>
 
-      {/* Timer controls - right side top */}
       <View style={[speedStyles.timerBar, { top: SCREEN_W * 0.35 }]}>
         {TIMERS.map((tm) => (
           <TouchableOpacity
@@ -403,7 +403,6 @@ export default function CreateReelScreen({ navigation }) {
         ))}
       </View>
 
-      {/* Filter strip - bottom */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={[speedStyles.filterStrip, { bottom: Math.max(insets.bottom + 100, 120) }]}>
         {FILTERS.map((f, i) => (
           <TouchableOpacity
@@ -417,10 +416,9 @@ export default function CreateReelScreen({ navigation }) {
         ))}
       </ScrollView>
 
-      {/* Bottom controls */}
       <View style={[s.controls, { bottom: Math.max(insets.bottom + 20, 40) }]}>
         <TouchableOpacity style={s.sideBtn} onPress={pickVideo}>
-          <Text style={s.sideIcon}>🖼️</Text>
+          <Icon name="images" size={22} color={COLORS.text} />
         </TouchableOpacity>
 
         <TouchableOpacity style={[s.recordBtn, recording && s.recordingActive]} onPress={toggleRecord}>
@@ -439,73 +437,70 @@ export default function CreateReelScreen({ navigation }) {
 
 const s = StyleSheet.create({
   container: { flex: 1 },
-  center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#000", padding: 40 },
-  topBar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 12, paddingBottom: 8, borderBottomWidth: 0.5, borderBottomColor: COLORS.border },
-  backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: COLORS.card, alignItems: "center", justifyContent: "center" },
-  backText: { fontSize: 16, color: COLORS.text, fontWeight: "700" },
-  title: { fontSize: SIZES.lg, fontWeight: "700", color: COLORS.text },
-  shareBtn: { backgroundColor: COLORS.primary, borderRadius: 20, paddingHorizontal: 20, height: 36, alignItems: "center", justifyContent: "center" },
-  shareText: { color: COLORS.text, fontWeight: "700", fontSize: SIZES.md },
-  detailsWrap: { padding: 16, gap: 12 },
-  input: { backgroundColor: COLORS.input, color: COLORS.text, borderRadius: 12, padding: 12, fontSize: 15, minHeight: 100, textAlignVertical: "top" },
-  inputMusic: { backgroundColor: COLORS.input, color: COLORS.text, borderRadius: 12, padding: 12, fontSize: 14 },
+  center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: COLORS.black, padding: 40 },
+  topBar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: SPACING.md, paddingBottom: SPACING.sm, borderBottomWidth: 0.5, borderBottomColor: COLORS.border, ...GLASS.elevated },
+  backBtn: { width: 36, height: 36, borderRadius: RADIUS.full, backgroundColor: COLORS.card, alignItems: "center", justifyContent: "center" },
+  backText: { fontSize: 16, color: COLORS.text, ...FONTS.bold },
+  title: { fontSize: SIZES.lg, ...FONTS.bold, color: COLORS.text },
+  shareBtn: { backgroundColor: COLORS.primary, borderRadius: RADIUS.xl, paddingHorizontal: SPACING.xl, height: 36, alignItems: "center", justifyContent: "center" },
+  shareText: { color: COLORS.text, ...FONTS.bold, fontSize: SIZES.md },
+  detailsWrap: { padding: SPACING.lg, gap: SPACING.md, ...GLASS.light, flex: 1 },
+  input: { backgroundColor: COLORS.input, color: COLORS.text, borderRadius: RADIUS.md, padding: SPACING.md, fontSize: 15, minHeight: 100, textAlignVertical: "top" },
+  inputMusic: { backgroundColor: COLORS.input, color: COLORS.text, borderRadius: RADIUS.md, padding: SPACING.md, fontSize: 14 },
   metaInfo: { color: COLORS.muted, fontSize: 12, fontStyle: "italic" },
-  musicPicker: { backgroundColor: COLORS.input, borderRadius: 12, padding: 12 },
+  musicPicker: { backgroundColor: COLORS.input, borderRadius: RADIUS.md, padding: SPACING.md },
   musicPickerText: { color: COLORS.text, fontSize: 14 },
-  statusRow: { flexDirection: "row", gap: 8 },
-  statusChip: { flex: 1, backgroundColor: COLORS.input, borderRadius: 10, paddingVertical: 10, alignItems: "center" },
+  statusRow: { flexDirection: "row", gap: SPACING.sm },
+  statusChip: { flex: 1, backgroundColor: COLORS.input, borderRadius: RADIUS.sm, paddingVertical: SPACING.sm, alignItems: "center" },
   statusChipActive: { backgroundColor: COLORS.primary },
-  statusChipText: { color: COLORS.muted, fontSize: 13, fontWeight: "600" },
-  statusChipTextActive: { color: "#fff", fontWeight: "700" },
-  musicSheet: { position: "absolute", left: 12, right: 12, bottom: 20, backgroundColor: "#1c1c1e", borderRadius: 16, padding: 16, zIndex: 50, maxHeight: 320 },
-  musicSheetTitle: { color: "#fff", fontWeight: "800", fontSize: 16, marginBottom: 10 },
-  musicItem: { paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.08)" },
-  musicItemTitle: { color: "#fff", fontSize: 14, fontWeight: "600" },
-  musicItemArtist: { color: "#999", fontSize: 12, marginTop: 2 },
-  musicClose: { marginTop: 8, alignItems: "center" },
-  musicCloseText: { color: COLORS.primary, fontWeight: "700" },
-  topControls: { position: "absolute", left: 16, right: 16, flexDirection: "row", justifyContent: "space-between", zIndex: 10 },
-  controlBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(0,0,0,0.5)", alignItems: "center", justifyContent: "center" },
+  statusChipText: { color: COLORS.muted, fontSize: 13, ...FONTS.semiBold },
+  statusChipTextActive: { color: COLORS.text, ...FONTS.bold },
+  musicSheet: { position: "absolute", left: SPACING.md, right: SPACING.md, bottom: SPACING.xl, backgroundColor: COLORS.surface, borderRadius: RADIUS.lg, padding: SPACING.lg, zIndex: 50, maxHeight: 320, ...GLASS.elevated },
+  musicSheetTitle: { color: COLORS.text, ...FONTS.black, fontSize: 16, marginBottom: SPACING.sm },
+  musicItem: { paddingVertical: SPACING.sm, borderBottomWidth: 1, borderBottomColor: COLORS.borderLight },
+  musicItemTitle: { color: COLORS.text, fontSize: 14, ...FONTS.semiBold },
+  musicItemArtist: { color: COLORS.textSecondary, fontSize: 12, marginTop: SPACING.xxs },
+  musicClose: { marginTop: SPACING.sm, alignItems: "center" },
+  musicCloseText: { color: COLORS.primary, ...FONTS.bold },
+  topControls: { position: "absolute", left: SPACING.lg, right: SPACING.lg, flexDirection: "row", justifyContent: "space-between", zIndex: 10 },
+  controlBtn: { width: 40, height: 40, borderRadius: RADIUS.full, backgroundColor: COLORS.overlayLight, alignItems: "center", justifyContent: "center" },
   controlBtnActive: { backgroundColor: "rgba(255,200,0,0.6)" },
-  controlIcon: { color: "#fff", fontSize: 18 },
-  recordIndicator: { position: "absolute", alignSelf: "center", flexDirection: "row", alignItems: "center", gap: 8, zIndex: 10, backgroundColor: "rgba(225,112,85,0.8)", paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20 },
-  recordDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: "#fff" },
-  recordTime: { color: "#fff", ...FONTS.semiBold, fontSize: 14 },
-  speedBadge: { color: "#fff", fontSize: 11, backgroundColor: "rgba(0,0,0,0.4)", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8 },
+  controlIcon: { color: COLORS.text, fontSize: 18 },
+  recordIndicator: { position: "absolute", alignSelf: "center", flexDirection: "row", alignItems: "center", gap: SPACING.sm, zIndex: 10, backgroundColor: "rgba(225,112,85,0.8)", paddingHorizontal: SPACING.md, paddingVertical: SPACING.xs, borderRadius: RADIUS.xl },
+  recordDot: { width: 10, height: 10, borderRadius: RADIUS.xs, backgroundColor: COLORS.text },
+  recordTime: { color: COLORS.text, ...FONTS.semiBold, fontSize: 14 },
+  speedBadge: { color: COLORS.text, fontSize: 11, backgroundColor: COLORS.overlayLight, paddingHorizontal: SPACING.xs, paddingVertical: SPACING.xxs, borderRadius: SPACING.sm },
   controls: { position: "absolute", left: 0, right: 0, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 30 },
-  sideBtn: { width: 50, height: 50, borderRadius: 25, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center" },
-  sideIcon: { color: "#fff", fontSize: 22 },
-  recordBtn: { width: 76, height: 76, borderRadius: 38, borderWidth: 4, borderColor: COLORS.danger, alignItems: "center", justifyContent: "center" },
-  recordInner: { width: 62, height: 62, borderRadius: 31, backgroundColor: COLORS.danger },
+  sideBtn: { width: 50, height: 50, borderRadius: RADIUS.full, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center" },
+  sideIcon: { color: COLORS.text, fontSize: 22 },
+  recordBtn: { width: 76, height: 76, borderRadius: RADIUS.full, borderWidth: 4, borderColor: COLORS.danger, alignItems: "center", justifyContent: "center" },
+  recordInner: { width: 62, height: 62, borderRadius: RADIUS.full, backgroundColor: COLORS.danger },
   recordingActive: { borderColor: COLORS.danger },
-  recordingSquare: { width: 30, height: 30, borderRadius: 6, backgroundColor: COLORS.danger },
-  grantBtn: { backgroundColor: COLORS.primary, borderRadius: 8, paddingVertical: 10, paddingHorizontal: 28 },
-  grantText: { color: "#fff", ...FONTS.semiBold, fontSize: 14 },
-  countdownText: { fontSize: 80, fontWeight: "800", color: "#fff", textShadowColor: "rgba(0,0,0,0.5)", textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 10 },
+  recordingSquare: { width: 30, height: 30, borderRadius: RADIUS.xs, backgroundColor: COLORS.danger },
+  grantBtn: { backgroundColor: COLORS.primary, borderRadius: RADIUS.sm, paddingVertical: SPACING.sm, paddingHorizontal: 28 },
+  grantText: { color: COLORS.text, ...FONTS.semiBold, fontSize: 14 },
+  countdownText: { fontSize: 80, ...FONTS.black, color: COLORS.text, textShadowColor: COLORS.overlay, textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 10 },
 
-  topRight: { flexDirection: "row", gap: 8 },
+  topRight: { flexDirection: "row", gap: SPACING.sm },
 });
 
 const speedStyles = StyleSheet.create({
-  /* Speed bar - left side */
-  speedBar: { position: "absolute", left: 10, zIndex: 15, alignItems: "center", gap: 6 },
-  speedBtn: { width: 38, height: 28, borderRadius: 14, backgroundColor: "rgba(0,0,0,0.45)", alignItems: "center", justifyContent: "center" },
+  speedBar: { position: "absolute", left: SPACING.sm, zIndex: 15, alignItems: "center", gap: SPACING.xs },
+  speedBtn: { width: 38, height: 28, borderRadius: RADIUS.md, backgroundColor: "rgba(0,0,0,0.45)", alignItems: "center", justifyContent: "center" },
   speedBtnActive: { backgroundColor: "rgba(255,255,255,0.9)" },
-  speedLabel: { color: "#fff", fontSize: 11, fontWeight: "600" },
-  speedLabelActive: { color: "#000" },
+  speedLabel: { color: COLORS.text, fontSize: 11, ...FONTS.semiBold },
+  speedLabelActive: { color: COLORS.black },
 
-  /* Timer bar - right side */
-  timerBar: { position: "absolute", right: 10, zIndex: 15, alignItems: "center", gap: 6 },
-  timerBtn: { width: 38, height: 28, borderRadius: 14, backgroundColor: "rgba(0,0,0,0.45)", alignItems: "center", justifyContent: "center" },
+  timerBar: { position: "absolute", right: SPACING.sm, zIndex: 15, alignItems: "center", gap: SPACING.xs },
+  timerBtn: { width: 38, height: 28, borderRadius: RADIUS.md, backgroundColor: "rgba(0,0,0,0.45)", alignItems: "center", justifyContent: "center" },
   timerBtnActive: { backgroundColor: "rgba(255,255,255,0.9)" },
-  timerLabel: { color: "#fff", fontSize: 11, fontWeight: "600" },
-  timerLabelActive: { color: "#000" },
+  timerLabel: { color: COLORS.text, fontSize: 11, ...FONTS.semiBold },
+  timerLabelActive: { color: COLORS.black },
 
-  /* Filter strip */
-  filterStrip: { position: "absolute", left: 0, right: 0, zIndex: 15, paddingHorizontal: 12 },
-  filterBtn: { alignItems: "center", marginRight: 12, gap: 4 },
-  filterPreview: { width: 44, height: 44, borderRadius: 22, backgroundColor: "rgba(255,255,255,0.15)", borderWidth: 2, borderColor: "transparent" },
-  filterBtnActive: { borderColor: "#fff" },
+  filterStrip: { position: "absolute", left: 0, right: 0, zIndex: 15, paddingHorizontal: SPACING.md },
+  filterBtn: { alignItems: "center", marginRight: SPACING.md, gap: SPACING.xs },
+  filterPreview: { width: 44, height: 44, borderRadius: RADIUS.full, backgroundColor: "rgba(255,255,255,0.15)", borderWidth: 2, borderColor: "transparent" },
+  filterBtnActive: { borderColor: COLORS.text },
   filterLabel: { color: "rgba(255,255,255,0.6)", fontSize: 10 },
-  filterLabelActive: { color: "#fff", fontWeight: "600" },
+  filterLabelActive: { color: COLORS.text, ...FONTS.semiBold },
 });

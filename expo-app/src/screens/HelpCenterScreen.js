@@ -2,7 +2,8 @@ import { useState } from "react";
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLanguage } from "../context/LanguageContext";
-import { COLORS, SIZES, FONTS } from "../components/Theme";
+import { COLORS, SIZES, FONTS, SPACING, RADIUS, TYPOGRAPHY, SHADOWS, GLASS, LAYOUT } from "../design/DesignSystem";
+import Icon from "../design/ui/Icon";
 import Screen3D from "../components/3D/Screen3D";
 
 const FAQ_DATA = {
@@ -40,20 +41,20 @@ export default function HelpCenterScreen({ navigation }) {
     <Screen3D style={[s.wrap, { paddingTop: insets.top }]}>
       <View style={s.topBar}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={s.backBtn}>←</Text>
+          <Icon name="arrow-back" size={20} color={COLORS.text} />
         </TouchableOpacity>
         <Text style={s.title}>{t("helpCenter")}</Text>
         <View style={{ width: 36 }} />
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40 }}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: SPACING.lg, paddingBottom: SPACING.huge }}>
         <Text style={s.intro}>{t("helpIntro")}</Text>
 
         {faq.map((item, i) => (
           <View key={i} style={[s.faqItem, openIndex === i && s.faqItemOpen]}>
             <TouchableOpacity style={s.faqHeader} onPress={() => toggle(i)} activeOpacity={0.7}>
               <Text style={s.faqQ}>{item.q}</Text>
-              <Text style={s.faqArrow}>{openIndex === i ? "⌄" : "›"}</Text>
+              <Icon name={openIndex === i ? "chevron-down" : "chevron-forward"} size={18} color={COLORS.muted} />
             </TouchableOpacity>
             {openIndex === i && (
               <View style={s.faqBody}>
@@ -72,17 +73,17 @@ export default function HelpCenterScreen({ navigation }) {
 
 const s = StyleSheet.create({
   wrap: { flex: 1 },
-  topBar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 12, paddingBottom: 8 },
+  topBar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: SPACING.md, paddingBottom: SPACING.sm, ...GLASS.default },
   backBtn: { fontSize: 22, color: COLORS.text },
   title: { fontSize: SIZES.lg, ...FONTS.semiBold, color: COLORS.text },
-  intro: { fontSize: 14, color: COLORS.muted, lineHeight: 20, marginBottom: 20, marginTop: 8, textAlign: "center" },
-  faqItem: { backgroundColor: COLORS.card, borderRadius: SIZES.radius, marginBottom: 8, borderWidth: 1, borderColor: COLORS.border, overflow: "hidden" },
-  faqItemOpen: { borderColor: COLORS.accent },
-  faqHeader: { flexDirection: "row", alignItems: "center", paddingVertical: 14, paddingHorizontal: 14 },
+  intro: { fontSize: 14, color: COLORS.muted, lineHeight: 20, marginBottom: SPACING.xl, marginTop: SPACING.sm, textAlign: "center" },
+  faqItem: { ...GLASS.elevated, borderRadius: RADIUS.md, marginBottom: SPACING.sm, overflow: "hidden" },
+  faqItemOpen: { borderColor: COLORS.gold },
+  faqHeader: { flexDirection: "row", alignItems: "center", paddingVertical: SPACING.md, paddingHorizontal: SPACING.md },
   faqQ: { flex: 1, fontSize: 14, ...FONTS.semiBold, color: COLORS.text, lineHeight: 20 },
-  faqArrow: { fontSize: 18, color: COLORS.muted, marginLeft: 8 },
-  faqBody: { paddingHorizontal: 14, paddingBottom: 14, borderTopWidth: 0.5, borderTopColor: COLORS.border, paddingTop: 10 },
+  faqArrow: { fontSize: 18, color: COLORS.muted, marginLeft: SPACING.sm },
+  faqBody: { paddingHorizontal: SPACING.md, paddingBottom: SPACING.md, borderTopWidth: 0.5, borderTopColor: GLASS.default.borderColor, paddingTop: SPACING.sm },
   faqA: { fontSize: 14, color: COLORS.muted, lineHeight: 20 },
-  contactTitle: { fontSize: 16, ...FONTS.semiBold, color: COLORS.text, marginTop: 24, marginBottom: 6 },
+  contactTitle: { fontSize: 16, ...FONTS.semiBold, color: COLORS.text, marginTop: SPACING.xxl, marginBottom: SPACING.xs },
   contactText: { fontSize: 13, color: COLORS.muted, lineHeight: 18 },
 });

@@ -4,8 +4,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import client, { resolveUrl } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
-import { COLORS, SIZES, FONTS } from "../components/Theme";
+import { COLORS, SIZES, FONTS, SPACING, RADIUS, TYPOGRAPHY, SHADOWS, GLASS, LAYOUT } from "../design/DesignSystem";
 import Screen3D from "../components/3D/Screen3D";
+import Icon from "../design/ui/Icon";
 
 export default function CreateGroupScreen({ navigation }) {
   const { t } = useLanguage();
@@ -108,7 +109,7 @@ export default function CreateGroupScreen({ navigation }) {
           {item.bio ? <Text style={s.userBio} numberOfLines={1}>{item.bio}</Text> : null}
         </View>
         <View style={[s.checkbox, selected && s.checkboxSelected]}>
-          {selected && <Text style={s.checkmark}>✓</Text>}
+          {selected && <Icon name="checkmark" size={14} color={COLORS.text} />}
         </View>
       </TouchableOpacity>
     );
@@ -118,7 +119,7 @@ export default function CreateGroupScreen({ navigation }) {
     <Screen3D style={[s.container, { paddingTop: insets.top }]}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <View style={s.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}><Text style={s.backText}>←</Text></TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}><Icon name="arrow-back" size={22} color={COLORS.gold} /></TouchableOpacity>
         <Text style={s.title}>{t("newGroup")}</Text>
         <TouchableOpacity onPress={create} disabled={creating || !name.trim() || selectedIds.size === 0} style={[s.createBtn, (!name.trim() || selectedIds.size === 0) && s.createBtnDisabled]}>
           <Text style={s.createText}>{t("createGroup")}</Text>
@@ -136,7 +137,7 @@ export default function CreateGroupScreen({ navigation }) {
       )}
 
       <View style={s.searchWrap}>
-        <Text style={s.searchIcon}>🔍</Text>
+        <Icon name="search" size={16} color={COLORS.muted} />
         <TextInput style={s.searchInput} value={search} onChangeText={setSearch} placeholder={t("searchUsers")} placeholderTextColor={COLORS.muted} />
       </View>
 
@@ -162,16 +163,16 @@ export default function CreateGroupScreen({ navigation }) {
 
 const s = StyleSheet.create({
   container: { flex: 1 },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingVertical: 12 },
-  backBtn: { padding: 4 },
-  backText: { color: COLORS.accent, fontSize: 22, fontWeight: "600" },
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: SPACING.lg, paddingVertical: SPACING.md, backgroundColor: GLASS.elevated.backgroundColor, borderBottomWidth: 1, borderBottomColor: GLASS.elevated.borderColor },
+  backBtn: { padding: SPACING.xs },
+  backText: { color: COLORS.gold, fontSize: 22, fontWeight: "600" },
   title: { fontSize: SIZES.lg, ...FONTS.semiBold, color: COLORS.text },
   createBtn: { backgroundColor: COLORS.primary, borderRadius: SIZES.radius, paddingHorizontal: 14, paddingVertical: 7 },
   createBtnDisabled: { opacity: 0.4 },
-  createText: { color: "#fff", ...FONTS.semiBold, fontSize: 13 },
+  createText: { color: COLORS.text, ...FONTS.semiBold, fontSize: 13 },
   inputWrap: { paddingHorizontal: 16, marginBottom: 10 },
   input: { backgroundColor: COLORS.input, borderRadius: SIZES.radius, paddingHorizontal: 14, paddingVertical: 12, color: COLORS.text, fontSize: SIZES.md },
-  searchWrap: { flexDirection: "row", alignItems: "center", backgroundColor: COLORS.input, borderRadius: SIZES.radius, marginHorizontal: 16, marginBottom: 10, paddingHorizontal: 12 },
+  searchWrap: { flexDirection: "row", alignItems: "center", backgroundColor: COLORS.input, borderRadius: SIZES.radius, marginHorizontal: 16, marginBottom: 10, paddingHorizontal: SPACING.md },
   searchIcon: { fontSize: 16, marginRight: 8 },
   searchInput: { flex: 1, paddingVertical: 10, color: COLORS.text, fontSize: SIZES.md },
   sectionTitle: { paddingHorizontal: 16, marginBottom: 6, color: COLORS.muted, fontWeight: "600", fontSize: SIZES.sm },
@@ -179,7 +180,7 @@ const s = StyleSheet.create({
   selectedCount: { color: COLORS.primary, fontWeight: "600", fontSize: SIZES.sm },
   centered: { flex: 1, alignItems: "center", justifyContent: "center" },
   emptyText: { color: COLORS.muted, fontSize: SIZES.md, textAlign: "center", marginTop: 40 },
-  userRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 11, gap: 12 },
+  userRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 11, gap: SPACING.md },
   userRowSelected: { backgroundColor: COLORS.primary + "15" },
   avatar: { width: 44, height: 44, borderRadius: 22 },
   avatarPlaceholder: { backgroundColor: COLORS.primary + "30", alignItems: "center", justifyContent: "center" },
@@ -187,7 +188,7 @@ const s = StyleSheet.create({
   userInfo: { flex: 1 },
   username: { fontSize: SIZES.md, fontWeight: "600", color: COLORS.text },
   userBio: { fontSize: 12, color: COLORS.muted, marginTop: 1 },
-  checkbox: { width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: COLORS.muted, alignItems: "center", justifyContent: "center" },
+  checkbox: { width: 24, height: 24, borderRadius: RADIUS.lg, borderWidth: 2, borderColor: COLORS.muted, alignItems: "center", justifyContent: "center" },
   checkboxSelected: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  checkmark: { color: "#fff", fontWeight: "700", fontSize: 14 },
+  checkmark: { color: COLORS.text, fontWeight: "700", fontSize: 14 },
 });

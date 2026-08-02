@@ -19,5 +19,5 @@ function SectionHeader({ title, action, style }) {
   );
 }
 const styles = StyleSheet.create({
-  divider: { height: 0.5, backgroundColor: COLORS.border, marginHorizontal: SPACING.lg },
+  divider: { height: 0.5, backgroundColor: COLORS.borderLight, marginHorizontal: SPACING.lg },
 });

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { View, Text, StyleSheet, Animated, TouchableOpacity } from "react-native";
+import Icon from "../ui/Icon";
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from "../DesignSystem";
 import { useLanguage } from "../../context/LanguageContext";
 import { useNetworkStatus } from "../../hooks/useNetworkStatus";
@@ -22,7 +23,7 @@ export default function OfflineState({ onRetry }) {
   return (
     <View style={styles.container}>
       <Animated.View style={[styles.iconWrap, { opacity: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.5, 1] }) }]}>
-        <Text style={styles.icon}>📡</Text>
+        <Icon name="wifi-outline" size="xxl" color={COLORS.warning} />
       </Animated.View>
       <Text style={styles.title}>{t("noConnection")}</Text>
       <Text style={styles.message}>{t("offlineMessage")}</Text>
@@ -57,7 +58,6 @@ export function OfflineBanner() {
 const styles = StyleSheet.create({
   container: { flex: 1, alignItems: "center", justifyContent: "center", padding: SPACING.xxl, minHeight: 300 },
   iconWrap: { width: 88, height: 88, borderRadius: 44, backgroundColor: COLORS.warning + "15", alignItems: "center", justifyContent: "center", marginBottom: SPACING.xl, borderWidth: 1, borderColor: COLORS.warning + "20" },
-  icon: { fontSize: 40 },
   title: { ...TYPOGRAPHY.h3, color: COLORS.text, marginBottom: SPACING.sm },
   message: { ...TYPOGRAPHY.body, color: COLORS.textSecondary, textAlign: "center", marginBottom: SPACING.xl },
   btn: { backgroundColor: COLORS.primary, paddingHorizontal: 28, paddingVertical: 12, borderRadius: RADIUS.full, ...SHADOWS.glow },

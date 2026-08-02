@@ -1,7 +1,7 @@
 import React, { memo } from "react";
 import { View, Text, TouchableOpacity, Image, StyleSheet } from "react-native";
 import { resolveUrl } from "../api/client";
-import { COLORS } from "./Theme";
+import { COLORS } from "../design/DesignSystem";
 
 const UserCard = memo(function UserCard({ user, onPress, onFollow, isFollowing, t }) {
   return (

@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { View, Text, TouchableOpacity, Alert, ActivityIndicator, StyleSheet, Dimensions } from "react-native";
+import { View, Text, TouchableOpacity, Alert, ActivityIndicator, StyleSheet, Dimensions, Animated as RNA } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   GestureHandlerRootView,
@@ -7,12 +7,7 @@ import {
   TapGestureHandler,
   State,
 } from "react-native-gesture-handler";
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-  withTiming,
-} from "react-native-reanimated";
+import Icon from "../design/ui/Icon";
 import { downloadAsync, cacheDirectory } from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import { resolveUrl } from "../api/client";
@@ -26,10 +21,10 @@ export default function ImageViewerScreen({ route, navigation }) {
   const username = route.params?.username ?? "";
   const insets = useSafeAreaInsets();
 
-  const scale = useSharedValue(1);
-  const savedScale = useRef(1);
-  const translateX = useSharedValue(0);
-  const translateY = useSharedValue(0);
+  const scale = useRef(new RNA.Value(1)).current;
+  const scaleRef = useRef(1);
+  const translateX = useRef(new RNA.Value(0)).current;
+  const translateY = useRef(new RNA.Value(0)).current;
   const [downloading, setDownloading] = useState(false);
 
   const fullUrl = resolveUrl(imageUrl);
@@ -37,38 +32,30 @@ export default function ImageViewerScreen({ route, navigation }) {
   const pinchRef = useRef(null);
   const doubleTapRef = useRef(null);
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: translateX.value },
-      { translateY: translateY.value },
-      { scale: scale.value },
-    ],
-  }));
-
   const onPinch = (event) => {
     if (event.nativeEvent.state === State.ACTIVE) {
-      const next = Math.min(Math.max(savedScale.current * event.nativeEvent.scale, 0.5), 4);
-      scale.value = next;
+      const next = Math.min(Math.max(scaleRef.current * event.nativeEvent.scale, 0.5), 4);
+      scaleRef.current = next;
+      scale.setValue(next);
     } else if (event.nativeEvent.state === State.END) {
-      savedScale.current = Math.min(Math.max(scale.value, 0.5), 4);
-      if (savedScale.current <= 1) {
-        scale.value = withSpring(1);
-        translateX.value = withTiming(0);
-        translateY.value = withTiming(0);
-        savedScale.current = 1;
+      if (scaleRef.current <= 1) {
+        scaleRef.current = 1;
+        RNA.spring(scale, { toValue: 1, useNativeDriver: true }).start();
+        RNA.timing(translateX, { toValue: 0, duration: 200, useNativeDriver: true }).start();
+        RNA.timing(translateY, { toValue: 0, duration: 200, useNativeDriver: true }).start();
       }
     }
   };
 
   const onDoubleTap = () => {
-    if (savedScale.current > 1) {
-      scale.value = withSpring(1);
-      translateX.value = withTiming(0);
-      translateY.value = withTiming(0);
-      savedScale.current = 1;
+    if (scaleRef.current > 1) {
+      scaleRef.current = 1;
+      RNA.spring(scale, { toValue: 1, useNativeDriver: true }).start();
+      RNA.timing(translateX, { toValue: 0, duration: 200, useNativeDriver: true }).start();
+      RNA.timing(translateY, { toValue: 0, duration: 200, useNativeDriver: true }).start();
     } else {
-      scale.value = withSpring(2.2);
-      savedScale.current = 2.2;
+      scaleRef.current = 2.2;
+      RNA.spring(scale, { toValue: 2.2, useNativeDriver: true }).start();
     }
   };
 
@@ -99,51 +86,51 @@ export default function ImageViewerScreen({ route, navigation }) {
     <GestureHandlerRootView style={s.wrap}>
       <View style={[s.topBar, { paddingTop: insets.top + 6 }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={s.closeBtn}>
-          <Text style={s.closeText}>✕</Text>
+          <Icon name="close" size="md" color="#fff" />
         </TouchableOpacity>
         {username && <Text style={s.username}>{username}</Text>}
         <View style={s.topActions}>
           <TouchableOpacity onPress={downloadImage} style={s.zoomBtn} disabled={downloading}>
             {downloading ? (
-              <ActivityIndicator size="small" color="#fff" />
+              <ActivityIndicator size="small" color={COLORS.white} />
             ) : (
-              <Text style={s.zoomBtnText}>⬇</Text>
+              <Icon name="download" size="sm" color="#fff" />
             )}
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => {
-              savedScale.current = 1;
-              scale.value = withSpring(1);
-              translateX.value = withTiming(0);
-              translateY.value = withTiming(0);
+              scaleRef.current = 1;
+              RNA.spring(scale, { toValue: 1, useNativeDriver: true }).start();
+              RNA.timing(translateX, { toValue: 0, duration: 200, useNativeDriver: true }).start();
+              RNA.timing(translateY, { toValue: 0, duration: 200, useNativeDriver: true }).start();
             }}
             style={s.zoomBtn}
           >
-            <Text style={s.zoomBtnText}>⟲</Text>
+            <Icon name="expand" size="sm" color="#fff" />
           </TouchableOpacity>
         </View>
       </View>
 
       <PinchGestureHandler ref={pinchRef} onHandlerStateChange={onPinch} simultaneousHandlers={doubleTapRef}>
-        <Animated.View style={s.imgWrap}>
+        <RNA.View style={s.imgWrap}>
           <TapGestureHandler
             ref={doubleTapRef}
             numberOfTaps={2}
             onActivated={onDoubleTap}
             simultaneousHandlers={pinchRef}
           >
-            <Animated.View style={[s.imgWrap, animatedStyle]}>
-              <Animated.Image source={{ uri: fullUrl }} style={s.img} resizeMode="contain" />
-            </Animated.View>
+            <RNA.View style={[s.imgWrap, { transform: [{ translateX }, { translateY }, { scale }] }]}>
+              <RNA.Image source={{ uri: fullUrl }} style={s.img} resizeMode="contain" />
+            </RNA.View>
           </TapGestureHandler>
-        </Animated.View>
+        </RNA.View>
       </PinchGestureHandler>
     </GestureHandlerRootView>
   );
 }
 
 const s = StyleSheet.create({
-  wrap: { flex: 1, backgroundColor: "#000", justifyContent: "center", alignItems: "center" },
+  wrap: { flex: 1, backgroundColor: COLORS.black, justifyContent: "center", alignItems: "center" },
   topBar: {
     position: "absolute",
     top: 0,
@@ -157,18 +144,19 @@ const s = StyleSheet.create({
     paddingBottom: 8,
   },
   closeBtn: { width: 36, height: 36, alignItems: "center", justifyContent: "center" },
-  closeText: { fontSize: 22, color: "#fff", fontWeight: "600" },
-  username: { fontSize: 15, fontWeight: "600", color: "#fff" },
+  username: { fontSize: 15, fontWeight: "600", color: COLORS.white },
   topActions: { flexDirection: "row", gap: 6 },
   zoomBtn: {
     width: 32,
     height: 32,
-    borderRadius: 16,
-    backgroundColor: "rgba(255,255,255,0.15)",
+    borderRadius: RADIUS.full,
+    backgroundColor: COLORS.glassLight,
+    borderWidth: 0.5,
+    borderColor: COLORS.glassBorder,
     alignItems: "center",
     justifyContent: "center",
   },
-  zoomBtnText: { fontSize: 18, color: "#fff", fontWeight: "600" },
+
   imgWrap: { width: SCREEN_W, height: SCREEN_H, alignItems: "center", justifyContent: "center" },
   img: { width: "100%", height: "100%" },
 });

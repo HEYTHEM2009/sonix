@@ -4,7 +4,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import client, { resolveUrl } from "../api/client";
-import { COLORS, SIZES } from "../components/Theme";
+import { COLORS, SIZES, FONTS, SPACING, RADIUS, SHADOWS, GLASS, TYPOGRAPHY, LAYOUT } from "../design/DesignSystem";
+import Icon from "../design/ui/Icon";
 import Screen3D from "../components/3D/Screen3D";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -204,7 +205,7 @@ export default function UsersScreen({ navigation }) {
         <View style={s.userInfo}>
           <View style={s.nameRow}>
             <Text style={s.username} numberOfLines={1}>{u.username}</Text>
-            {u.is_private && <Text style={s.lockIcon}>🔒</Text>}
+            {u.is_private && <Text style={s.lockIcon}>(Private)</Text>}
           </View>
           {u.bio ? <Text style={s.bio} numberOfLines={1}>{u.bio}</Text> : null}
           <Text style={s.followers}>
@@ -219,7 +220,7 @@ export default function UsersScreen({ navigation }) {
               { backgroundColor: state === "follow" ? COLORS.primary : COLORS.input },
             ]}
           >
-            <Text style={[s.followText, { color: state === "follow" ? "#fff" : COLORS.textSecondary }]}>
+            <Text style={[s.followText, { color: state === "follow" ? COLORS.white : COLORS.textSecondary }]}>
               {state === "following" ? t("followingStatus") : state === "requested" ? t("requested") : t("follow")}
             </Text>
           </TouchableOpacity>
@@ -240,7 +241,7 @@ export default function UsersScreen({ navigation }) {
   const renderRecent = ({ item: u }) => (
     <TouchableOpacity style={s.recentRow} onPress={() => pickRecent(u)}>
       <View style={s.recentIcon}>
-        <Text style={s.recentIconText}>🕐</Text>
+        <Icon name="time" size={10} />
       </View>
       <Text style={s.recentName} numberOfLines={1}>{u.username}</Text>
     </TouchableOpacity>
@@ -266,7 +267,7 @@ export default function UsersScreen({ navigation }) {
         />
         {query.length > 0 && (
           <TouchableOpacity onPress={() => { setQuery(""); setDebounced(""); setShowSuggestions(false); }} style={s.clearBtn}>
-            <Text style={s.clearBtnText}>✕</Text>
+            <Icon name="close" size={16} color={COLORS.muted} />
           </TouchableOpacity>
         )}
       </View>
@@ -280,7 +281,7 @@ export default function UsersScreen({ navigation }) {
               onPress={() => setFilterType(f.key)}
               style={[s.filterChip, filterType === f.key && { backgroundColor: COLORS.primary }]}
             >
-              <Text style={[s.filterChipText, filterType === f.key && { color: "#fff" }]}>
+              <Text style={[s.filterChipText, filterType === f.key && { color: COLORS.white }]}>
                 {f.label}
               </Text>
             </TouchableOpacity>
@@ -322,10 +323,10 @@ export default function UsersScreen({ navigation }) {
       {/* Search results */}
       {query.length >= 2 ? (
         loading && results.length === 0 ? (
-          <ActivityIndicator color={COLORS.accent} style={{ marginTop: 40 }} />
+          <ActivityIndicator color={COLORS.gold} style={{ marginTop: 40 }} />
         ) : error && results.length === 0 ? (
           <View style={s.emptyWrap}>
-            <Text style={s.emptyIcon}>⚠️</Text>
+            <Icon name="alert-circle" size={40} style={{ marginBottom: SPACING.md }} />
             <Text style={s.empty}>{error}</Text>
           </View>
         ) : (
@@ -336,11 +337,11 @@ export default function UsersScreen({ navigation }) {
             contentContainerStyle={s.listContent}
             ListEmptyComponent={
               <View style={s.emptyWrap}>
-                <Text style={s.emptyIcon}>🔍</Text>
+                <Icon name="search" size={40} style={{ marginBottom: SPACING.md }} />
                 <Text style={s.empty}>{t("noUsersFound")}</Text>
               </View>
             }
-            ListFooterComponent={loadingMore ? <ActivityIndicator color={COLORS.accent} style={{ padding: 16 }} /> : null}
+            ListFooterComponent={loadingMore ? <ActivityIndicator color={COLORS.gold} style={{ padding: SPACING.lg }} /> : null}
             refreshing={refreshing}
             onRefresh={onRefresh}
             onEndReached={loadMore}
@@ -350,7 +351,7 @@ export default function UsersScreen({ navigation }) {
         )
       ) : query.length === 0 ? (
         <View style={s.emptyWrap}>
-          <Text style={s.emptyIcon}>👥</Text>
+          <Icon name="people" size={40} style={{ marginBottom: SPACING.md }} />
           <Text style={s.empty}>{t("searchPeople")}</Text>
         </View>
       ) : null}
@@ -364,71 +365,68 @@ const s = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 12,
-    paddingBottom: 8,
+    paddingHorizontal: SPACING.md,
+    paddingBottom: SPACING.sm,
     borderBottomWidth: 0.5,
     borderBottomColor: COLORS.border,
   },
   searchInput: {
     flex: 1,
     backgroundColor: COLORS.input,
-    borderRadius: 10,
+    borderRadius: RADIUS.sm,
     padding: 10,
     fontSize: 14,
     color: COLORS.text,
   },
   clearBtn: {
-    marginLeft: 8,
-    padding: 6,
+    marginLeft: SPACING.sm,
+    padding: SPACING.xs + 2,
   },
   clearBtnText: {
+    ...TYPOGRAPHY.bodyBold,
     color: COLORS.muted,
-    fontSize: 16,
-    fontWeight: "600",
   },
   filterBar: {
     flexDirection: "row",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    gap: 8,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.xs + 2,
+    gap: SPACING.sm,
     borderBottomWidth: 0.5,
     borderBottomColor: COLORS.border,
   },
   filterChip: {
-    paddingVertical: 4,
+    paddingVertical: SPACING.xs,
     paddingHorizontal: 14,
-    borderRadius: 16,
+    borderRadius: RADIUS.lg,
     backgroundColor: COLORS.input,
   },
   filterChipText: {
-    fontSize: 13,
+    ...TYPOGRAPHY.caption,
     color: COLORS.textSecondary,
-    fontWeight: "500",
   },
   suggestionsWrap: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
     borderBottomWidth: 0.5,
     borderBottomColor: COLORS.border,
   },
   suggestionsLabel: {
-    fontSize: 12,
+    ...TYPOGRAPHY.label,
     color: COLORS.muted,
-    marginBottom: 6,
-    fontWeight: "600",
+    marginBottom: SPACING.xs + 2,
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
   suggRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 8,
-    gap: 10,
+    paddingVertical: SPACING.sm,
+    gap: SPACING.sm + 2,
   },
   suggAvatar: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: RADIUS.full,
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
@@ -436,11 +434,11 @@ const s = StyleSheet.create({
   suggName: {
     color: COLORS.text,
     fontSize: 14,
-    fontWeight: "500",
+    ...FONTS.medium,
   },
   recentSection: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
     borderBottomWidth: 0.5,
     borderBottomColor: COLORS.border,
   },
@@ -448,82 +446,81 @@ const s = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 4,
+    marginBottom: SPACING.xs,
   },
   recentLabel: {
-    fontSize: 12,
+    ...TYPOGRAPHY.label,
     color: COLORS.muted,
-    fontWeight: "600",
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
   clearText: {
-    fontSize: 13,
-    color: COLORS.accent,
-    fontWeight: "500",
+    ...TYPOGRAPHY.caption,
+    color: COLORS.gold,
   },
   recentRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 8,
-    gap: 10,
+    paddingVertical: SPACING.sm,
+    gap: SPACING.sm + 2,
   },
   recentIcon: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: RADIUS.full,
     backgroundColor: COLORS.input,
     alignItems: "center",
     justifyContent: "center",
   },
-  recentIconText: { fontSize: 16 },
+  recentIconText: { fontSize: 10, color: COLORS.text },
   recentName: {
     color: COLORS.text,
     fontSize: 14,
-    fontWeight: "500",
+    ...FONTS.medium,
     flex: 1,
   },
   listContent: { paddingBottom: 30 },
-  emptyWrap: { alignItems: "center", paddingTop: 60, paddingHorizontal: 24 },
-  emptyIcon: { fontSize: 40, marginBottom: 12 },
-  empty: { textAlign: "center", color: COLORS.muted, fontSize: 15, lineHeight: 22 },
+  emptyWrap: { alignItems: "center", paddingTop: 60, paddingHorizontal: SPACING.xxl },
+  emptyIcon: { fontSize: 40, marginBottom: SPACING.md },
+  empty: { ...TYPOGRAPHY.body, textAlign: "center", color: COLORS.muted },
   userCard: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 10,
-    paddingHorizontal: 12,
+    paddingHorizontal: SPACING.md,
     borderBottomWidth: 0.5,
     borderBottomColor: COLORS.border,
+    ...GLASS.default,
   },
-  avatarWrap: { position: "relative", marginRight: 10 },
+  avatarWrap: { position: "relative", marginRight: SPACING.sm + 2 },
   avatar: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: RADIUS.full,
     backgroundColor: COLORS.input,
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
   },
-  avatarImg: { width: 44, height: 44, borderRadius: 22 },
-  avatarText: { color: COLORS.text, fontWeight: "600", fontSize: 16 },
+  avatarImg: { width: 44, height: 44, borderRadius: RADIUS.full },
+  avatarText: { ...TYPOGRAPHY.bodyBold, color: COLORS.text },
   onlineDot: {
     position: "absolute",
     bottom: 1,
     right: 1,
     width: 12,
     height: 12,
-    borderRadius: 6,
-    backgroundColor: "#34C759",
+    borderRadius: RADIUS.xs,
+    backgroundColor: COLORS.success,
     borderWidth: 2,
     borderColor: COLORS.card,
   },
-  userInfo: { flex: 1, marginRight: 8 },
-  nameRow: { flexDirection: "row", alignItems: "center", gap: 4 },
-  username: { fontWeight: "600", fontSize: 14, color: COLORS.text },
-  lockIcon: { fontSize: 11 },
-  bio: { fontSize: 12, color: COLORS.textSecondary, marginTop: 2 },
-  followers: { fontSize: 11, color: COLORS.muted, marginTop: 2 },
-  followBtn: { paddingVertical: 6, paddingHorizontal: 18, borderRadius: 8 },
-  followText: { fontWeight: "600", fontSize: 13 },
+  userInfo: { flex: 1, marginRight: SPACING.sm },
+  nameRow: { flexDirection: "row", alignItems: "center", gap: SPACING.xs },
+  username: { ...FONTS.semiBold, fontSize: 14, color: COLORS.text },
+  lockIcon: { fontSize: 10, color: COLORS.muted },
+  bio: { fontSize: 12, color: COLORS.textSecondary, marginTop: SPACING.xxs },
+  followers: { ...TYPOGRAPHY.small, color: COLORS.muted, marginTop: SPACING.xxs },
+  followBtn: { paddingVertical: SPACING.xs + 2, paddingHorizontal: 18, borderRadius: RADIUS.sm },
+  followText: { ...TYPOGRAPHY.captionBold },
 });

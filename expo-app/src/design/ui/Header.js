@@ -55,8 +55,8 @@ export function PremiumHeader({ title, subtitle, gradient = false, style }) {
 }
 
 const styles = StyleSheet.create({
-  container: { backgroundColor: "transparent", paddingBottom: SPACING.sm },
-  glassContainer: { backgroundColor: GLASS.default.backgroundColor, borderBottomWidth: 1, borderBottomColor: GLASS.default.borderColor },
+  container: { backgroundColor: "transparent", paddingBottom: SPACING.sm, borderBottomWidth: 0.5, borderBottomColor: COLORS.borderLight },
+  glassContainer: { backgroundColor: GLASS.default.backgroundColor, borderBottomWidth: 1, borderBottomColor: COLORS.glassBorder },
   content: { flexDirection: "row", alignItems: "center", paddingHorizontal: SPACING.md, minHeight: 48 },
   left: { minWidth: 50, alignItems: "flex-start" },
   center: { flex: 1, alignItems: "center" },
@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
   glassTitle: { ...TYPOGRAPHY.bodyBold, color: COLORS.text },
   subtitle: { ...TYPOGRAPHY.small, color: COLORS.textSecondary },
   right: { minWidth: 50, flexDirection: "row", alignItems: "center", justifyContent: "flex-end" },
-  screenHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: SPACING.lg, paddingBottom: SPACING.sm },
+  screenHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: SPACING.lg, paddingBottom: SPACING.sm, borderBottomWidth: 0.5, borderBottomColor: COLORS.borderLight },
   glassScreenHeader: {
     flexDirection: "row",
     alignItems: "center",
@@ -73,11 +73,11 @@ const styles = StyleSheet.create({
     paddingBottom: SPACING.sm,
     backgroundColor: GLASS.default.backgroundColor,
     borderBottomWidth: 1,
-    borderBottomColor: GLASS.default.borderColor,
+    borderBottomColor: COLORS.glassBorder,
   },
   screenTitle: { ...TYPOGRAPHY.h2, color: COLORS.text },
   rightContent: { flexDirection: "row", gap: SPACING.sm },
-  premiumHeader: { paddingHorizontal: SPACING.lg, paddingBottom: SPACING.xl },
+  premiumHeader: { paddingHorizontal: SPACING.lg, paddingBottom: SPACING.xl, borderBottomWidth: 0.5, borderBottomColor: COLORS.borderLight },
   eyebrow: { ...TYPOGRAPHY.label, color: COLORS.primaryLight, marginBottom: SPACING.xs },
   premiumTitle: { ...TYPOGRAPHY.hero, color: COLORS.text },
 });

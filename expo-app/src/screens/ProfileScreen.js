@@ -8,6 +8,7 @@ import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import { useNetworkStatus } from "../hooks/useNetworkStatus";
 import client, { resolveUrl } from "../api/client";
+import Icon from "../design/ui/Icon";
 import { COLORS, SPACING, RADIUS, TYPOGRAPHY, SHADOWS, GLASS, LAYOUT } from "../design/DesignSystem";
 import Avatar from "../design/ui/Avatar";
 import Button, { IconButton } from "../design/ui/Button";
@@ -77,8 +78,8 @@ export default function ProfileScreen({ navigation }) {
           <View style={styles.heroTop}>
             <Text style={styles.username}>{user?.username}</Text>
             <View style={styles.topActions}>
-              <IconButton icon="⚙️" onPress={() => navigation.navigate("Settings")} color={COLORS.text} bgColor="rgba(255,255,255,0.05)" size={38} />
-              <IconButton icon="🚪" onPress={logout} color={COLORS.dangerLight} bgColor="rgba(255,255,255,0.03)" size={38} />
+              <IconButton icon="settings" onPress={() => navigation.navigate("Settings")} color={COLORS.text} bgColor={COLORS.glassLight} size={38} />
+              <IconButton icon="log-out" onPress={logout} color={COLORS.dangerLight} bgColor={COLORS.glassLight} size={38} />
             </View>
           </View>
           <View style={styles.heroBody}>
@@ -101,9 +102,12 @@ export default function ProfileScreen({ navigation }) {
           <Text style={styles.name}>{user?.name || user?.username}</Text>
           {user?.bio && <Text style={styles.bio}>{user.bio}</Text>}
           <View style={styles.privacyRow}>
-            <View style={[styles.privacyBadge, isPrivate && { backgroundColor: COLORS.accent + "25", borderColor: COLORS.accent + "40" }]}>
-              <Text style={[styles.privacyText, isPrivate && { color: COLORS.accent }]}>{isPrivate ? `🔒 ${t("private")}` : `🌐 ${t("public")}`}</Text>
+          <View style={[styles.privacyBadge, isPrivate && { backgroundColor: COLORS.accent + "25", borderColor: COLORS.accent + "40" }]}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+              <Icon name={isPrivate ? "lock-closed" : "globe"} size={14} color={isPrivate ? COLORS.accent : COLORS.primaryLight} />
+              <Text style={[styles.privacyText, isPrivate && { color: COLORS.accent }]}>{isPrivate ? t("private") : t("public")}</Text>
             </View>
+          </View>
           </View>
           <View style={styles.btnRow}>
             <Button title={t("editProfile")} variant="primary" size="sm" onPress={() => navigation.navigate("EditProfile")} style={{ flex: 1 }} />
@@ -117,14 +121,14 @@ export default function ProfileScreen({ navigation }) {
 
       <View style={styles.savedSection}>
         <TouchableOpacity style={[styles.glassRow, { marginBottom: SPACING.sm }]} onPress={() => navigation.navigate("SavedPosts")}>
-          <Text style={styles.savedIcon}>🔖</Text>
+          <Icon name="bookmark-outline" size={18} color={COLORS.text} style={{ marginRight: SPACING.md }} />
           <Text style={styles.savedLabel}>{t("saved")}</Text>
-          <Text style={styles.savedArrow}>→</Text>
+          <Icon name="arrow-forward" size={18} color={COLORS.muted} />
         </TouchableOpacity>
         <TouchableOpacity style={styles.glassRow} onPress={() => navigation.navigate("Highlights")}>
-          <Text style={styles.savedIcon}>✨</Text>
+          <Icon name="sparkles" size={18} color={COLORS.text} style={{ marginRight: SPACING.md }} />
           <Text style={styles.savedLabel}>{t("highlights")}</Text>
-          <Text style={styles.savedArrow}>→</Text>
+          <Icon name="arrow-forward" size={18} color={COLORS.muted} />
         </TouchableOpacity>
       </View>
 
@@ -135,11 +139,11 @@ export default function ProfileScreen({ navigation }) {
               <Avatar source={null} username={r.follower?.username} size="sm" />
               <Text style={styles.reqName}>{r.follower?.username}</Text>
               <View style={styles.reqActions}>
-                <TouchableOpacity onPress={() => approveRequest(r.id)} style={styles.approveBtn}>
-                  <Text style={styles.btnCheck}>✓</Text>
+                <TouchableOpacity onPress={() => approveRequest(r.id)} style={styles.approveBtn} hitSlop={{top:8, bottom:8, left:8, right:8}}>
+                  <Icon name="checkmark" size={16} color="#fff" />
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => rejectRequest(r.id)} style={styles.rejectBtn}>
-                  <Text style={styles.btnX}>✕</Text>
+                <TouchableOpacity onPress={() => rejectRequest(r.id)} style={styles.rejectBtn} hitSlop={{top:8, bottom:8, left:8, right:8}}>
+                  <Icon name="close" size={16} color={COLORS.danger} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -149,7 +153,7 @@ export default function ProfileScreen({ navigation }) {
 
       {posts.length === 0 && !loading && (
         <View style={styles.emptyPosts}>
-          <Text style={styles.emptyIcon}>📷</Text>
+          <Icon name="camera-outline" size={48} color={COLORS.muted} style={{ marginBottom: SPACING.md }} />
           <Text style={styles.emptyTitle}>{t("noPosts")}</Text>
         </View>
       )}
@@ -239,17 +243,17 @@ const styles = StyleSheet.create({
   reqRow: { flexDirection: "row", alignItems: "center", paddingVertical: SPACING.sm, gap: SPACING.md },
   reqName: { flex: 1, ...TYPOGRAPHY.bodyBold, color: COLORS.text },
   reqActions: { flexDirection: "row", gap: SPACING.sm },
-  approveBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: COLORS.success, alignItems: "center", justifyContent: "center" },
-  btnCheck: { color: "#fff", fontSize: 16, fontWeight: "700" },
-  rejectBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.05)", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: GLASS.default.borderColor },
+  approveBtn: { width: 32, height: 32, borderRadius: RADIUS.xl, backgroundColor: COLORS.success, alignItems: "center", justifyContent: "center" },
+  btnCheck: { color: COLORS.white, fontSize: 16, fontWeight: "700" },
+  rejectBtn: { width: 32, height: 32, borderRadius: RADIUS.xl, backgroundColor: COLORS.glassLight, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: GLASS.default.borderColor },
   btnX: { color: COLORS.danger, fontSize: 16, fontWeight: "700" },
 
   emptyPosts: { alignItems: "center", paddingTop: SPACING.huge },
   emptyIcon: { fontSize: 48, marginBottom: SPACING.md },
   emptyTitle: { ...TYPOGRAPHY.body, color: COLORS.muted },
 
-  cell: { width: CELL, height: CELL, marginBottom: GAP, borderRadius: 4, overflow: "hidden" },
+  cell: { width: CELL, height: CELL, marginBottom: GAP, borderRadius: RADIUS.xs, overflow: "hidden" },
   cellImg: { width: "100%", height: "100%" },
   cellTextWrap: { width: "100%", height: "100%", backgroundColor: COLORS.card, alignItems: "center", justifyContent: "center", padding: 6 },
-  cellText: { fontSize: 11, color: COLORS.textSecondary, textAlign: "center" },
+  cellText: { ...TYPOGRAPHY.small, color: COLORS.textSecondary, textAlign: "center" },
 });

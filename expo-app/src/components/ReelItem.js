@@ -9,14 +9,15 @@ import {
   Alert,
   ActivityIndicator,
   Animated as RNA,
+  Easing,
 } from "react-native";
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
-import Animated, { useSharedValue, useAnimatedStyle, withTiming, withSequence, runOnJS, Easing } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { VideoView, useVideoPlayer } from "expo-video";
 import { resolveUrl } from "../api/client";
-import { COLORS } from "./Theme";
+import { COLORS } from "../design/DesignSystem";
+import Icon from "../design/ui/Icon";
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
 
@@ -28,71 +29,58 @@ function formatCount(n) {
 }
 
 function FloatingHeart({ x, y }) {
-  const scale = useSharedValue(0);
-  const opacity = useSharedValue(1);
-  const translateY = useSharedValue(0);
+  const scale = useRef(new RNA.Value(0)).current;
+  const opacity = useRef(new RNA.Value(1)).current;
+  const translateY = useRef(new RNA.Value(0)).current;
 
   useEffect(() => {
-    scale.value = withSequence(
-      withTiming(1.2, { duration: 150, easing: Easing.out(Easing.quad) }),
-      withTiming(1, { duration: 100 })
-    );
-    opacity.value = withTiming(0, { duration: 700, easing: Easing.out(Easing.quad) });
-    translateY.value = withTiming(-90, { duration: 700, easing: Easing.out(Easing.quad) });
+    RNA.sequence([
+      RNA.timing(scale, { toValue: 1.2, duration: 150, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+      RNA.timing(scale, { toValue: 1, duration: 100, useNativeDriver: true }),
+    ]).start();
+    RNA.timing(opacity, { toValue: 0, duration: 700, easing: Easing.out(Easing.quad), useNativeDriver: true }).start();
+    RNA.timing(translateY, { toValue: -90, duration: 700, easing: Easing.out(Easing.quad), useNativeDriver: true }).start();
   }, []);
 
-  const animStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }, { translateY: translateY.value }],
-    opacity: opacity.value,
-  }));
-
   return (
-    <Animated.View
+    <RNA.View
       pointerEvents="none"
-      style={[{ position: "absolute", left: x - 40, top: y - 40, zIndex: 15 }, animStyle]}
+      style={[{ position: "absolute", left: x - 40, top: y - 40, zIndex: 15, transform: [{ scale }, { translateY }], opacity }]}
     >
-      <Text style={{ fontSize: 80 }}>❤️</Text>
-    </Animated.View>
+      <Icon name="heart" size={80} color="#ff2d55" />
+    </RNA.View>
   );
 }
 
 function SmallHeart({ x, y, offsetX, offsetY, delayMs }) {
-  const scale = useSharedValue(0);
-  const opacity = useSharedValue(1);
-  const translateX = useSharedValue(0);
-  const translateY = useSharedValue(0);
+  const scale = useRef(new RNA.Value(0)).current;
+  const opacity = useRef(new RNA.Value(1)).current;
+  const translateX = useRef(new RNA.Value(0)).current;
+  const translateY = useRef(new RNA.Value(0)).current;
   const started = useRef(false);
 
   useEffect(() => {
     if (started.current) return;
     started.current = true;
-    setTimeout(() => {
-      scale.value = withSequence(
-        withTiming(1, { duration: 100 }),
-        withTiming(0.6, { duration: 400 })
-      );
-      opacity.value = withTiming(0, { duration: 500 });
-      translateX.value = withTiming(offsetX, { duration: 500 });
-      translateY.value = withTiming(offsetY, { duration: 500 });
+    const timer = setTimeout(() => {
+      RNA.sequence([
+        RNA.timing(scale, { toValue: 1, duration: 100, useNativeDriver: true }),
+        RNA.timing(scale, { toValue: 0.6, duration: 400, useNativeDriver: true }),
+      ]).start();
+      RNA.timing(opacity, { toValue: 0, duration: 500, useNativeDriver: true }).start();
+      RNA.timing(translateX, { toValue: offsetX, duration: 500, useNativeDriver: true }).start();
+      RNA.timing(translateY, { toValue: offsetY, duration: 500, useNativeDriver: true }).start();
     }, delayMs);
+    return () => clearTimeout(timer);
   }, []);
 
-  const animStyle = useAnimatedStyle(() => ({
-    transform: [
-      { scale: scale.value },
-      { translateX: translateX.value },
-      { translateY: translateY.value },
-    ],
-    opacity: opacity.value,
-  }));
-
   return (
-    <Animated.View
+    <RNA.View
       pointerEvents="none"
-      style={[{ position: "absolute", left: x - 14, top: y - 14, zIndex: 14 }, animStyle]}
+      style={[{ position: "absolute", left: x - 14, top: y - 14, zIndex: 14, transform: [{ scale }, { translateX }, { translateY }], opacity }]}
     >
-      <Text style={{ fontSize: 28 }}>❤️</Text>
-    </Animated.View>
+      <Icon name="heart" size={28} color="#ff2d55" />
+    </RNA.View>
   );
 }
 
@@ -245,13 +233,13 @@ const ReelItem = memo(function ReelItem({
   const doubleTap = Gesture.Tap()
     .numberOfTaps(2)
     .onEnd((event) => {
-      runOnJS(handleDoubleTap)(event.x, event.y);
+      handleDoubleTap(event.x, event.y);
     });
 
   const singleTap = Gesture.Tap()
     .numberOfTaps(1)
     .onEnd(() => {
-      runOnJS(togglePlayPause)();
+      togglePlayPause();
     });
 
   const composedGesture = Gesture.Exclusive(doubleTap, singleTap);
@@ -302,7 +290,7 @@ const ReelItem = memo(function ReelItem({
       )}
       {videoError && (
         <View style={styles.videoLoading}>
-          <Text style={{ color: "#fff", fontSize: 14 }}>⚠️</Text>
+          <Icon name="alert-circle" size={14} color="#fff" />
           <Text style={{ color: "#888", fontSize: 12, marginTop: 6 }}>Video unavailable</Text>
         </View>
       )}
@@ -336,7 +324,7 @@ const ReelItem = memo(function ReelItem({
 
       {paused && videoReady && (
         <View style={styles.playOverlay} pointerEvents="none">
-          <Text style={styles.playIcon}>▶️</Text>
+          <Icon name="play" size={72} color="#fff" style={{ opacity: 0.85 }} />
         </View>
       )}
 
@@ -366,9 +354,9 @@ const ReelItem = memo(function ReelItem({
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.sidebarAction} onPress={toggleLike} activeOpacity={0.7}>
-          <RNA.Text style={[styles.sidebarIcon, { transform: [{ scale: heartScale }], opacity: heartOpacity }]}>
-            {liked ? "❤️" : "🤍"}
-          </RNA.Text>
+          <RNA.View style={[styles.sidebarIcon, { transform: [{ scale: heartScale }], opacity: heartOpacity }]}>
+            <Icon name={liked ? "heart" : "heart-outline"} size={30} color="#fff" />
+          </RNA.View>
           <Text style={styles.sidebarCount}>{formatCount(likesCount)}</Text>
         </TouchableOpacity>
 
@@ -377,12 +365,12 @@ const ReelItem = memo(function ReelItem({
           onPress={() => onComment(reel.id)}
           activeOpacity={0.7}
         >
-          <Text style={styles.sidebarIcon}>💬</Text>
+          <Icon name="chatbubble-outline" size={30} color="#fff" />
           <Text style={styles.sidebarCount}>{formatCount(reel.comments_count)}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.sidebarAction} onPress={toggleSave} activeOpacity={0.7}>
-          <Text style={styles.sidebarIcon}>{saved ? "🔖" : "📑"}</Text>
+          <Icon name={saved ? "bookmark" : "bookmark-outline"} size={30} color="#fff" />
           <Text style={styles.sidebarCount}>{formatCount(reel.saves_count)}</Text>
         </TouchableOpacity>
 
@@ -391,7 +379,7 @@ const ReelItem = memo(function ReelItem({
           onPress={() => onShare(reel)}
           activeOpacity={0.7}
         >
-          <Text style={styles.sidebarIcon}>📤</Text>
+          <Icon name="share-outline" size={30} color="#fff" />
           <Text style={styles.sidebarCount}>{formatCount(reel.shares_count)}</Text>
         </TouchableOpacity>
 
@@ -406,16 +394,16 @@ const ReelItem = memo(function ReelItem({
             }
             activeOpacity={0.7}
           >
-            <Text style={styles.sidebarIcon}>🗑️</Text>
+            <Icon name="trash-outline" size={30} color="#fff" />
           </TouchableOpacity>
         )}
 
         <TouchableOpacity style={styles.sidebarAction} onPress={() => onDownload(reel)} activeOpacity={0.7}>
-          <Text style={styles.sidebarIcon}>⬇️</Text>
+          <Icon name="download-outline" size={30} color="#fff" />
         </TouchableOpacity>
 
         <RNA.View style={[styles.musicDisc, { transform: [{ rotate: spinInterpolation }] }]}>
-          <Text style={styles.musicDiscIcon}>🎵</Text>
+          <Icon name="musical-note" size={16} color="#fff" />
         </RNA.View>
       </View>
 
@@ -434,7 +422,7 @@ const ReelItem = memo(function ReelItem({
           ) : null}
           {reel.music_title ? (
             <View style={styles.musicRow}>
-              <Text style={styles.musicIconSmall}>♪</Text>
+              <Icon name="musical-note" size={12} color="#ddd" />
               <Text style={styles.musicText} numberOfLines={1}>
                 {reel.music_title}
               </Text>

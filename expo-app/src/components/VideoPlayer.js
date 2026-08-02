@@ -1,7 +1,7 @@
 import { useState, memo } from "react";
 import { View, StyleSheet, ActivityIndicator } from "react-native";
 import { WebView } from "react-native-webview";
-import { COLORS } from "./Theme";
+import { COLORS } from "../design/DesignSystem";
 
 const VideoPlayer = memo(({ uri, style, onEnd }) => {
   const [loading, setLoading] = useState(true);

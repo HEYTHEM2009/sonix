@@ -3,7 +3,8 @@ import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Activi
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import client from "../api/client";
 import { useLanguage } from "../context/LanguageContext";
-import { COLORS, SIZES, FONTS } from "../components/Theme";
+import { COLORS, SIZES, FONTS, SPACING, RADIUS, TYPOGRAPHY, SHADOWS, GLASS, LAYOUT } from "../design/DesignSystem";
+import Icon from "../design/ui/Icon";
 import Screen3D from "../components/3D/Screen3D";
 
 const TABS = ["feedback", "reportContent"];
@@ -56,7 +57,7 @@ export default function ReportProblemScreen({ navigation }) {
     <Screen3D style={[s.wrap, { paddingTop: insets.top }]}>
       <View style={s.topBar}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={s.backBtn}>←</Text>
+          <Icon name="arrow-back" size={20} color={COLORS.text} />
         </TouchableOpacity>
         <Text style={s.title}>{t("reportProblem")}</Text>
         <View style={{ width: 36 }} />
@@ -77,7 +78,7 @@ export default function ReportProblemScreen({ navigation }) {
       </View>
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16 }}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: SPACING.lg }}>
         {tab === "feedback" ? (
           <View>
             <Text style={s.label}>{t("subject")}</Text>
@@ -173,26 +174,26 @@ export default function ReportProblemScreen({ navigation }) {
 
 const s = StyleSheet.create({
   wrap: { flex: 1 },
-  topBar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 12, paddingBottom: 8 },
+  topBar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: SPACING.md, paddingBottom: SPACING.sm, ...GLASS.default },
   backBtn: { fontSize: 22, color: COLORS.text },
   title: { fontSize: SIZES.lg, ...FONTS.semiBold, color: COLORS.text },
-  tabRow: { flexDirection: "row", marginHorizontal: 16, marginBottom: 12, backgroundColor: COLORS.input, borderRadius: SIZES.radius, padding: 3 },
-  tab: { flex: 1, paddingVertical: 10, alignItems: "center", borderRadius: SIZES.radius - 2 },
+  tabRow: { flexDirection: "row", marginHorizontal: SPACING.lg, marginBottom: SPACING.md, backgroundColor: COLORS.input, borderRadius: RADIUS.md, padding: 3 },
+  tab: { flex: 1, paddingVertical: SPACING.sm, alignItems: "center", borderRadius: RADIUS.sm },
   tabActive: { backgroundColor: COLORS.card },
   tabText: { fontSize: 13, ...FONTS.medium, color: COLORS.muted },
-  tabTextActive: { color: COLORS.accent, ...FONTS.semiBold },
-  label: { fontSize: 14, ...FONTS.semiBold, color: COLORS.text, marginBottom: 6, marginTop: 12 },
-  input: { backgroundColor: COLORS.input, borderRadius: SIZES.radius, paddingHorizontal: 14, paddingVertical: 12, color: COLORS.text, fontSize: 14, borderWidth: 1, borderColor: COLORS.border, marginBottom: 8 },
+  tabTextActive: { color: COLORS.gold, ...FONTS.semiBold },
+  label: { fontSize: 14, ...FONTS.semiBold, color: COLORS.text, marginBottom: SPACING.xs, marginTop: SPACING.md },
+  input: { backgroundColor: COLORS.input, borderRadius: RADIUS.md, paddingHorizontal: SPACING.md, paddingVertical: SPACING.md, color: COLORS.text, fontSize: 14, borderWidth: 1, borderColor: COLORS.border, marginBottom: SPACING.sm },
   textArea: { minHeight: 120 },
-  sendBtn: { backgroundColor: COLORS.accent, borderRadius: SIZES.radius, paddingVertical: 14, alignItems: "center", marginTop: 8 },
+  sendBtn: { backgroundColor: COLORS.gold, borderRadius: RADIUS.md, paddingVertical: SPACING.md, alignItems: "center", marginTop: SPACING.sm },
   sendBtnText: { color: COLORS.text, ...FONTS.semiBold, fontSize: 16 },
-  reportItem: { backgroundColor: COLORS.card, borderRadius: SIZES.radius, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: COLORS.border },
-  reportItemTitle: { fontSize: 14, ...FONTS.semiBold, color: COLORS.text, marginBottom: 4 },
+  reportItem: { ...GLASS.elevated, borderRadius: RADIUS.md, padding: SPACING.md, marginBottom: SPACING.sm },
+  reportItemTitle: { fontSize: 14, ...FONTS.semiBold, color: COLORS.text, marginBottom: SPACING.xxs },
   reportItemDesc: { fontSize: 13, color: COLORS.muted, lineHeight: 18 },
-  typeRow: { flexDirection: "row", gap: 8, marginBottom: 8 },
-  typeBtn: { flex: 1, paddingVertical: 10, alignItems: "center", borderRadius: SIZES.radius, backgroundColor: COLORS.input, borderWidth: 1, borderColor: COLORS.border },
-  typeBtnActive: { backgroundColor: COLORS.card, borderColor: COLORS.accent },
+  typeRow: { flexDirection: "row", gap: SPACING.sm, marginBottom: SPACING.sm },
+  typeBtn: { flex: 1, paddingVertical: SPACING.sm, alignItems: "center", borderRadius: RADIUS.md, backgroundColor: COLORS.input, borderWidth: 1, borderColor: COLORS.border },
+  typeBtnActive: { backgroundColor: COLORS.card, borderColor: COLORS.gold },
   typeBtnText: { fontSize: 13, ...FONTS.medium, color: COLORS.muted },
-  typeBtnTextActive: { color: COLORS.accent, ...FONTS.semiBold },
-  reportNote: { fontSize: 12, color: COLORS.muted, textAlign: "center", marginTop: 12, fontStyle: "italic" },
+  typeBtnTextActive: { color: COLORS.gold, ...FONTS.semiBold },
+  reportNote: { fontSize: 12, color: COLORS.muted, textAlign: "center", marginTop: SPACING.md, fontStyle: "italic" },
 });

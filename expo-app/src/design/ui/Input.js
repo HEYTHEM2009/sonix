@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from "react";
 import { View, Text, TextInput, StyleSheet, Animated, TouchableOpacity } from "react-native";
+import Icon from "./Icon";
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS, GLASS } from "../DesignSystem";
 
 export default function Input({
@@ -45,9 +46,9 @@ export default function Input({
     ]).start();
   }, [borderAnim, glowAnim]);
 
-  const borderColor = borderAnim.interpolate({
+  const animatedBorder = borderAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [COLORS.inputBorder, COLORS.inputFocusBorder],
+    outputRange: [glass ? COLORS.glassBorder : COLORS.inputBorder, COLORS.inputFocusBorder],
   });
 
   return (
@@ -56,12 +57,12 @@ export default function Input({
       <Animated.View style={[
         styles.inputWrap,
         glass && GLASS.default,
-        { borderColor: error ? COLORS.danger : focused ? COLORS.inputFocusBorder : glass ? COLORS.glassBorder : COLORS.inputBorder },
+        { borderColor: error ? COLORS.danger : animatedBorder },
         glass && { backgroundColor: GLASS.default.backgroundColor },
         multiline && styles.multiline,
         disabled && styles.disabled,
       ]}>
-        {icon && <Text style={styles.icon}>{icon}</Text>}
+        {icon && <Icon name={icon} size="md" color={COLORS.text} style={{ marginRight: SPACING.sm, opacity: 0.6 }} />}
         <TextInput
           ref={inputRef}
           style={[
@@ -104,7 +105,7 @@ export default function Input({
 export function SearchInput({ placeholder, value, onChangeText, onClear, style, glass = true }) {
   return (
     <View style={[glass ? styles.glassSearchWrap : styles.searchWrap, style]}>
-      <Text style={styles.searchIcon}>🔍</Text>
+      <Icon name="search-outline" size="sm" color={COLORS.textSecondary} style={{ marginRight: SPACING.sm }} />
       <TextInput
         style={styles.searchInput}
         placeholder={placeholder}
@@ -115,8 +116,8 @@ export function SearchInput({ placeholder, value, onChangeText, onClear, style, 
         accessibilityLabel={placeholder}
       />
       {value?.length > 0 && onClear && (
-        <TouchableOpacity onPress={onClear} style={styles.clearBtn} accessibilityRole="button" accessibilityLabel="Clear search">
-          <Text style={styles.clearIcon}>✕</Text>
+        <TouchableOpacity onPress={onClear} style={styles.clearBtn} accessibilityRole="button" accessibilityLabel="Clear search" hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <Icon name="close-circle" size="sm" color={COLORS.muted} />
         </TouchableOpacity>
       )}
     </View>
@@ -139,7 +140,6 @@ const styles = StyleSheet.create({
   multiline: { paddingTop: SPACING.md, alignItems: "flex-start" },
   disabled: { opacity: 0.5 },
   input: { flex: 1, color: COLORS.text, fontSize: 15, paddingVertical: SPACING.md - 2, backgroundColor: "transparent" },
-  icon: { fontSize: 18, marginRight: SPACING.sm, opacity: 0.6 },
   counter: { fontSize: 11, marginLeft: SPACING.sm },
   error: { ...TYPOGRAPHY.small, color: COLORS.danger, marginTop: SPACING.xs, marginLeft: 2 },
   hint: { ...TYPOGRAPHY.small, color: COLORS.muted, marginTop: SPACING.xs, marginLeft: 2 },
@@ -163,8 +163,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: GLASS.default.borderColor,
   },
-  searchIcon: { fontSize: 16, marginRight: SPACING.sm, opacity: 0.6 },
   searchInput: { flex: 1, color: COLORS.text, fontSize: 15, paddingVertical: 0 },
-  clearBtn: { padding: SPACING.xs },
-  clearIcon: { fontSize: 14, color: COLORS.muted },
+  clearBtn: { padding: SPACING.sm, marginLeft: SPACING.sm },
 });

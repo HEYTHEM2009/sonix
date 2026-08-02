@@ -2,9 +2,10 @@ import { useState, useEffect, useCallback } from "react";
 import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, RefreshControl, ActivityIndicator } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import client, { resolveUrl } from "../api/client";
-import { COLORS, SIZES } from "../components/Theme";
+import { COLORS, SIZES, FONTS, SPACING, RADIUS, SHADOWS, GLASS, TYPOGRAPHY, LAYOUT } from "../design/DesignSystem";
 import { useLanguage } from "../context/LanguageContext";
 import Screen3D from "../components/3D/Screen3D";
+import Icon from "../design/ui/Icon";
 
 export default function SavedPostsScreen({ navigation }) {
   const { t } = useLanguage();
@@ -13,7 +14,6 @@ export default function SavedPostsScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-  const insets = useSafeAreaInsets();
 
   const load = useCallback(async (pageNum = 1, append = false) => {
     try {
@@ -36,15 +36,17 @@ export default function SavedPostsScreen({ navigation }) {
     postsGrid.push(posts.slice(i, i + 3));
   }
 
+  const insets = useSafeAreaInsets();
+
   return (
     <Screen3D>
       <View style={[s.topBar, { paddingTop: insets.top + 6 }]}>
-        <TouchableOpacity onPress={() => navigation.goBack()}><Text style={s.backText}>←</Text></TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.goBack()}><Icon name="arrow-back" size={SIZES.xxl} color={COLORS.text} /></TouchableOpacity>
         <Text style={s.title}>{t("savedPosts")}</Text>
         <View style={{ width: 36 }} />
       </View>
       {loading ? (
-        <ActivityIndicator color={COLORS.accent} style={{ marginTop: 40 }} />
+        <ActivityIndicator color={COLORS.gold} style={{ marginTop: 40 }} />
       ) : (
         <FlatList
           data={postsGrid}
@@ -53,7 +55,7 @@ export default function SavedPostsScreen({ navigation }) {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.text} colors={[COLORS.text]} />}
           ListEmptyComponent={
             <View style={s.emptyWrap}>
-              <Text style={s.emptyIcon}>🔖</Text>
+              <Icon name="bookmark-outline" size={36} color={COLORS.muted} />
               <Text style={s.empty}>{t("noSavedPosts")}</Text>
             </View>
           }
@@ -76,15 +78,15 @@ export default function SavedPostsScreen({ navigation }) {
 
 const s = StyleSheet.create({
   container: { flex: 1 },
-  topBar: { paddingBottom: 10, paddingHorizontal: 12, borderBottomWidth: 0.5, borderBottomColor: COLORS.border, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  backText: { fontSize: 22, color: COLORS.text },
-  title: { fontSize: SIZES.md, fontWeight: "600", color: COLORS.text },
+  topBar: { paddingBottom: SPACING.sm + 2, paddingHorizontal: SPACING.md, borderBottomWidth: 0.5, borderBottomColor: COLORS.border, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  backText: { fontSize: SIZES.xxl, color: COLORS.text },
+  title: { fontSize: SIZES.md, ...FONTS.semiBold, color: COLORS.text },
   emptyWrap: { alignItems: "center", paddingTop: 60 },
-  emptyIcon: { fontSize: 36, marginBottom: 8 },
-  empty: { textAlign: "center", color: COLORS.muted, fontSize: SIZES.lg },
-  row: { flexDirection: "row", gap: 2, marginBottom: 2 },
+  emptyIcon: { fontSize: 36, marginBottom: SPACING.sm },
+  empty: { textAlign: "center", ...TYPOGRAPHY.body, color: COLORS.muted },
+  row: { flexDirection: "row", gap: SPACING.xxs, marginBottom: SPACING.xxs },
   cell: { flex: 1, aspectRatio: 1, overflow: "hidden" },
   cellImg: { width: "100%", height: "100%" },
-  cellText: { width: "100%", height: "100%", backgroundColor: COLORS.card, alignItems: "center", justifyContent: "center", padding: 6 },
+  cellText: { width: "100%", height: "100%", backgroundColor: COLORS.card, alignItems: "center", justifyContent: "center", padding: SPACING.xs + 2 },
   cellTextContent: { fontSize: 10, color: COLORS.textSecondary, textAlign: "center" },
 });

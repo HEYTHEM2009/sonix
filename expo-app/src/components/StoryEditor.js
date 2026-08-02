@@ -1,8 +1,9 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, ScrollView, Dimensions, PanResponder, Modal, FlatList, Keyboard } from "react-native";
-import { COLORS, SIZES, FONTS } from "./Theme";
+import { COLORS, SIZES, FONTS } from "../design/DesignSystem";
 import { useLanguage } from "../context/LanguageContext";
 import { useVideoPlayer, VideoView } from "expo-video";
+import Icon from "../design/ui/Icon";
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
 const COLORS_PALETTE = ["#ffffff", "#000000", "#E17055", "#00CEC9", "#6C5CE7", "#FDCB6E", "#FF7675", "#74B9FF", "#55EFC4", "#FD79A8"];
@@ -77,7 +78,7 @@ function DraggableSticker({ sticker, index, onUpdate, onRemove }) {
     >
       <Text style={{ fontSize: sticker.size || 40 }}>{sticker.emoji}</Text>
       <TouchableOpacity style={stickerDragStyles.removeBtn} onPress={() => onRemove(index)}>
-        <Text style={stickerDragStyles.removeText}>✕</Text>
+        <Icon name="close" size={10} color="#fff" />
       </TouchableOpacity>
     </View>
   );
@@ -98,17 +99,24 @@ try {
 } catch (_) {}
 
 function VideoPreview({ uri }) {
-  if (!_VideoView || !_useVideoPlayer) {
+  const player = _useVideoPlayer?.(uri, (p) => {
+    p.loop = true;
+    p.play();
+  });
+  useEffect(() => {
+    return () => {
+      if (!player) return;
+      try { player.pause(); } catch (_) {}
+      try { player.remove?.(); } catch (_) {}
+    };
+  }, [player]);
+  if (!_VideoView || !_useVideoPlayer || !player) {
     return (
       <View style={[s.previewImage, { backgroundColor: "#000", alignItems: "center", justifyContent: "center" }]}>
         <Text style={{ color: "#fff", fontSize: 13 }}>Video preview unavailable</Text>
       </View>
     );
   }
-  const player = _useVideoPlayer(uri, (p) => {
-    p.loop = true;
-    p.play();
-  });
   return (
     <_VideoView style={[s.previewImage, { backgroundColor: "#000" }]} player={player} contentFit="contain" />
   );
@@ -174,21 +182,21 @@ function DrawingCanvas({ visible, strokes, onAddStroke, onUndo, onRedo, canUndo,
       <View style={s.drawingTopBar}>
         <View style={s.drawingTopLeft}>
           <TouchableOpacity onPress={onClose} style={s.drawActionBtn}>
-            <Text style={s.drawingCancel}>✕</Text>
+            <Icon name="close" size={18} color={COLORS.text} />
           </TouchableOpacity>
           <TouchableOpacity
             style={[s.drawActionBtn, canUndo && s.drawActionActive]}
             onPress={onUndo}
             disabled={!canUndo}
           >
-            <Text style={[s.drawActionText, !canUndo && s.drawActionDisabled]}>↩</Text>
+            <Icon name="return-down-back" size={18} color={COLORS.text} style={!canUndo && s.drawActionDisabled} />
           </TouchableOpacity>
           <TouchableOpacity
             style={[s.drawActionBtn, canRedo && s.drawActionActive]}
             onPress={onRedo}
             disabled={!canRedo}
           >
-            <Text style={[s.drawActionText, !canRedo && s.drawActionDisabled]}>↪</Text>
+            <Icon name="return-down-forward" size={18} color={COLORS.text} style={!canRedo && s.drawActionDisabled} />
           </TouchableOpacity>
         </View>
 
@@ -204,7 +212,7 @@ function DrawingCanvas({ visible, strokes, onAddStroke, onUndo, onRedo, canUndo,
             style={[s.drawColorBtn, s.eraserBtn, isEraser && s.drawColorActive]}
             onPress={() => setIsEraser(true)}
           >
-            <Text style={s.eraserIcon}>◻</Text>
+            <Icon name="square-outline" size={14} color={COLORS.text} />
           </TouchableOpacity>
         </View>
 
@@ -400,10 +408,10 @@ export default function StoryEditor({ imageUri, videoUri, mediaType, onPost }) {
 
         <View style={s.previewToolbar}>
           <TouchableOpacity style={s.previewToolBtn} onPress={() => setShowStickerPicker(true)}>
-            <Text style={s.previewToolIcon}>😀</Text>
+            <Icon name="happy" size={20} color="#fff" />
           </TouchableOpacity>
           <TouchableOpacity style={s.previewToolBtn} onPress={() => setShowDrawing(true)}>
-            <Text style={s.previewToolIcon}>✏️</Text>
+            <Icon name="create" size={20} color="#fff" />
           </TouchableOpacity>
         </View>
       </View>
@@ -464,7 +472,10 @@ export default function StoryEditor({ imageUri, videoUri, mediaType, onPost }) {
           <View style={s.stickerChips}>
             {stickers.map((st, i) => (
               <TouchableOpacity key={i} style={s.stickerChip} onPress={() => removeSticker(i)}>
-                <Text style={s.stickerChipText}>{st.emoji} ✕</Text>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                  <Text style={s.stickerChipText}>{st.emoji}</Text>
+                  <Icon name="close" size={12} color={COLORS.text} />
+                </View>
               </TouchableOpacity>
             ))}
           </View>
@@ -474,7 +485,10 @@ export default function StoryEditor({ imageUri, videoUri, mediaType, onPost }) {
       {drawingStrokes.length > 0 && (
         <View style={s.drawActions}>
           <TouchableOpacity style={s.undoRedoBtn} onPress={undoDrawing}>
-            <Text style={s.undoRedoText}>↩ {t("undo")}</Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+              <Icon name="return-down-back" size={14} color={COLORS.text} />
+              <Text style={s.undoRedoText}>{t("undo")}</Text>
+            </View>
           </TouchableOpacity>
           <TouchableOpacity style={s.undoRedoBtn} onPress={() => setDrawingStrokes([])}>
             <Text style={[s.undoRedoText, { color: COLORS.danger }]}>{t("clearAll")}</Text>

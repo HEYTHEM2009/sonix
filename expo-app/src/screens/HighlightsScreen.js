@@ -4,7 +4,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import client, { resolveUrl } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
-import { COLORS, SIZES, FONTS } from "../components/Theme";
+import { COLORS, SIZES, FONTS, SPACING, RADIUS, TYPOGRAPHY, SHADOWS, GLASS, LAYOUT } from "../design/DesignSystem";
+import Icon from "../design/ui/Icon";
 import Screen3D from "../components/3D/Screen3D";
 
 export default function HighlightsScreen({ route, navigation }) {
@@ -43,7 +44,8 @@ export default function HighlightsScreen({ route, navigation }) {
     setLoadingStories(true);
     try {
       const res = await client.get("/stories/mine");
-      setMyStories(res.data || []);
+      const data = res.data;
+      setMyStories(Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : []);
     } catch (_) {}
     setLoadingStories(false);
   };
@@ -120,25 +122,25 @@ export default function HighlightsScreen({ route, navigation }) {
   return (
     <Screen3D style={s.container}>
       <View style={[s.topBar, { paddingTop: insets.top + 6 }]}>
-        <TouchableOpacity onPress={() => navigation.goBack()}><Text style={s.backText}>←</Text></TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.goBack()}><Icon name="arrow-back" size={22} color={COLORS.text} /></TouchableOpacity>
         <Text style={s.title}>{t("highlights")}</Text>
         {isOwner && (
           <TouchableOpacity onPress={() => { setShowCreate(true); loadMyStories(); }}>
-            <Text style={s.addBtn}>+</Text>
+            <Icon name="add" size={28} color={COLORS.gold} />
           </TouchableOpacity>
         )}
       </View>
 
       {loading ? (
-        <ActivityIndicator color={COLORS.accent} style={{ marginTop: 40 }} />
+        <ActivityIndicator color={COLORS.gold} style={{ marginTop: 40 }} />
       ) : (
         <FlatList
           data={highlights}
           keyExtractor={(h) => String(h.id)}
-          contentContainerStyle={{ padding: 16, paddingBottom: Math.max(insets.bottom + 20, 30) }}
+          contentContainerStyle={{ padding: SPACING.lg, paddingBottom: Math.max(insets.bottom + 20, 30) }}
           ListEmptyComponent={
             <View style={s.emptyWrap}>
-              <Text style={s.emptyIcon}>✨</Text>
+              <Icon name="star-outline" size={48} />
               <Text style={s.emptyText}>{t("noHighlights")}</Text>
               {isOwner && <Text style={s.emptyHint}>{t("createHighlightDesc")}</Text>}
             </View>
@@ -163,7 +165,7 @@ export default function HighlightsScreen({ route, navigation }) {
                   ) : h.cover_image && resolveUrl(h.cover_image) ? (
                     <Image source={{ uri: resolveUrl(h.cover_image) }} style={s.coverImg} />
                   ) : (
-                    <Text style={s.coverPlaceholder}>✨</Text>
+                    <Icon name="star" size={32} />
                   )}
                 </View>
                 <View style={s.highlightInfo}>
@@ -174,13 +176,13 @@ export default function HighlightsScreen({ route, navigation }) {
               {isOwner && (
                 <View style={s.highlightActions}>
                   <TouchableOpacity style={s.highlightActionBtn} onPress={() => { setEditTitle(h.title); setShowEdit(h); }}>
-                    <Text style={s.highlightActionText}>✏️</Text>
+                    <Icon name="pencil" size={16} />
                   </TouchableOpacity>
                   <TouchableOpacity style={s.highlightActionBtn} onPress={() => { setSelectedStories(new Set()); setShowStoryPicker(h); loadMyStories(); }}>
-                    <Text style={s.highlightActionText}>+</Text>
+                    <Icon name="add" size={16} />
                   </TouchableOpacity>
                   <TouchableOpacity style={s.highlightActionBtn} onPress={() => deleteHighlight(h.id)}>
-                    <Text style={[s.highlightActionText, { color: COLORS.danger }]}>🗑</Text>
+                    <Icon name="trash" size={16} color={COLORS.danger} />
                   </TouchableOpacity>
                 </View>
               )}
@@ -206,7 +208,7 @@ export default function HighlightsScreen({ route, navigation }) {
 
             <Text style={s.sectionLabel}>{t("selectStories")}</Text>
             {loadingStories ? (
-              <ActivityIndicator color={COLORS.accent} style={{ marginVertical: 20 }} />
+              <ActivityIndicator color={COLORS.gold} style={{ marginVertical: 20 }} />
             ) : myStories.length > 0 ? (
               <ScrollView style={s.storiesList} nestedScrollEnabled>
                 {myStories.map((story) => (
@@ -219,14 +221,14 @@ export default function HighlightsScreen({ route, navigation }) {
                       <Image source={{ uri: resolveUrl(story.image) }} style={s.storyThumb} />
                     ) : (
                       <View style={[s.storyThumb, { backgroundColor: story.bg_color || COLORS.card, alignItems: "center", justifyContent: "center" }]}>
-                        <Text style={{ fontSize: 16 }}>📝</Text>
+                        <Icon name="document-text" size={16} />
                       </View>
                     )}
                     <Text style={s.storySelectText} numberOfLines={1}>
                       {story.text_overlay || `Story ${new Date(story.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`}
                     </Text>
                     <View style={[s.storyCheckbox, selectedStories.has(story.id) && s.storyCheckboxActive]}>
-                      {selectedStories.has(story.id) && <Text style={s.storyCheckmark}>✓</Text>}
+                      {selectedStories.has(story.id) && <Icon name="checkmark" size={12} />}
                     </View>
                   </TouchableOpacity>
                 ))}
@@ -236,7 +238,7 @@ export default function HighlightsScreen({ route, navigation }) {
             )}
 
             <TouchableOpacity style={[s.createBtn, creating && { opacity: 0.5 }]} onPress={createHighlight} disabled={creating}>
-              {creating ? <ActivityIndicator color="#fff" /> : <Text style={s.createBtnText}>{t("create")}</Text>}
+              {creating ? <ActivityIndicator color={COLORS.text} /> : <Text style={s.createBtnText}>{t("create")}</Text>}
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
@@ -257,7 +259,7 @@ export default function HighlightsScreen({ route, navigation }) {
               autoFocus
             />
             <TouchableOpacity style={[s.createBtn, creating && { opacity: 0.5 }]} onPress={updateHighlightTitle} disabled={creating}>
-              {creating ? <ActivityIndicator color="#fff" /> : <Text style={s.createBtnText}>{t("save")}</Text>}
+              {creating ? <ActivityIndicator color={COLORS.text} /> : <Text style={s.createBtnText}>{t("save")}</Text>}
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
@@ -279,14 +281,14 @@ export default function HighlightsScreen({ route, navigation }) {
                         <Image source={{ uri: resolveUrl(story.image) }} style={s.storyThumb} />
                       ) : (
                         <View style={[s.storyThumb, { backgroundColor: COLORS.card, alignItems: "center", justifyContent: "center" }]}>
-                          <Text style={{ fontSize: 16 }}>📝</Text>
+                        <Text style={{ fontSize: 16 }}>T</Text>
                         </View>
                       )}
                       <Text style={s.storySelectText} numberOfLines={1}>
                         {story.text_overlay || `Story ${new Date(story.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`}
                       </Text>
                       <TouchableOpacity onPress={() => removeStoryFromHighlight(showStoryPicker.id, story.id)}>
-                        <Text style={{ color: COLORS.danger, fontSize: 16 }}>✕</Text>
+                        <Icon name="close" size={16} color={COLORS.danger} />
                       </TouchableOpacity>
                     </View>
                   ))}
@@ -296,7 +298,7 @@ export default function HighlightsScreen({ route, navigation }) {
 
             <Text style={[s.sectionLabel, { marginTop: 12 }]}>{t("addFromStories")}</Text>
             {loadingStories ? (
-              <ActivityIndicator color={COLORS.accent} style={{ marginVertical: 20 }} />
+              <ActivityIndicator color={COLORS.gold} style={{ marginVertical: 20 }} />
             ) : myStories.length > 0 ? (
               <ScrollView style={s.storiesList} nestedScrollEnabled>
                 {myStories.filter((s) => !showStoryPicker?.stories?.some((hs) => hs.id === s.id)).map((story) => (
@@ -309,7 +311,7 @@ export default function HighlightsScreen({ route, navigation }) {
                       <Image source={{ uri: resolveUrl(story.image) }} style={s.storyThumb} />
                     ) : (
                       <View style={[s.storyThumb, { backgroundColor: COLORS.card, alignItems: "center", justifyContent: "center" }]}>
-                        <Text style={{ fontSize: 16 }}>📝</Text>
+                        <Icon name="document-text" size={16} />
                       </View>
                     )}
                     <Text style={s.storySelectText} numberOfLines={1}>
@@ -331,12 +333,12 @@ export default function HighlightsScreen({ route, navigation }) {
 
 const s = StyleSheet.create({
   container: { flex: 1 },
-  topBar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingBottom: 10, borderBottomWidth: 0.5, borderBottomColor: COLORS.border },
+  topBar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: SPACING.lg, paddingBottom: 10, borderBottomWidth: 0.5, borderBottomColor: COLORS.border, backgroundColor: GLASS.elevated.backgroundColor },
   backText: { fontSize: 22, color: COLORS.text },
   title: { fontSize: SIZES.lg, ...FONTS.bold, color: COLORS.text },
-  addBtn: { fontSize: 28, color: COLORS.accent, ...FONTS.bold },
+  addBtn: { fontSize: 28, color: COLORS.gold, ...FONTS.bold },
   emptyWrap: { alignItems: "center", paddingTop: 60 },
-  emptyIcon: { fontSize: 48, marginBottom: 12 },
+  emptyIcon: { fontSize: 48, marginBottom: SPACING.md },
   emptyText: { fontSize: SIZES.lg, ...FONTS.bold, color: COLORS.text },
   emptyHint: { fontSize: SIZES.sm, color: COLORS.muted, marginTop: 6 },
   highlightCard: { marginBottom: 16 },
@@ -348,23 +350,23 @@ const s = StyleSheet.create({
   highlightTitle: { fontSize: SIZES.md, ...FONTS.semiBold, color: COLORS.text },
   highlightCount: { fontSize: SIZES.xs, color: COLORS.muted, marginTop: 2 },
   highlightActions: { flexDirection: "row", gap: 6, marginTop: 8 },
-  highlightActionBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: COLORS.card, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: COLORS.border },
+  highlightActionBtn: { width: 32, height: 32, borderRadius: RADIUS.xl, backgroundColor: COLORS.card, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: COLORS.border },
   highlightActionText: { fontSize: 14 },
-  modalOverlay: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.6)" },
-  modalContent: { backgroundColor: COLORS.card, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingBottom: 30, maxHeight: "80%" },
-  modalHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: COLORS.muted, alignSelf: "center", marginBottom: 12 },
+  modalOverlay: { flex: 1, justifyContent: "flex-end", backgroundColor: COLORS.overlay },
+  modalContent: { backgroundColor: GLASS.elevated.backgroundColor, borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl, padding: SPACING.xl, paddingBottom: 30, maxHeight: "80%", borderWidth: 1, borderColor: GLASS.elevated.borderColor },
+  modalHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: COLORS.muted, alignSelf: "center", marginBottom: SPACING.md },
   modalTitle: { fontSize: SIZES.lg, ...FONTS.bold, color: COLORS.text, textAlign: "center", marginBottom: 16 },
   modalInput: { backgroundColor: COLORS.input, borderRadius: SIZES.radius, padding: 14, fontSize: 16, color: COLORS.text, marginBottom: 16 },
   sectionLabel: { fontSize: SIZES.sm, ...FONTS.semiBold, color: COLORS.textSecondary, marginBottom: 8 },
-  storiesList: { maxHeight: 200, marginBottom: 12 },
-  storySelectRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 8, paddingHorizontal: 4, borderBottomWidth: 0.5, borderBottomColor: COLORS.border },
-  storySelectActive: { backgroundColor: COLORS.primary + "15", borderRadius: 8 },
-  storyThumb: { width: 40, height: 40, borderRadius: 8, overflow: "hidden" },
+  storiesList: { maxHeight: 200, marginBottom: SPACING.md },
+  storySelectRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: SPACING.sm, paddingHorizontal: SPACING.xs, borderBottomWidth: 0.5, borderBottomColor: COLORS.border },
+  storySelectActive: { backgroundColor: COLORS.primary + "15", borderRadius: RADIUS.md },
+  storyThumb: { width: 40, height: 40, borderRadius: RADIUS.md, overflow: "hidden" },
   storySelectText: { flex: 1, color: COLORS.text, fontSize: 13 },
   storyCheckbox: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: COLORS.muted, alignItems: "center", justifyContent: "center" },
   storyCheckboxActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  storyCheckmark: { color: "#fff", fontSize: 12, ...FONTS.bold },
+  storyCheckmark: { color: COLORS.text, fontSize: 12, ...FONTS.bold },
   noStoriesText: { color: COLORS.muted, textAlign: "center", paddingVertical: 20, fontSize: 13 },
   createBtn: { backgroundColor: COLORS.primary, borderRadius: SIZES.radius, paddingVertical: 14, alignItems: "center", marginTop: 8 },
-  createBtnText: { color: "#fff", ...FONTS.bold, fontSize: SIZES.lg },
+  createBtnText: { color: COLORS.text, ...FONTS.bold, fontSize: SIZES.lg },
 });

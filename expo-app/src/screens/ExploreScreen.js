@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from "react";
 import { View, Text, FlatList, StyleSheet, ActivityIndicator, TouchableOpacity, Image, TextInput, Dimensions, KeyboardAvoidingView, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
-import { COLORS, SIZES } from "../components/Theme";
+import Icon from "../design/ui/Icon";
+import { COLORS, SIZES, FONTS, SPACING, RADIUS, TYPOGRAPHY, SHADOWS, GLASS, LAYOUT } from "../design/DesignSystem";
 import client, { resolveUrl } from "../api/client";
 import { useLanguage } from "../context/LanguageContext";
 
@@ -55,8 +56,9 @@ export default function ExploreScreen({ navigation }) {
           <Text style={s.gridText} numberOfLines={3}>{item.content}</Text>
         </View>
       )}
-      <View style={s.gridOverlay}>
-        <Text style={s.gridLikes}>❤️ {item.likes_count || 0}</Text>
+      <View style={[s.gridOverlay, { flexDirection: "row", alignItems: "center" }]}>
+        <Icon name="heart" size={12} color={COLORS.text} />
+        <Text style={s.gridLikes}> {item.likes_count || 0}</Text>
       </View>
     </TouchableOpacity>
   );
@@ -99,13 +101,12 @@ export default function ExploreScreen({ navigation }) {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <View style={s.topBar}>
         <Text style={s.logo}>{t("sonix")}</Text>
-        <TouchableOpacity onPress={() => navigation.navigate("Notifications")}><Text style={s.bellIcon}>🔔</Text></TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.navigate("Notifications")} style={s.bellBtn}><Text style={s.bellIcon}>N</Text></TouchableOpacity>
       </View>
 
       <View style={s.searchBar}>
-        <Text style={s.searchIcon}>🔍</Text>
         <TextInput style={s.searchInput} value={searchQ} onChangeText={setSearchQ} placeholder={t("searchUsers")} placeholderTextColor={COLORS.muted} returnKeyType="search" />
-        {searchQ ? <TouchableOpacity onPress={() => setSearchQ("")}><Text style={s.clearBtn}>✕</Text></TouchableOpacity> : null}
+        {searchQ ? <TouchableOpacity onPress={() => setSearchQ("")}><Text style={s.clearBtn}>x</Text></TouchableOpacity> : null}
       </View>
 
       <FlatList
@@ -133,35 +134,35 @@ export default function ExploreScreen({ navigation }) {
 
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
-  topBar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingVertical: 10 },
-  logo: { fontSize: 24, fontWeight: "800", color: COLORS.text },
-  bellIcon: { fontSize: 22 },
+  topBar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: SPACING.lg, paddingVertical: SPACING.sm },
+  logo: { fontSize: 24, ...FONTS.black, color: COLORS.text },
+  bellBtn: { width: 34, height: 34, borderRadius: RADIUS.md, backgroundColor: GLASS.bg, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: GLASS.border },
+  bellIcon: { fontSize: SIZES.sm, color: COLORS.text, ...FONTS.bold },
 
-  searchBar: { flexDirection: "row", alignItems: "center", marginHorizontal: 16, marginBottom: 12, backgroundColor: COLORS.input, borderRadius: 20, paddingHorizontal: 14, height: 40, gap: 8 },
-  searchIcon: { fontSize: 16 },
-  searchInput: { flex: 1, fontSize: SIZES.md, color: COLORS.text, padding: 0 },
-  clearBtn: { fontSize: 16, color: COLORS.muted, padding: 4 },
+  searchBar: { flexDirection: "row", alignItems: "center", marginHorizontal: SPACING.lg, marginBottom: SPACING.md, backgroundColor: GLASS.bg, borderRadius: RADIUS.xl, paddingHorizontal: SPACING.md, height: 42, borderWidth: 1, borderColor: GLASS.border, ...SHADOWS.sm },
+  searchInput: { flex: 1, fontSize: SIZES.sm, color: COLORS.text },
+  clearBtn: { fontSize: 14, color: COLORS.muted, padding: SPACING.xs },
 
-  sectionTitle: { fontSize: SIZES.lg, fontWeight: "700", color: COLORS.text, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 10 },
+  sectionTitle: { fontSize: SIZES.lg, ...FONTS.bold, color: COLORS.text, paddingHorizontal: SPACING.lg, paddingTop: SPACING.lg, paddingBottom: SPACING.sm },
 
-  gridRow: { paddingHorizontal: 12, gap: 6, marginBottom: 6 },
-  gridItem: { width: COL_W, height: COL_W, borderRadius: 8, overflow: "hidden", position: "relative" },
+  gridRow: { paddingHorizontal: SPACING.sm, gap: SPACING.xs, marginBottom: SPACING.xs },
+  gridItem: { width: COL_W, height: COL_W, borderRadius: RADIUS.md, overflow: "hidden", position: "relative" },
   gridImg: { width: "100%", height: "100%" },
-  gridTextBg: { backgroundColor: COLORS.input, justifyContent: "center", padding: 6 },
-  gridText: { fontSize: 11, color: COLORS.text, lineHeight: 15 },
-  gridOverlay: { position: "absolute", bottom: 4, left: 4, backgroundColor: "rgba(0,0,0,0.5)", borderRadius: 8, paddingHorizontal: 6, paddingVertical: 2 },
-  gridLikes: { color: "#fff", fontSize: 10 },
+  gridTextBg: { backgroundColor: COLORS.surfaceLight, justifyContent: "center", padding: SPACING.xs },
+  gridText: { fontSize: SIZES.xs, color: COLORS.textSecondary, lineHeight: 15 },
+  gridOverlay: { position: "absolute", bottom: SPACING.xs, left: SPACING.xs, backgroundColor: COLORS.overlayLight, borderRadius: RADIUS.sm, paddingHorizontal: SPACING.xs, paddingVertical: SPACING.xs },
+  gridLikes: { color: COLORS.text, fontSize: SIZES.xs },
 
-  userRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 0.5, borderBottomColor: COLORS.border },
-  userAvatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: COLORS.border },
+  userRow: { flexDirection: "row", alignItems: "center", gap: SPACING.sm, paddingHorizontal: SPACING.lg, paddingVertical: SPACING.sm, borderBottomWidth: 0.5, borderBottomColor: GLASS.border },
+  userAvatar: { width: 44, height: 44, borderRadius: RADIUS.full, backgroundColor: COLORS.border },
   userInfo: { flex: 1 },
-  userName: { fontWeight: "600", color: COLORS.text, fontSize: SIZES.md },
-  userBio: { fontSize: SIZES.sm, color: COLORS.muted, marginTop: 2 },
+  userName: { ...FONTS.semiBold, color: COLORS.text, fontSize: SIZES.md },
+  userBio: { fontSize: SIZES.sm, color: COLORS.muted, marginTop: SPACING.xs },
 
   empty: { textAlign: "center", marginTop: 40, color: COLORS.muted, fontSize: SIZES.md },
   errorWrap: { alignItems: "center", marginTop: 80 },
-  errorText: { color: COLORS.muted, fontSize: SIZES.md, marginBottom: 16 },
-  retryBtn: { backgroundColor: COLORS.primary, borderRadius: 16, paddingHorizontal: 24, paddingVertical: 10 },
-  retryText: { color: "#fff", fontWeight: "700", fontSize: SIZES.md },
+  errorText: { color: COLORS.muted, fontSize: SIZES.md, marginBottom: SPACING.lg },
+  retryBtn: { backgroundColor: COLORS.primary, borderRadius: RADIUS.lg, paddingHorizontal: SPACING.xl, paddingVertical: SPACING.sm, ...SHADOWS.primary },
+  retryText: { color: COLORS.text, ...FONTS.bold, fontSize: SIZES.md },
 });
 

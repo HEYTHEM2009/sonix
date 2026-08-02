@@ -14,10 +14,10 @@
       },
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_URL": "http://10.0.2.2:8000/api",
-        "EXPO_PUBLIC_WS_HOST": "10.0.2.2",
+        "EXPO_PUBLIC_API_URL": "https://sonix-production.up.railway.app/api",
+        "EXPO_PUBLIC_WS_HOST": "sonix-production.up.railway.app",
         "EXPO_PUBLIC_WS_PORT": "443",
-        "EXPO_PUBLIC_REVERB_KEY": "sonix-reverb"
+        "EXPO_PUBLIC_REVERB_KEY": "pAf2QcSCIg03Nvy4zbDeR9GKOjEql8UH"
       }
     },
     "production": {
@@ -29,7 +29,7 @@
         "EXPO_PUBLIC_API_URL": "https://sonix-production.up.railway.app/api",
         "EXPO_PUBLIC_WS_HOST": "sonix-production.up.railway.app",
         "EXPO_PUBLIC_WS_PORT": "443",
-        "EXPO_PUBLIC_REVERB_KEY": "sonix-reverb"
+        "EXPO_PUBLIC_REVERB_KEY": "pAf2QcSCIg03Nvy4zbDeR9GKOjEql8UH"
       }
     }
   },

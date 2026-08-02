@@ -1,5 +1,5 @@
 import { View, StyleSheet } from "react-native";
-import { COLORS } from "../Theme";
+import { COLORS } from "../../design/DesignSystem";
 
 const MediaProgress = ({ progress = 0, visible = false, color = COLORS.primary }) => {
   if (!visible) return null;

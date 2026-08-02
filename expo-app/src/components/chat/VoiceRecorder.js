@@ -3,6 +3,7 @@ import {
   View, Text, TouchableOpacity, StyleSheet, Animated, Alert, Vibration,
 } from "react-native";
 import { useLanguage } from "../../context/LanguageContext";
+import Icon from "../../design/ui/Icon";
 
 const BAR_COUNT = 28;
 const BAR_WIDTH = 3;
@@ -151,7 +152,7 @@ const VoiceRecorder = ({ onSend, onCancel, onRecordingStateChange }) => {
   return (
     <View style={styles.bar}>
       <TouchableOpacity onPress={cancel} style={styles.cancelBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-        <Text style={styles.cancelIcon}>✕</Text>
+        <Icon name="close" size="sm" color="#fff" />
       </TouchableOpacity>
 
       <View style={styles.center}>
@@ -161,11 +162,11 @@ const VoiceRecorder = ({ onSend, onCancel, onRecordingStateChange }) => {
 
       <View style={styles.rightControls}>
         <TouchableOpacity onPress={togglePause} style={styles.pauseBtn} disabled={!recording}>
-          <Text style={styles.pauseIcon}>{paused ? "▶" : "⏸"}</Text>
+          <Icon name={paused ? "play" : "pause"} size="sm" color="#fff" />
         </TouchableOpacity>
         <TouchableOpacity onPress={stop} style={styles.sendBtn}>
           <Animated.View style={styles.sendInner}>
-            <Text style={styles.sendIcon}>⬆</Text>
+            <Icon name="arrow-up" size="md" color="#fff" />
           </Animated.View>
         </TouchableOpacity>
       </View>

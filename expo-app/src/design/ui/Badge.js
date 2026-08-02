@@ -10,16 +10,22 @@ const VARIANTS = {
   glass: { bg: "rgba(124, 111, 255, 0.2)", text: COLORS.primaryLight, glow: "rgba(124, 111, 255, 0.1)" },
 };
 
+const SIZE_STYLES = {
+  sm: { minWidth: 18, height: 18, paddingHorizontal: 4, text: { ...TYPOGRAPHY.smallBold, fontSize: 10 } },
+  lg: { minWidth: 24, height: 24, paddingHorizontal: 8, text: { ...TYPOGRAPHY.smallBold, fontSize: 11 } },
+};
+
 export default function Badge({ count, max = 99, variant = "primary", size = "sm", showZero = false, style }) {
   if (!count || count <= 0) {
     if (showZero) { count = 0; } else { return null; }
   }
   const v = VARIANTS[variant] || VARIANTS.primary;
+  const s = SIZE_STYLES[size] || SIZE_STYLES.sm;
   const display = count > max ? `${max}+` : String(count);
 
   return (
-    <View style={[styles.badge, { backgroundColor: v.bg }, size === "lg" && { minWidth: 24, height: 24, paddingHorizontal: 8 }, style]}>
-      <Text style={[styles.text, { color: v.text }, size === "lg" && { fontSize: 11 }]}>{display}</Text>
+    <View style={[styles.badge, { backgroundColor: v.bg }, s, style]}>
+      <Text style={[styles.text, { color: v.text }, s.text]}>{display}</Text>
     </View>
   );
 }
@@ -31,7 +37,7 @@ export function Dot({ color = COLORS.primary, size = 8, glow = false, style }) {
 }
 
 const styles = StyleSheet.create({
-  badge: { minWidth: 18, height: 18, borderRadius: 9, alignItems: "center", justifyContent: "center", paddingHorizontal: 4 },
-  text: { fontSize: 10, fontWeight: "800" },
+  badge: { alignItems: "center", justifyContent: "center", borderRadius: RADIUS.full },
+  text: { ...TYPOGRAPHY.smallBold },
   dot: {},
 });

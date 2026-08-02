@@ -4,17 +4,18 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
+import { useRealtimeContext } from "../context/RealtimeContext";
 import { useNetworkStatus } from "../hooks/useNetworkStatus";
 import client, { resolveUrl } from "../api/client";
-import { COLORS, SIZES, FONTS, SPACING, RADIUS, TYPOGRAPHY, SHADOWS, LAYOUT, GLASS } from "../design/DesignSystem";
-import { useFadeIn, useSlideIn, useSpringValue, useStaggerAnimation } from "../design/animations/animations";
+import realtime from "../api/realtime";
+import { COLORS, SIZES, SPACING, RADIUS, TYPOGRAPHY, SHADOWS, GLASS } from "../design/DesignSystem";
 import Button from "../design/ui/Button";
 import Avatar from "../design/ui/Avatar";
-import Badge from "../design/ui/Badge";
+import Icon from "../design/ui/Icon";
 import { PostSkeleton } from "../design/states/LoadingState";
 import EmptyState from "../design/states/EmptyState";
 import ErrorState from "../design/states/ErrorState";
-import { OfflineBanner } from "../design/states/OfflineState";
+import OfflineState, { OfflineBanner } from "../design/states/OfflineState";
 
 const { width: SCREEN_W } = Dimensions.get("window");
 
@@ -47,7 +48,7 @@ const LikeAnimation = memo(({ show }) => {
     }
   }, [show]);
   if (!show) return null;
-  return <Animated.View style={[styles.heartOverlay, { transform: [{ scale }], opacity }]}><Text style={styles.heartBig}>❤️</Text></Animated.View>;
+  return <Animated.View style={[styles.heartOverlay, { transform: [{ scale }], opacity }]}><Icon name="heart" size={80} color={COLORS.danger} /></Animated.View>;
 });
 
 const PostCard = memo(({ post, currentUser, onLike, onBookmark, onComment, onShare, onImagePress, onVideoPress, onMenuPress, onUserPress, onLikesPress, navigation }) => {
@@ -81,11 +82,12 @@ const PostCard = memo(({ post, currentUser, onLike, onBookmark, onComment, onSha
       setTimeout(() => setShowHeart(false), 800);
     } else {
       tapTimer.current = setTimeout(() => {
-        if (post.image) onImagePress(post);
+        if (post.type === "video" && post.video) onVideoPress(post);
+        else if (post.image) onImagePress(post);
       }, 300);
     }
     lastTap.current = now;
-  }, [liked, handleLike, post, onImagePress]);
+  }, [liked, handleLike, post, onImagePress, onVideoPress]);
 
   const handleBookmark = useCallback(() => {
     setBookmarked(!bookmarked);
@@ -111,7 +113,7 @@ const PostCard = memo(({ post, currentUser, onLike, onBookmark, onComment, onSha
           </View>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => onMenuPress(post)} style={styles.menuBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-          <Text style={styles.menuDots}>•••</Text>
+          <Icon name="ellipsis-horizontal" size="sm" color={COLORS.textSecondary} />
         </TouchableOpacity>
       </View>
 
@@ -119,9 +121,11 @@ const PostCard = memo(({ post, currentUser, onLike, onBookmark, onComment, onSha
         <Pressable onPress={handleDoubleTap} style={styles.mediaWrap}>
           {post.type === "video" && post.video ? (
             <>
-              <Image source={{ uri: resolveUrl(post.image || "") }} style={styles.postImg} resizeMode="cover" />
+              {post.thumbnail || post.image ? (
+                <Image source={{ uri: resolveUrl(post.thumbnail || post.image) }} style={styles.postImg} resizeMode="cover" />
+              ) : null}
               <TouchableOpacity style={styles.playOverlay} onPress={() => onVideoPress(post)} activeOpacity={0.8}>
-                <View style={styles.playCircle}><Text style={styles.playIcon}>▶</Text></View>
+                <View style={styles.playCircle}><Icon name="play" size={24} color="#fff" style={{ marginLeft: 3 }} /></View>
               </TouchableOpacity>
             </>
           ) : post.image ? (
@@ -142,42 +146,42 @@ const PostCard = memo(({ post, currentUser, onLike, onBookmark, onComment, onSha
 
       <View style={styles.actionsBar}>
         <View style={styles.actionsLeft}>
-          <TouchableOpacity onPress={handleLike} style={styles.actionBtn}>
-            <Text style={[styles.actionIcon, liked && styles.likedIcon]}>{liked ? "❤️" : "🤍"}</Text>
+          <TouchableOpacity onPress={handleLike} style={styles.actionBtn} hitSlop={{top:8, bottom:8, left:8, right:8}}>
+            <Icon name={liked ? "heart" : "heart-outline"} size={22} color={liked ? COLORS.danger : COLORS.text} />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => onComment(post.id)} style={styles.actionBtn}>
-            <Text style={styles.actionIcon}>💬</Text>
+          <TouchableOpacity onPress={() => onComment(post.id)} style={styles.actionBtn} hitSlop={{top:8, bottom:8, left:8, right:8}}>
+            <Icon name="chatbubble-outline" size={22} color={COLORS.text} />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => onShare(post.id)} style={styles.actionBtn}>
-            <Text style={styles.actionIcon}>📤</Text>
+          <TouchableOpacity onPress={() => onShare(post.id)} style={styles.actionBtn} hitSlop={{top:8, bottom:8, left:8, right:8}}>
+            <Icon name="share-outline" size={22} color={COLORS.text} />
           </TouchableOpacity>
         </View>
-        <TouchableOpacity onPress={handleBookmark} style={styles.actionBtn}>
-          <Text style={[styles.actionIcon, bookmarked && { transform: [{ scale: 1.15 }] }]}>{bookmarked ? "🔖" : "🏷️"}</Text>
+        <TouchableOpacity onPress={handleBookmark} style={styles.actionBtn} hitSlop={{top:8, bottom:8, left:8, right:8}}>
+          <Icon name={bookmarked ? "bookmark" : "bookmark-outline"} size={22} color={COLORS.text} style={bookmarked ? { transform: [{ scale: 1.15 }] } : undefined} />
         </TouchableOpacity>
       </View>
 
-      <TouchableOpacity onPress={() => onLikesPress(post.id)}>
+      <TouchableOpacity onPress={() => onLikesPress(post.id)} hitSlop={{top:8, bottom:8, left:8, right:8}}>
         <Text style={styles.likesText}>{t("likes").replace("{count}", likesCount)}</Text>
       </TouchableOpacity>
 
       {post.comments && post.comments.length > 0 && (
         <View style={styles.commentsPreview}>
           {post.comments.slice(0, 2).map((comment) => (
-            <TouchableOpacity key={comment.id} onPress={() => onComment(post.id)} style={styles.commentRow}>
+            <TouchableOpacity key={comment.id} onPress={() => onComment(post.id)} style={styles.commentRow} hitSlop={{top:8, bottom:8, left:8, right:8}}>
               <Text style={styles.commentUser}>{comment.user?.username}</Text>
               <Text style={styles.commentText} numberOfLines={1}>{comment.content}</Text>
             </TouchableOpacity>
           ))}
           {post.comments_count > 2 && (
-            <TouchableOpacity onPress={() => onComment(post.id)}>
+            <TouchableOpacity onPress={() => onComment(post.id)} hitSlop={{top:8, bottom:8, left:8, right:8}}>
               <Text style={styles.viewAllComments}>{t("viewComments").replace("{count}", post.comments_count)}</Text>
             </TouchableOpacity>
           )}
         </View>
       )}
       {(!post.comments || post.comments.length === 0) && (
-        <TouchableOpacity onPress={() => onComment(post.id)}><Text style={styles.viewAllComments}>{t("addComment")}</Text></TouchableOpacity>
+        <TouchableOpacity onPress={() => onComment(post.id)} hitSlop={{top:8, bottom:8, left:8, right:8}}><Text style={styles.viewAllComments}>{t("addComment")}</Text></TouchableOpacity>
       )}
     </Animated.View>
   );
@@ -208,6 +212,41 @@ export default function FeedScreen({ navigation }) {
   const loadingRef = useRef(false);
   const insets = useSafeAreaInsets();
   const isOnline = useNetworkStatus();
+  const { isConnected } = useRealtimeContext();
+
+  useEffect(() => {
+    if (!user?.id || !isConnected) return undefined;
+    const channelName = `stories.${user.id}`;
+    realtime.listen(channelName, "story.created", (payload) => {
+      if (!payload?.id) return;
+      setStories((prev) => {
+        const story = {
+          id: payload.id,
+          user_id: payload.user_id,
+          type: payload.type,
+          image: payload.image,
+          video: payload.video,
+          text_overlay: payload.text_overlay,
+          text_color: payload.text_color,
+          bg_color: payload.bg_color,
+          duration: payload.duration,
+          stickers: payload.stickers,
+          drawing_data: payload.drawing_data,
+          created_at: payload.created_at,
+        };
+        const idx = prev.findIndex((g) => g.user?.id === payload.user_id);
+        if (idx !== -1) {
+          const group = prev[idx];
+          if (group.stories?.some((s) => s.id === story.id)) return prev;
+          const next = prev.slice();
+          next[idx] = { ...group, stories: [story, ...(group.stories || [])], has_unseen: true };
+          return next;
+        }
+        return [{ user: payload.user, stories: [story], has_unseen: true }, ...prev];
+      });
+    });
+    return () => realtime.leave(channelName);
+  }, [user?.id, isConnected]);
 
   const loadPosts = useCallback(async (pageNum = 1, append = false) => {
     if (loadingRef.current) return;
@@ -253,6 +292,34 @@ export default function FeedScreen({ navigation }) {
     setLoadingMore(false);
   }, [hasMore, loadingMore, page, loadPosts]);
 
+  const renderPost = useCallback(({ item: post }) => (
+    <PostCard
+      post={post}
+      currentUser={user}
+      onLike={likePost}
+      onBookmark={toggleBookmark}
+      onComment={(id) => navigation.navigate("Comments", { postId: id })}
+      onShare={(id) => navigation.navigate("SharePost", { postId: id })}
+      onImagePress={(p) => navigation.navigate("ImageViewer", { imageUrl: p.image, username: p.user?.username })}
+      onVideoPress={(p) => navigation.navigate("VideoPost", { videoUrl: p.video, username: p.user?.username })}
+      onMenuPress={(p) => {
+        const isMine = p.user?.id === user?.id;
+        const options = [];
+        if (isMine) {
+          options.push({ text: `✏️ ${t("edit")}`, onPress: () => navigation.navigate("EditPost", { postId: p.id, initialContent: p.content }) });
+          options.push({ text: `🗑️ ${t("deletePost")}`, destructive: true, onPress: () => { client.delete(`/posts/${p.id}`).then(() => setPosts((prev) => prev.filter((x) => x.id !== p.id))).catch(() => {}); } });
+        } else {
+          options.push({ text: `⚠️ ${t("report")}`, onPress: () => { client.post("/reports", { type: "post", id: p.id, reason: "Inappropriate" }).catch(() => {}); } });
+        }
+        options.push({ text: t("cancel"), cancel: true });
+        Alert.alert(null, null, options);
+      }}
+      onUserPress={(id) => navigation.navigate("UserProfile", { userId: id })}
+      onLikesPress={(id) => navigation.navigate("LikeList", { postId: id })}
+      navigation={navigation}
+    />
+  ), [user, likePost, toggleBookmark, t, navigation]);
+
   const likePost = useCallback((postId, liked, count) => {
     setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, liked: liked ? 0 : 1, likes_count: count + (liked ? -1 : 1) } : p));
     client.post("/likes", { post_id: postId }).catch(() => setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, liked: liked ? 1 : 0, likes_count: count } : p)));
@@ -272,8 +339,8 @@ export default function FeedScreen({ navigation }) {
     <View>
       <View style={[styles.topBar, { paddingTop: insets.top + SPACING.sm }]}>
         <Text style={styles.logo}>{t("sonix")}</Text>
-        <TouchableOpacity onPress={() => navigation.navigate("Notifications")} style={styles.notifBtn}>
-          <Text style={styles.notifIcon}>🔔</Text>
+        <TouchableOpacity onPress={() => navigation.navigate("Notifications")} style={styles.notifBtn} hitSlop={{top:8, bottom:8, left:8, right:8}}>
+          <Icon name="notifications-outline" size={18} color={COLORS.text} />
         </TouchableOpacity>
       </View>
 
@@ -357,13 +424,13 @@ export default function FeedScreen({ navigation }) {
         keyExtractor={(p) => String(p.id)}
         ListHeaderComponent={header}
         extraData={posts.length}
-        initialNumToRender={6}
-        maxToRenderPerBatch={8}
-        windowSize={9}
+        initialNumToRender={4}
+        maxToRenderPerBatch={5}
+        windowSize={5}
         removeClippedSubviews
         ListEmptyComponent={
           <EmptyState
-            icon="✨"
+            icon="sparkles"
             title={t("emptyFeed")}
             message={t("followPeople")}
             actionLabel={t("findPeople")}
@@ -381,33 +448,7 @@ export default function FeedScreen({ navigation }) {
         onEndReachedThreshold={0.5}
         contentContainerStyle={{ paddingBottom: 120 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} colors={[COLORS.primary]} />}
-        renderItem={({ item: post }) => (
-          <PostCard
-            post={post}
-            currentUser={user}
-            onLike={likePost}
-            onBookmark={toggleBookmark}
-            onComment={(id) => navigation.navigate("Comments", { postId: id })}
-            onShare={(id) => navigation.navigate("SharePost", { postId: id })}
-            onImagePress={(p) => navigation.navigate("ImageViewer", { imageUrl: p.image, username: p.user?.username })}
-            onVideoPress={(p) => navigation.navigate("VideoPost", { videoUrl: p.video, username: p.user?.username })}
-            onMenuPress={(p) => {
-              const isMine = p.user?.id === user?.id;
-              const options = [];
-              if (isMine) {
-                options.push({ text: `✏️ ${t("edit")}`, onPress: () => navigation.navigate("EditPost", { postId: p.id, initialContent: p.content }) });
-                options.push({ text: `🗑️ ${t("deletePost")}`, destructive: true, onPress: () => { client.delete(`/posts/${p.id}`).then(() => setPosts((prev) => prev.filter((x) => x.id !== p.id))); } });
-              } else {
-                options.push({ text: `⚠️ ${t("report")}`, onPress: () => { client.post("/reports", { type: "post", id: p.id, reason: "Inappropriate" }); } });
-              }
-              options.push({ text: t("cancel"), cancel: true });
-              Alert.alert(null, null, options);
-            }}
-            onUserPress={(id) => navigation.navigate("UserProfile", { userId: id })}
-            onLikesPress={(id) => navigation.navigate("LikeList", { postId: id })}
-            navigation={navigation}
-          />
-        )}
+        renderItem={renderPost}
       />
     </View>
   );
@@ -417,34 +458,34 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.screenBg },
   topBar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: SPACING.lg, paddingBottom: SPACING.sm },
   logo: { fontSize: 28, fontWeight: "900", color: COLORS.text, letterSpacing: 2 },
-  notifBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: GLASS.default.backgroundColor, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: GLASS.default.borderColor },
+  notifBtn: { width: 40, height: 40, borderRadius: RADIUS.xxl, backgroundColor: GLASS.default.backgroundColor, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: GLASS.default.borderColor },
   notifIcon: { fontSize: 18 },
 
   storiesSection: { paddingVertical: SPACING.sm, paddingBottom: SPACING.md },
   storyItem: { alignItems: "center", width: 70 },
-  myStoryRing: { width: 68, height: 68, borderRadius: 34, borderWidth: 2, borderColor: COLORS.primaryGlow, alignItems: "center", justifyContent: "center", marginBottom: 4 },
+  myStoryRing: { width: 68, height: 68, borderRadius: 34, borderWidth: 2, borderColor: COLORS.primaryGlow, alignItems: "center", justifyContent: "center", marginBottom: SPACING.xs },
   myStoryAvatar: { width: 60, height: 60, borderRadius: 30, backgroundColor: COLORS.cardElevated, alignItems: "center", justifyContent: "center", overflow: "hidden" },
   myStoryInitial: { color: COLORS.primary, fontSize: 22, fontWeight: "700" },
-  plusBadge: { position: "absolute", bottom: 0, right: 0, width: 24, height: 24, borderRadius: 12, backgroundColor: COLORS.primary, alignItems: "center", justifyContent: "center", borderWidth: 2.5, borderColor: COLORS.bg },
-  plusText: { color: COLORS.text, fontSize: 15, fontWeight: "700", marginTop: -1 },
-  storyRing: { width: 68, height: 68, borderRadius: 34, borderWidth: 3, borderColor: COLORS.accent, padding: 2, marginBottom: 4 },
+  plusBadge: { position: "absolute", bottom: 0, right: 0, width: 24, height: 24, borderRadius: RADIUS.lg, backgroundColor: COLORS.primary, alignItems: "center", justifyContent: "center", borderWidth: 2.5, borderColor: COLORS.bg },
+  plusText: { color: COLORS.text, ...TYPOGRAPHY.bodyBold, marginTop: -1 },
+  storyRing: { width: 68, height: 68, borderRadius: 34, borderWidth: 3, borderColor: COLORS.accent, padding: SPACING.xxs, marginBottom: SPACING.xs },
   storyAvatarInner: { width: "100%", height: "100%", borderRadius: 29, backgroundColor: COLORS.cardElevated, alignItems: "center", justifyContent: "center", overflow: "hidden" },
   storyInitial: { color: COLORS.text, fontSize: 22, fontWeight: "700" },
-  storyLabel: { fontSize: 11, color: COLORS.textSecondary, textAlign: "center", maxWidth: 68 },
+  storyLabel: { ...TYPOGRAPHY.small, color: COLORS.textSecondary, textAlign: "center", maxWidth: 68 },
 
   card: { marginBottom: SPACING.sm, borderRadius: RADIUS.xl, padding: SPACING.md, marginHorizontal: SPACING.sm, backgroundColor: GLASS.default.backgroundColor, borderWidth: 1, borderColor: GLASS.default.borderColor, ...SHADOWS.glass },
   cardHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: SPACING.sm },
   cardHeaderLeft: { flexDirection: "row", alignItems: "center", gap: 10 },
   cardUsername: { fontSize: SIZES.md, fontWeight: "700", color: COLORS.text },
   cardTime: { fontSize: SIZES.xs, color: COLORS.muted },
-  menuBtn: { padding: 4, width: 32, height: 32, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.03)", alignItems: "center", justifyContent: "center" },
+  menuBtn: { padding: SPACING.xs, width: 32, height: 32, borderRadius: RADIUS.xl, backgroundColor: COLORS.glassLight, alignItems: "center", justifyContent: "center" },
   menuDots: { fontSize: 14, color: COLORS.textSecondary, fontWeight: "900", letterSpacing: 1 },
 
   mediaWrap: { position: "relative", borderRadius: RADIUS.lg, overflow: "hidden" },
   postImg: { width: "100%", height: SCREEN_W - 40, borderRadius: RADIUS.lg, backgroundColor: COLORS.cardElevated },
   playOverlay: { position: "absolute", inset: 0, alignItems: "center", justifyContent: "center" },
-  playCircle: { width: 60, height: 60, borderRadius: 30, backgroundColor: "rgba(0,0,0,0.5)", alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: "rgba(255,255,255,0.2)" },
-  playIcon: { color: "#fff", fontSize: 24, marginLeft: 4 },
+  playCircle: { width: 60, height: 60, borderRadius: 30, backgroundColor: COLORS.overlayLight, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: "rgba(255,255,255,0.2)" },
+  playIcon: { color: COLORS.white, fontSize: 24, marginLeft: 4 },
 
   heartOverlay: { position: "absolute", inset: 0, alignItems: "center", justifyContent: "center", zIndex: 10 },
   heartBig: { fontSize: 80 },
@@ -455,19 +496,19 @@ const styles = StyleSheet.create({
   contentUser: { fontWeight: "700", color: COLORS.primaryLight },
 
   actionsBar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: SPACING.xs, marginTop: SPACING.xs },
-  actionsLeft: { flexDirection: "row", alignItems: "center", gap: 20 },
+  actionsLeft: { flexDirection: "row", alignItems: "center", gap: SPACING.xl },
   actionBtn: { padding: 6 },
   actionIcon: { fontSize: 22 },
 
   likesText: { fontSize: SIZES.sm, fontWeight: "700", color: COLORS.text, paddingVertical: 2 },
-  commentsPreview: { paddingVertical: 4, gap: 4 },
-  commentRow: { flexDirection: "row", gap: 4, alignItems: "center" },
+  commentsPreview: { paddingVertical: SPACING.xs, gap: SPACING.xs },
+  commentRow: { flexDirection: "row", gap: SPACING.xs, alignItems: "center" },
   commentUser: { fontSize: SIZES.sm, fontWeight: "700", color: COLORS.text },
   commentText: { fontSize: SIZES.sm, color: COLORS.textTertiary, flex: 1 },
-  viewAllComments: { fontSize: SIZES.sm, color: COLORS.muted, paddingVertical: 4 },
+  viewAllComments: { fontSize: SIZES.sm, color: COLORS.muted, paddingVertical: SPACING.xs },
   hashtag: { color: COLORS.accent, fontWeight: "600" },
   mention: { color: COLORS.primaryLight, fontWeight: "600" },
 
   loadingFooter: { flexDirection: "row", justifyContent: "center", gap: 6, paddingVertical: SPACING.xl },
-  loadingDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.primary },
+  loadingDot: { width: 8, height: 8, borderRadius: RADIUS.xs, backgroundColor: COLORS.primary },
 });

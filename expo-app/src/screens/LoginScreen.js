@@ -73,7 +73,7 @@ export default function LoginScreen({ navigation }) {
                   onChangeText={setEmail}
                   keyboardType="email-address"
                   autoCapitalize="none"
-                  icon="✉️"
+                  icon="mail"
                   glass
                 />
                 <Input
@@ -82,7 +82,7 @@ export default function LoginScreen({ navigation }) {
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry
-                  icon="🔒"
+                  icon="lock-closed"
                   glass
                 />
                 {error && <Text style={styles.error}>{error}</Text>}

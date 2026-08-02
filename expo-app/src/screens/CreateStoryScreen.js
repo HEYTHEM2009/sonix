@@ -1,12 +1,30 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, Modal, Animated, Keyboard, KeyboardAvoidingView, Platform, FlatList, Image, Dimensions } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, Modal, Animated, Keyboard, KeyboardAvoidingView, Platform, FlatList, Image, Dimensions, NativeModules, BackHandler } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
-const loadMediaLibrary = () => import("expo-media-library").catch(() => null);
+const hasMediaLibraryNative = () => {
+  try {
+    return !!(NativeModules?.ExpoMediaLibraryNext || NativeModules?.ExpoMediaLibrary);
+  } catch {
+    return false;
+  }
+};
+const loadMediaLibrary = async () => {
+  try {
+    if (!hasMediaLibraryNative()) return null;
+    const mod = await import("expo-media-library");
+    if (!mod || typeof mod.requestPermissionsAsync !== "function") return null;
+    return mod;
+  } catch {
+    return null;
+  }
+};
 const loadFileSystem = () => import("expo-file-system/legacy").catch(() => null);
 import client from "../api/client";
-import { COLORS, SIZES, FONTS } from "../components/Theme";
+import { COLORS, SIZES, FONTS, SPACING, RADIUS, TYPOGRAPHY, SHADOWS, GLASS, LAYOUT } from "../design/DesignSystem";
 import { useLanguage } from "../context/LanguageContext";
+import Icon from "../design/ui/Icon";
+import Screen3D from "../components/3D/Screen3D";
 const StoryEditor = React.lazy(() => import("../components/StoryEditor"));
 
 class StoryEditorErrorBoundary extends React.Component {
@@ -15,11 +33,11 @@ class StoryEditorErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: COLORS.bg, padding: 20 }}>
-          <Text style={{ fontSize: 48, marginBottom: 12 }}>⚠️</Text>
-          <Text style={{ fontSize: 16, color: COLORS.text, textAlign: "center", marginBottom: 8 }}>Story editor failed to load</Text>
-          <TouchableOpacity onPress={() => this.setState({ hasError: false })} style={{ backgroundColor: COLORS.primary, borderRadius: 8, paddingHorizontal: 20, paddingVertical: 10 }}>
-            <Text style={{ color: "#fff", fontWeight: "600" }}>Retry</Text>
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: COLORS.bg, padding: SPACING.xl }}>
+          <Icon name="warning" size={48} color={COLORS.text} style={{ marginBottom: SPACING.md }} />
+          <Text style={{ fontSize: 16, color: COLORS.text, textAlign: "center", marginBottom: SPACING.sm }}>Story editor failed to load</Text>
+          <TouchableOpacity onPress={() => this.setState({ hasError: false })} style={{ backgroundColor: COLORS.primary, borderRadius: RADIUS.sm, paddingHorizontal: SPACING.xl, paddingVertical: SPACING.sm }}>
+            <Text style={{ color: COLORS.text, ...FONTS.semiBold }}>Retry</Text>
           </TouchableOpacity>
         </View>
       );
@@ -27,7 +45,6 @@ class StoryEditorErrorBoundary extends React.Component {
     return this.props.children;
   }
 }
-import Screen3D from "../components/3D/Screen3D";
 
 const { width: SCREEN_W } = Dimensions.get("window");
 const GRID_COLS = 3;
@@ -52,6 +69,20 @@ export default function CreateStoryScreen({ navigation }) {
   useEffect(() => {
     loadRecentAssets();
   }, []);
+
+  useEffect(() => {
+    const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+      if (step === "edit") {
+        setStep("pick");
+        setMedia(null);
+        setMediaType(null);
+        Keyboard.dismiss();
+        return true;
+      }
+      return false;
+    });
+    return () => sub.remove();
+  }, [step]);
 
   const loadRecentAssets = async () => {
     try {
@@ -252,7 +283,7 @@ export default function CreateStoryScreen({ navigation }) {
 
       setTimeout(() => {
         setUploading(false);
-        navigation.navigate("Home", { screen: "Feed" });
+        navigation.reset({ index: 0, routes: [{ name: "Home", params: { screen: "Feed" } }] });
       }, 600);
 
     } catch (e) {
@@ -268,7 +299,7 @@ export default function CreateStoryScreen({ navigation }) {
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
           <View style={[s.topBar, { paddingTop: insets.top + 6 }]}>
             <TouchableOpacity onPress={() => { setStep("pick"); setMedia(null); Keyboard.dismiss(); }}>
-              <Text style={s.closeText}>✕</Text>
+              <Icon name="close" size={18} color={COLORS.text} />
             </TouchableOpacity>
             <Text style={s.title}>{t("editStory")}</Text>
             <View style={{ width: 40 }} />
@@ -290,7 +321,7 @@ export default function CreateStoryScreen({ navigation }) {
             <View style={s.uploadBox}>
               <View style={s.uploadIconWrap}>
                 {uploadProgress >= 100 ? (
-                  <Text style={s.uploadCheckmark}>✓</Text>
+                  <Icon name="checkmark-circle" size={32} color={COLORS.success} />
                 ) : (
                   <ActivityIndicator size="large" color={COLORS.primary} />
                 )}
@@ -324,7 +355,7 @@ export default function CreateStoryScreen({ navigation }) {
       <Image source={{ uri: item.uri }} style={s.gridImage} />
       {item.mediaType === "video" && (
         <View style={s.videoBadge}>
-          <Text style={s.videoBadgeText}>▶</Text>
+          <Icon name="play" size={8} color={COLORS.text} />
           {item.duration > 0 && (
             <Text style={s.videoDuration}>
               {Math.floor(item.duration / 60)}:{String(Math.floor(item.duration % 60)).padStart(2, "0")}
@@ -339,7 +370,7 @@ export default function CreateStoryScreen({ navigation }) {
     <>
       <TouchableOpacity style={s.cameraItem} onPress={capture} activeOpacity={0.7}>
         <View style={s.cameraCircle}>
-          <Text style={s.cameraIcon}>📷</Text>
+          <Icon name="camera" size={16} color={COLORS.text} />
         </View>
         <Text style={s.cameraLabel}>{t("camera")}</Text>
       </TouchableOpacity>
@@ -350,7 +381,7 @@ export default function CreateStoryScreen({ navigation }) {
     <View style={[s.container, { paddingTop: insets.top }]}>
       <View style={s.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={s.closeBtn}>
-          <Text style={s.closeText}>✕</Text>
+          <Icon name="close" size={18} color={COLORS.text} />
         </TouchableOpacity>
         <Text style={s.headerTitle}>{t("addToStory")}</Text>
         <View style={s.settingsBtn} />
@@ -358,20 +389,20 @@ export default function CreateStoryScreen({ navigation }) {
 
       <View style={s.optionsRow}>
         <TouchableOpacity style={s.optionCard} onPress={pickImage} activeOpacity={0.7}>
-          <View style={[s.optionIconWrap, { backgroundColor: "#FF6B6B20" }]}>
-            <Text style={s.optionEmoji}>🖼️</Text>
+          <View style={[s.optionIconWrap, { backgroundColor: COLORS.danger + "20" }]}>
+            <Icon name="image" size={18} color={COLORS.danger} />
           </View>
           <Text style={s.optionLabel}>{t("photo")}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={s.optionCard} onPress={pickVideo} activeOpacity={0.7}>
-          <View style={[s.optionIconWrap, { backgroundColor: "#A855F720" }]}>
-            <Text style={s.optionEmoji}>🎬</Text>
+          <View style={[s.optionIconWrap, { backgroundColor: COLORS.primary + "20" }]}>
+            <Icon name="videocam" size={18} color={COLORS.primary} />
           </View>
           <Text style={s.optionLabel}>{t("video")}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={s.optionCard} onPress={capture} activeOpacity={0.7}>
-          <View style={[s.optionIconWrap, { backgroundColor: "#F59E0B20" }]}>
-            <Text style={s.optionEmoji}>📷</Text>
+          <View style={[s.optionIconWrap, { backgroundColor: COLORS.gold + "20" }]}>
+            <Icon name="camera" size={18} color={COLORS.gold} />
           </View>
           <Text style={s.optionLabel}>{t("camera")}</Text>
         </TouchableOpacity>
@@ -428,7 +459,7 @@ export default function CreateStoryScreen({ navigation }) {
           <View style={s.uploadBox}>
             <View style={s.uploadIconWrap}>
               {uploadProgress >= 100 ? (
-                <Text style={s.uploadCheckmark}>✓</Text>
+                <Icon name="checkmark-circle" size={32} color={COLORS.success} />
               ) : (
                 <ActivityIndicator size="large" color={COLORS.primary} />
               )}
@@ -454,46 +485,46 @@ export default function CreateStoryScreen({ navigation }) {
 
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingBottom: 12 },
-  closeBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: COLORS.card, alignItems: "center", justifyContent: "center" },
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: SPACING.lg, paddingBottom: SPACING.md, ...GLASS.elevated },
+  closeBtn: { width: 40, height: 40, borderRadius: RADIUS.full, backgroundColor: COLORS.card, alignItems: "center", justifyContent: "center" },
   closeText: { fontSize: 18, color: COLORS.text, ...FONTS.bold },
   headerTitle: { fontSize: SIZES.lg, ...FONTS.bold, color: COLORS.text },
-  settingsBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: COLORS.card, alignItems: "center", justifyContent: "center" },
+  settingsBtn: { width: 40, height: 40, borderRadius: RADIUS.full, backgroundColor: COLORS.card, alignItems: "center", justifyContent: "center" },
   settingsIcon: { fontSize: 18 },
 
-  optionsRow: { flexDirection: "row", paddingHorizontal: 16, gap: 12, marginBottom: 16 },
-  optionCard: { flex: 1, backgroundColor: COLORS.card, borderRadius: SIZES.radiusLg, padding: 16, alignItems: "center", gap: 8 },
-  optionIconWrap: { width: 52, height: 52, borderRadius: 26, alignItems: "center", justifyContent: "center" },
-  optionEmoji: { fontSize: 24 },
+  optionsRow: { flexDirection: "row", paddingHorizontal: SPACING.lg, gap: SPACING.md, marginBottom: SPACING.lg },
+  optionCard: { flex: 1, backgroundColor: COLORS.card, borderRadius: RADIUS.xl, padding: SPACING.lg, alignItems: "center", gap: SPACING.sm, ...GLASS.light },
+  optionIconWrap: { width: 52, height: 52, borderRadius: RADIUS.full, alignItems: "center", justifyContent: "center" },
+  optionEmoji: { fontSize: 18 },
   optionLabel: { fontSize: SIZES.sm, ...FONTS.semiBold, color: COLORS.text },
 
-  recentHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingVertical: 10 },
+  recentHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: SPACING.lg, paddingVertical: SPACING.sm },
   recentTitle: { fontSize: SIZES.md, ...FONTS.bold, color: COLORS.text },
   selectBtn: { fontSize: SIZES.sm, color: COLORS.primary, ...FONTS.semiBold },
 
   gridContainer: { paddingBottom: 100 },
   gridItem: { width: GRID_ITEM_SIZE, height: GRID_ITEM_SIZE, padding: 1 },
-  gridImage: { width: "100%", height: "100%", borderRadius: 2 },
-  videoBadge: { position: "absolute", bottom: 6, left: 6, flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "rgba(0,0,0,0.6)", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
-  videoBadgeText: { fontSize: 8, color: "#fff" },
-  videoDuration: { fontSize: 10, color: "#fff", ...FONTS.semiBold },
+  gridImage: { width: "100%", height: "100%", borderRadius: SPACING.xxs },
+  videoBadge: { position: "absolute", bottom: SPACING.xs, left: SPACING.xs, flexDirection: "row", alignItems: "center", gap: SPACING.xs, backgroundColor: COLORS.overlay, paddingHorizontal: SPACING.xs, paddingVertical: SPACING.xxs, borderRadius: SPACING.xs },
+  videoBadgeText: { fontSize: 8, color: COLORS.text },
+  videoDuration: { fontSize: 10, color: COLORS.text, ...FONTS.semiBold },
 
-  cameraItem: { width: GRID_ITEM_SIZE, height: GRID_ITEM_SIZE, alignItems: "center", justifyContent: "center", padding: 1 },
-  cameraCircle: { width: 60, height: 60, borderRadius: 30, backgroundColor: COLORS.primary, alignItems: "center", justifyContent: "center", marginBottom: 6 },
-  cameraIcon: { fontSize: 28, color: "#fff" },
+  cameraItem: { width: GRID_ITEM_SIZE, height: GRID_ITEM_SIZE, alignItems: "center", justifyContent: "center", padding: 1, ...GLASS.light },
+  cameraCircle: { width: 60, height: 60, borderRadius: RADIUS.full, backgroundColor: COLORS.primary, alignItems: "center", justifyContent: "center", marginBottom: SPACING.xs },
+  cameraIcon: { fontSize: 16, color: COLORS.text },
   cameraLabel: { fontSize: SIZES.xs, color: COLORS.text, ...FONTS.semiBold },
 
-  loadingWrap: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12 },
+  loadingWrap: { flex: 1, alignItems: "center", justifyContent: "center", gap: SPACING.md },
   emptyText: { color: COLORS.muted, fontSize: SIZES.sm, textAlign: "center", paddingHorizontal: 40 },
-  grantBtn: { backgroundColor: COLORS.primary, borderRadius: SIZES.radius, paddingHorizontal: 24, paddingVertical: 10 },
-  grantBtnText: { color: "#fff", ...FONTS.semiBold, fontSize: SIZES.sm },
+  grantBtn: { backgroundColor: COLORS.primary, borderRadius: RADIUS.md, paddingHorizontal: SPACING.xxl, paddingVertical: SPACING.sm },
+  grantBtnText: { color: COLORS.text, ...FONTS.semiBold, fontSize: SIZES.sm },
 
-  topBar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 12, paddingBottom: 8, borderBottomWidth: 0.5, borderBottomColor: COLORS.border },
+  topBar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: SPACING.md, paddingBottom: SPACING.sm, borderBottomWidth: 0.5, borderBottomColor: COLORS.border, ...GLASS.elevated },
   title: { fontSize: SIZES.lg, ...FONTS.bold, color: COLORS.text },
 
-  uploadOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.7)", alignItems: "center", justifyContent: "center" },
-  uploadBox: { backgroundColor: COLORS.card, borderRadius: SIZES.radiusLg, padding: 30, alignItems: "center", gap: 16, width: 260 },
-  uploadIconWrap: { width: 60, height: 60, borderRadius: 30, backgroundColor: COLORS.primary + "20", alignItems: "center", justifyContent: "center" },
+  uploadOverlay: { flex: 1, backgroundColor: COLORS.overlay, alignItems: "center", justifyContent: "center" },
+  uploadBox: { backgroundColor: COLORS.card, borderRadius: RADIUS.xl, padding: SPACING.xxxl, alignItems: "center", gap: SPACING.lg, width: 260, ...GLASS.elevated },
+  uploadIconWrap: { width: 60, height: 60, borderRadius: RADIUS.full, backgroundColor: COLORS.primary + "20", alignItems: "center", justifyContent: "center" },
   uploadCheckmark: { fontSize: 32, color: COLORS.success, ...FONTS.bold },
   uploadPhase: { color: COLORS.text, fontSize: SIZES.md, ...FONTS.semiBold },
   progressTrack: { width: "100%", height: 6, borderRadius: 3, backgroundColor: COLORS.input, overflow: "hidden" },

@@ -30,6 +30,7 @@ import StoryViewerScreen from "../screens/StoryViewerScreen";
 import EditProfileScreen from "../screens/EditProfileScreen";
 import SavedPostsScreen from "../screens/SavedPostsScreen";
 const ImageViewerScreen = React.lazy(() => import("../screens/ImageViewerScreen"));
+const ChatVideoViewerScreen = React.lazy(() => import("../screens/ChatVideoViewerScreen"));
 import SharePostScreen from "../screens/SharePostScreen";
 import LikeListScreen from "../screens/LikeListScreen";
 import GroupChatScreen from "../screens/GroupChatScreen";
@@ -175,17 +176,18 @@ export default function AppNavigator() {
           <Stack.Screen name="GroupChat" component={GroupChatScreen} />
           <Stack.Screen name="CreateGroup" component={CreateGroupScreen} />
           <Stack.Screen name="Comments" component={CommentsScreen} />
-          <Stack.Screen name="Camera" options={{ animation: "slide_from_bottom" }}>{() => <SuspenseScreen><CameraScreen /></SuspenseScreen>}</Stack.Screen>
+          <Stack.Screen name="Camera" options={{ animation: "slide_from_bottom" }}>{({ navigation, route }) => <SuspenseScreen><CameraScreen navigation={navigation} route={route} /></SuspenseScreen>}</Stack.Screen>
           <Stack.Screen name="StoryViewer" component={StoryViewerScreen} options={{ animation: "fade" }} />
           <Stack.Screen name="Notifications" component={NotificationsScreen} />
           <Stack.Screen name="EditProfile" component={EditProfileScreen} />
           <Stack.Screen name="SavedPosts" component={SavedPostsScreen} />
-          <Stack.Screen name="ImageViewer" options={{ animation: "fade" }}>{() => <SuspenseScreen><ImageViewerScreen /></SuspenseScreen>}</Stack.Screen>
+          <Stack.Screen name="ImageViewer" options={{ animation: "fade" }}>{({ navigation, route }) => <SuspenseScreen><ImageViewerScreen navigation={navigation} route={route} /></SuspenseScreen>}</Stack.Screen>
+<Stack.Screen name="ChatVideoViewer" options={{ animation: "fade" }}>{({ navigation, route }) => <SuspenseScreen><ChatVideoViewerScreen navigation={navigation} route={route} /></SuspenseScreen>}</Stack.Screen>
           <Stack.Screen name="SharePost" component={SharePostScreen} />
           <Stack.Screen name="LikeList" component={LikeListScreen} />
           <Stack.Screen name="EditPost" component={EditPostScreen} />
           <Stack.Screen name="Settings" component={SettingsScreen} />
-          <Stack.Screen name="CreateStory" options={{ animation: "slide_from_bottom" }}>{() => <SuspenseScreen><CreateStoryScreen /></SuspenseScreen>}</Stack.Screen>
+          <Stack.Screen name="CreateStory" options={{ animation: "slide_from_bottom" }}>{({ navigation, route }) => <SuspenseScreen><CreateStoryScreen navigation={navigation} route={route} /></SuspenseScreen>}</Stack.Screen>
           <Stack.Screen name="VideoPost" component={VideoPostScreen} options={{ animation: "fade" }} />
           <Stack.Screen name="Highlights" component={HighlightsScreen} />
           <Stack.Screen name="BlockedUsers" component={BlockedUsersScreen} />
@@ -205,7 +207,7 @@ export default function AppNavigator() {
 }
 
 const styles = StyleSheet.create({
-  tabContainer: { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: "transparent" },
+  tabContainer: { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: "transparent", pointerEvents: "box-none" },
   tabBar: {
     flexDirection: "row",
     alignItems: "center",

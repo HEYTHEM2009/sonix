@@ -16,6 +16,7 @@ import { MessageSkeleton } from "../design/states/LoadingState";
 import EmptyState from "../design/states/EmptyState";
 import ErrorState from "../design/states/ErrorState";
 import { OfflineBanner } from "../design/states/OfflineState";
+import Icon from "../design/ui/Icon";
 
 function formatTime(dateStr, t) {
   const d = new Date(dateStr);
@@ -40,10 +41,10 @@ const SwipeActions = ({ children, onPin, onMute, onDelete, onBlock }) => {
   const resetSwipe = () => Animated.spring(translateX, { toValue: 0, useNativeDriver: true }).start();
 
   const actions = [
-    { icon: "📌", color: COLORS.primary, onPress: () => { resetSwipe(); onPin(); } },
-    { icon: "🔕", color: "#F59E0B", onPress: () => { resetSwipe(); onMute(); } },
-    { icon: "🗑️", color: COLORS.danger, onPress: () => { resetSwipe(); onDelete(); } },
-    { icon: "🚫", color: "#8B5CF6", onPress: () => { resetSwipe(); onBlock(); } },
+    { icon: "pin", color: COLORS.primary, onPress: () => { resetSwipe(); onPin(); } },
+    { icon: "notifications-off", color: "#F59E0B", onPress: () => { resetSwipe(); onMute(); } },
+    { icon: "trash", color: COLORS.danger, onPress: () => { resetSwipe(); onDelete(); } },
+    { icon: "ban", color: "#8B5CF6", onPress: () => { resetSwipe(); onBlock(); } },
   ];
 
   return (
@@ -51,7 +52,7 @@ const SwipeActions = ({ children, onPin, onMute, onDelete, onBlock }) => {
       <View style={styles.swipeActions}>
         {actions.map((a, i) => (
           <TouchableOpacity key={i} style={[styles.swipeAction, { backgroundColor: a.color }]} onPress={a.onPress}>
-            <Text style={styles.swipeText}>{a.icon}</Text>
+            <Icon name={a.icon} size={18} color="#fff" />
           </TouchableOpacity>
         ))}
       </View>
@@ -80,17 +81,17 @@ const ConversationItem = memo(({ item, onPress, onLongPress, onDelete, onMute, o
       <TouchableOpacity style={styles.rowContent} onPress={onPress} onLongPress={onLongPress} activeOpacity={0.7}>
         <View style={styles.nameRow}>
           <View style={styles.nameLeft}>
-            {item.is_pinned && <Text style={styles.pinIcon}>📌</Text>}
+            {item.is_pinned && <Icon name="pin" size={12} color={COLORS.primary} />}
             <Text style={styles.name} numberOfLines={1}>{item.user.username}</Text>
           </View>
           <View style={styles.nameRight}>
-            {item.is_muted && <Text style={styles.muteIcon}>🔕</Text>}
+            {item.is_muted && <Icon name="notifications-off" size={12} color={COLORS.muted} />}
             {item.last_message?.created_at && <Text style={styles.time}>{formatTime(item.last_message.created_at, t)}</Text>}
           </View>
         </View>
         <View style={styles.previewRow}>
           <Text style={[styles.preview, item.unread_count > 0 && { color: COLORS.text, fontWeight: "600" }]} numberOfLines={1}>
-            {item.last_message?.type === "image" ? `📷 ${t("photo")}` : item.last_message?.type === "voice" ? `🎤 ${t("voice")}` : item.last_message?.is_mine ? `${t("you")}: ` : ""}{item.last_message?.content || t("startConv")}
+            {item.last_message?.type === "image" ? <><Icon name="camera" size={12} color={COLORS.textTertiary} /> {t("photo")}</> : item.last_message?.type === "voice" ? <><Icon name="mic" size={12} color={COLORS.textTertiary} /> {t("voice")}</> : item.last_message?.is_mine ? `${t("you")}: ` : ""}{item.last_message?.content || t("startConv")}
           </Text>
           {item.unread_count > 0 && <Badge count={item.unread_count} variant="primary" />}
         </View>
@@ -214,10 +215,10 @@ export default function MessagesScreen({ navigation }) {
           <Text style={styles.title}>{t("messages")}</Text>
           <View style={styles.headerActions}>
             <TouchableOpacity style={styles.headerBtn} onPress={() => navigation.navigate("CreateGroup")}>
-              <Text style={styles.headerBtnIcon}>👥</Text>
+              <Icon name="people" size={18} color={COLORS.text} />
             </TouchableOpacity>
             <TouchableOpacity style={styles.headerBtn} onPress={() => navigation.navigate("Users")}>
-              <Text style={styles.headerBtnIcon}>✏️</Text>
+              <Icon name="create" size={18} color={COLORS.text} />
             </TouchableOpacity>
           </View>
         </View>
@@ -232,11 +233,12 @@ export default function MessagesScreen({ navigation }) {
       <FlatList
         data={data}
         keyExtractor={(item, i) => item.key || String(item.id || i)}
+        removeClippedSubviews={false}
         contentContainerStyle={{ paddingBottom: Math.max(insets.bottom + 80, 100) }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} colors={[COLORS.primary]} />}
         ListEmptyComponent={
           <EmptyState
-            icon="💬"
+            icon="chatbubble"
             title={search ? t("noResults") : t("noMessages")}
             message={search ? t("tryDifferentSearch") : t("startConversation")}
           />
@@ -246,7 +248,7 @@ export default function MessagesScreen({ navigation }) {
           if (item.type === "group") {
             return (
               <TouchableOpacity style={styles.groupRow} onPress={() => navigation.navigate("GroupChat", { groupId: item.id, groupName: item.name })} activeOpacity={0.7}>
-                <View style={styles.groupAvatar}><Text style={styles.groupAvatarText}>👥</Text></View>
+                <View style={styles.groupAvatar}><Icon name="people" size={24} color={COLORS.primary} /></View>
                 <View style={styles.groupInfo}>
                   <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
                   <Text style={styles.preview} numberOfLines={1}>{item.last_message ? `${item.last_message.username}: ${item.last_message.content}` : t("startConv")}</Text>
@@ -290,11 +292,11 @@ const styles = StyleSheet.create({
   headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: SPACING.md },
   title: { ...TYPOGRAPHY.h2, color: COLORS.text },
   headerActions: { flexDirection: "row", gap: SPACING.sm },
-  headerBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: GLASS.default.backgroundColor, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: GLASS.default.borderColor },
+  headerBtn: { width: 40, height: 40, borderRadius: RADIUS.xxl, backgroundColor: GLASS.default.backgroundColor, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: GLASS.default.borderColor },
   headerBtnIcon: { fontSize: 18 },
 
   swipeWrap: { overflow: "hidden", marginBottom: 0 },
-  swipeActions: { position: "absolute", right: 0, top: 6, bottom: 6, flexDirection: "row", alignItems: "center", paddingRight: SPACING.md, gap: 2 },
+  swipeActions: { position: "absolute", right: 0, top: 6, bottom: 6, flexDirection: "row", alignItems: "center", paddingRight: SPACING.md, gap: SPACING.xxs },
   swipeAction: { width: 40, height: "100%", alignItems: "center", justifyContent: "center", borderRadius: RADIUS.sm },
   swipeText: { fontSize: 18 },
 
@@ -307,8 +309,8 @@ const styles = StyleSheet.create({
   memberCount: { ...TYPOGRAPHY.small, color: COLORS.muted },
 
   nameRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 3 },
-  nameLeft: { flexDirection: "row", alignItems: "center", gap: 4, flex: 1 },
-  nameRight: { flexDirection: "row", alignItems: "center", gap: 4 },
+  nameLeft: { flexDirection: "row", alignItems: "center", gap: SPACING.xs, flex: 1 },
+  nameRight: { flexDirection: "row", alignItems: "center", gap: SPACING.xs },
   name: { ...TYPOGRAPHY.bodyBold, color: COLORS.text, flex: 1 },
   time: { ...TYPOGRAPHY.small, color: COLORS.muted },
   pinIcon: { fontSize: 12 },

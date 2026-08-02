@@ -2,17 +2,11 @@
   "expo": {
     "name": "Sonix",
     "slug": "sonix-app-new",
-    "owner": "YOUR_EXPO_USERNAME",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
     "scheme": "sonix",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#0a0a1a"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.sonix.app",
@@ -79,8 +73,9 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "YOUR_EAS_PROJECT_ID"
+        "projectId": "6666b88b-b938-4994-ba0b-cf2b21cbecb0"
       }
-    }
+    },
+    "owner": "heythem.00"
   }
 }

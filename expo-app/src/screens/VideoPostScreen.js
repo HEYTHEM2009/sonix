@@ -1,11 +1,12 @@
 import { useState, useCallback, useRef } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions, StatusBar, ActivityIndicator } from "react-native";
+import Icon from "../design/ui/Icon";
 import { useFocusEffect } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { WebView } from "react-native-webview";
 import { resolveUrl } from "../api/client";
 import { useLanguage } from "../context/LanguageContext";
-import { COLORS } from "../components/Theme";
+import { COLORS, SIZES, FONTS, SPACING, RADIUS, TYPOGRAPHY, SHADOWS, GLASS, LAYOUT } from "../design/DesignSystem";
 
 const { width, height } = Dimensions.get("window");
 
@@ -40,7 +41,7 @@ export default function VideoPostScreen({ route, navigation }) {
 <video id="v" playsinline webkit-playsinline controls autoplay muted
        src="${resolveUrl(videoUrl)}" type="video/mp4"
        style="width:100%;height:100%;object-fit:contain"></video>
-<div id="soundBtn">🔇</div>
+<div id="soundBtn">MUTE</div>
 <script>
   var v = document.getElementById('v');
   var muted = true;
@@ -48,7 +49,7 @@ export default function VideoPostScreen({ route, navigation }) {
   sb.addEventListener('click', function() {
     muted = !muted;
     v.muted = muted;
-    sb.textContent = muted ? '🔇' : '🔊';
+    sb.textContent = muted ? 'MUTE' : 'UNMUTE';
     if (muted) { try { v.pause(); } catch(e) {} }
     else { try { v.play(); } catch(e) {} }
     window.ReactNativeWebView.postMessage('toggleSound:' + (muted ? 'off' : 'on'));
@@ -63,8 +64,12 @@ export default function VideoPostScreen({ route, navigation }) {
     window.ReactNativeWebView.postMessage('videoReady');
   });
   document.addEventListener('message', function(e) {
-    if (e.data === 'mute') { muted = true; v.muted = true; try { v.pause(); } catch(ex) {} sb.textContent = '🔇'; }
-    else if (e.data === 'unmute') { muted = false; v.muted = false; try { v.play(); } catch(ex) {} sb.textContent = '🔊'; }
+    if (e.data === 'mute') { muted = true; v.muted = true; try { v.pause(); } catch(ex) {} sb.textContent = 'MUTE'; }
+    else if (e.data === 'unmute') { muted = false; v.muted = false; try { v.play(); } catch(ex) {} sb.textContent = 'UNMUTE'; }
+    else if (e.data === 'stop') {
+      try { v.pause(); v.muted = true; v.removeAttribute('src'); v.load(); } catch(ex) {}
+      sb.textContent = 'MUTE';
+    }
   });
 </script>
 </body></html>`;
@@ -72,7 +77,7 @@ export default function VideoPostScreen({ route, navigation }) {
   useFocusEffect(
     useCallback(() => {
       return () => {
-        try { webViewRef.current?.postMessage("mute"); } catch (e) {}
+        try { webViewRef.current?.postMessage("stop"); } catch (e) {}
       };
     }, [])
   );
@@ -107,8 +112,8 @@ export default function VideoPostScreen({ route, navigation }) {
         </View>
       )}
       <View style={[s.topBar, { top: insets.top + 10 }]}>
-        <TouchableOpacity style={s.closeBtn} onPress={() => { webViewRef.current?.postMessage("mute"); navigation.goBack(); }}>
-          <Text style={s.closeText}>✕</Text>
+        <TouchableOpacity style={s.closeBtn} onPress={() => { webViewRef.current?.postMessage("stop"); navigation.goBack(); }}>
+          <Icon name="close" size="xl" />
         </TouchableOpacity>
         {username && <Text style={s.username}>{username}</Text>}
       </View>
@@ -117,12 +122,12 @@ export default function VideoPostScreen({ route, navigation }) {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#000" },
+  container: { flex: 1, backgroundColor: COLORS.black },
   webview: { width, height },
-  loadingOverlay: { position: "absolute", inset: 0, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(0,0,0,0.6)" },
-  loadingText: { color: "#fff", marginTop: 12, fontSize: 14 },
-  topBar: { position: "absolute", left: 0, right: 0, flexDirection: "row", alignItems: "center", paddingHorizontal: 16, gap: 12, zIndex: 10 },
-  closeBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(0,0,0,0.5)", alignItems: "center", justifyContent: "center" },
-  closeText: { color: "#fff", fontSize: 20, fontWeight: "700" },
-  username: { color: "#fff", fontSize: 16, fontWeight: "600" },
+  loadingOverlay: { position: "absolute", inset: 0, alignItems: "center", justifyContent: "center", backgroundColor: COLORS.overlay },
+  loadingText: { color: COLORS.text, marginTop: SPACING.md, fontSize: SIZES.md },
+  topBar: { position: "absolute", left: 0, right: 0, flexDirection: "row", alignItems: "center", paddingHorizontal: SPACING.lg, gap: SPACING.md, zIndex: 10 },
+  closeBtn: { width: 36, height: 36, borderRadius: RADIUS.xl, backgroundColor: COLORS.overlay, alignItems: "center", justifyContent: "center" },
+  closeText: { color: COLORS.text, fontSize: SIZES.xxl, ...FONTS.bold },
+  username: { color: COLORS.text, fontSize: SIZES.lg, ...FONTS.semiBold },
 });

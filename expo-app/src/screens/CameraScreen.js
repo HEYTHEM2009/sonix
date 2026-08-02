@@ -5,7 +5,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import client from "../api/client";
-import { COLORS, FONTS } from "../components/Theme";
+import Icon from "../design/ui/Icon";
+import { COLORS, SIZES, FONTS, SPACING, RADIUS, TYPOGRAPHY, SHADOWS, GLASS, LAYOUT } from "../design/DesignSystem";
 
 export default function CameraScreen({ navigation }) {
   const [permission, requestPermission] = useCameraPermissions();
@@ -95,7 +96,7 @@ export default function CameraScreen({ navigation }) {
   if (!permission.granted) {
     return (
       <View style={[s.center, { paddingTop: insets.top }]}>
-        <Text style={{ color: "#fff", fontSize: 15, marginBottom: 16, textAlign: "center" }}>{t("cameraPermissionRequired")}</Text>
+        <Text style={{ color: COLORS.text, fontSize: 15, marginBottom: SPACING.lg, textAlign: "center" }}>{t("cameraPermissionRequired")}</Text>
         <TouchableOpacity style={s.grantBtn} onPress={requestPermission}><Text style={s.grantText}>{t("grantPermission")}</Text></TouchableOpacity>
       </View>
     );
@@ -104,7 +105,7 @@ export default function CameraScreen({ navigation }) {
   const formatTime = (s) => `${Math.floor(s / 60).toString().padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#000" }}>
+    <View style={{ flex: 1, backgroundColor: COLORS.black }}>
       <CameraView
         ref={cameraRef}
         style={{ flex: 1 }}
@@ -115,17 +116,17 @@ export default function CameraScreen({ navigation }) {
 
       <View style={[s.topControls, { top: insets.top + 12 }]}>
         <TouchableOpacity style={s.controlBtn} onPress={() => navigation.goBack()}>
-          <Text style={s.controlIcon}>✕</Text>
+          <Icon name="close" size={18} color={COLORS.text} />
         </TouchableOpacity>
 
         <View style={s.topRight}>
           <TouchableOpacity style={s.controlBtn} onPress={() => setFlash(flash === "off" ? "on" : "off")}>
-            <Text style={s.controlIcon}>{flash === "on" ? "⚡" : "⚡"}</Text>
-            <Text style={[s.flashLabel, flash === "on" && { color: "#FDCB6E" }]}>{flash === "on" ? "ON" : "OFF"}</Text>
+            <Icon name={flash === "on" ? "flash" : "flash-off"} size={18} color={flash === "on" ? COLORS.gold : COLORS.text} />
+            <Text style={[s.flashLabel, flash === "on" && { color: COLORS.gold }]}>{flash === "on" ? "ON" : "OFF"}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={s.controlBtn} onPress={() => setFacing(facing === "back" ? "front" : "back")}>
-            <Text style={s.controlIcon}>🔄</Text>
+            <Icon name="camera-reverse" size={18} color={COLORS.text} />
           </TouchableOpacity>
         </View>
       </View>
@@ -142,14 +143,15 @@ export default function CameraScreen({ navigation }) {
           style={[s.modeSwitch, mode === "video" && s.modeActive]}
           onPress={() => setMode(mode === "photo" ? "video" : "photo")}
         >
+          <Icon name={mode === "photo" ? "videocam" : "camera"} size={16} color={mode === "video" ? COLORS.primary : COLORS.text} />
           <Text style={[s.modeText, mode === "video" && { color: COLORS.primary }]}>
-            {mode === "photo" ? "🎥 Video" : "📷 Photo"}
+            {mode === "photo" ? "Video" : "Photo"}
           </Text>
         </TouchableOpacity>
 
         {mode === "photo" ? (
           <TouchableOpacity style={[s.captureBtn, capturing && s.capturing]} onPress={takeAndUpload} disabled={capturing}>
-            {capturing ? <ActivityIndicator color="#fff" size="large" /> : <View style={s.captureInner} />}
+            {capturing ? <ActivityIndicator color={COLORS.text} size="large" /> : <View style={s.captureInner} />}
           </TouchableOpacity>
         ) : (
           <TouchableOpacity style={[s.recordBtn, recording && s.recordingActive]} onPress={toggleRecord}>
@@ -168,26 +170,26 @@ export default function CameraScreen({ navigation }) {
 }
 
 const s = StyleSheet.create({
-  center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#000", padding: 40 },
-  topControls: { position: "absolute", left: 16, right: 16, flexDirection: "row", justifyContent: "space-between", zIndex: 10 },
-  controlBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(0,0,0,0.5)", alignItems: "center", justifyContent: "center" },
-  controlIcon: { color: "#fff", fontSize: 18 },
-  flashLabel: { color: "#fff", fontSize: 9, ...FONTS.semiBold },
-  topRight: { flexDirection: "row", gap: 10 },
-  recordIndicator: { position: "absolute", alignSelf: "center", flexDirection: "row", alignItems: "center", gap: 8, zIndex: 10, backgroundColor: "rgba(225,112,85,0.8)", paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20 },
-  recordDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: "#fff" },
-  recordTime: { color: "#fff", ...FONTS.semiBold, fontSize: 14 },
-  controls: { position: "absolute", left: 0, right: 0, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 30 },
-  modeSwitch: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.15)" },
-  modeActive: { backgroundColor: COLORS.primary + "40" },
-  modeText: { color: "#fff", fontSize: 13, ...FONTS.semiBold },
-  captureBtn: { width: 76, height: 76, borderRadius: 38, borderWidth: 4, borderColor: "#fff", alignItems: "center", justifyContent: "center" },
-  captureInner: { width: 62, height: 62, borderRadius: 31, backgroundColor: "#fff" },
+  center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: COLORS.black, padding: SPACING.huge },
+  topControls: { position: "absolute", left: SPACING.lg, right: SPACING.lg, flexDirection: "row", justifyContent: "space-between", zIndex: 10 },
+  controlBtn: { width: 40, height: 40, borderRadius: RADIUS.xl, backgroundColor: COLORS.overlayLight, alignItems: "center", justifyContent: "center" },
+  controlIcon: { color: COLORS.text, fontSize: 18 },
+  flashLabel: { color: COLORS.text, fontSize: 9, ...FONTS.semiBold },
+  topRight: { flexDirection: "row", gap: SPACING.sm },
+  recordIndicator: { position: "absolute", alignSelf: "center", flexDirection: "row", alignItems: "center", gap: SPACING.sm, zIndex: 10, backgroundColor: COLORS.danger + "CC", paddingHorizontal: SPACING.md, paddingVertical: RADIUS.xs, borderRadius: RADIUS.xl },
+  recordDot: { width: 10, height: 10, borderRadius: RADIUS.full, backgroundColor: COLORS.text },
+  recordTime: { color: COLORS.text, ...FONTS.semiBold, fontSize: 14 },
+  controls: { position: "absolute", left: 0, right: 0, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: SPACING.xxxl },
+  modeSwitch: { paddingHorizontal: SPACING.md, paddingVertical: RADIUS.xs, borderRadius: RADIUS.lg, backgroundColor: "rgba(255,255,255,0.15)" },
+  modeActive: { backgroundColor: COLORS.primaryGlowLight },
+  modeText: { color: COLORS.text, fontSize: 13, ...FONTS.semiBold },
+  captureBtn: { width: 76, height: 76, borderRadius: RADIUS.full, borderWidth: 4, borderColor: COLORS.text, alignItems: "center", justifyContent: "center" },
+  captureInner: { width: 62, height: 62, borderRadius: RADIUS.full, backgroundColor: COLORS.text },
   capturing: { opacity: 0.5 },
-  recordBtn: { width: 76, height: 76, borderRadius: 38, borderWidth: 4, borderColor: COLORS.danger, alignItems: "center", justifyContent: "center" },
-  recordInner: { width: 62, height: 62, borderRadius: 31, backgroundColor: COLORS.danger },
+  recordBtn: { width: 76, height: 76, borderRadius: RADIUS.full, borderWidth: 4, borderColor: COLORS.danger, alignItems: "center", justifyContent: "center" },
+  recordInner: { width: 62, height: 62, borderRadius: RADIUS.full, backgroundColor: COLORS.danger },
   recordingActive: { borderColor: COLORS.danger },
-  recordingSquare: { width: 30, height: 30, borderRadius: 6, backgroundColor: COLORS.danger },
-  grantBtn: { backgroundColor: COLORS.primary, borderRadius: 8, paddingVertical: 10, paddingHorizontal: 28 },
-  grantText: { color: "#fff", ...FONTS.semiBold, fontSize: 14 },
+  recordingSquare: { width: 30, height: 30, borderRadius: RADIUS.xs, backgroundColor: COLORS.danger },
+  grantBtn: { backgroundColor: COLORS.primary, borderRadius: RADIUS.sm, paddingVertical: SPACING.sm, paddingHorizontal: SPACING.xxl },
+  grantText: { color: COLORS.text, ...FONTS.semiBold, fontSize: 14 },
 });

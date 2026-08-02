@@ -5,7 +5,8 @@ import client, { resolveUrl } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import Screen3D from "../components/3D/Screen3D";
-import { COLORS } from "../components/Theme";
+import { COLORS, SIZES, FONTS, SPACING, RADIUS, TYPOGRAPHY, SHADOWS, GLASS, LAYOUT } from "../design/DesignSystem";
+import Icon from "../design/ui/Icon";
 
 export default function UserProfileScreen({ route, navigation }) {
   const { t } = useLanguage();
@@ -71,7 +72,7 @@ export default function UserProfileScreen({ route, navigation }) {
   };
 
   if (loading) {
-    return <Screen3D noParticles><View style={[s.loadingWrap, { paddingTop: insets.top }]}><ActivityIndicator size="large" color="#fff" /></View></Screen3D>;
+    return <Screen3D noParticles><View style={[s.loadingWrap, { paddingTop: insets.top }]}><ActivityIndicator size="large" color={COLORS.text} /></View></Screen3D>;
   }
 
   return (
@@ -86,7 +87,7 @@ export default function UserProfileScreen({ route, navigation }) {
       ListHeaderComponent={() => (
         <View>
           <View style={[s.topBar, { paddingTop: insets.top + 6 }]}>
-            <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}><Text style={s.backText}>←</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}><Icon name="arrow-back" size={22} color={COLORS.text} /></TouchableOpacity>
             <Text style={s.topTitle}>{profile?.username}</Text>
             <TouchableOpacity onPress={toggleBlock}><Text style={s.blockBtn}>{blocked ? t("unblock") : "•••"}</Text></TouchableOpacity>
           </View>
@@ -107,8 +108,8 @@ export default function UserProfileScreen({ route, navigation }) {
 
             {currentUser && parseInt(userId) !== currentUser.id && (
               <View style={s.btnRow}>
-                <TouchableOpacity onPress={toggleFollow} disabled={followLoading} style={[s.followBtn, { flex: 1, backgroundColor: followState === "none" ? COLORS.accent : COLORS.card }]}>
-                  {followLoading ? <ActivityIndicator color="#fff" size="small" /> : (
+                <TouchableOpacity onPress={toggleFollow} disabled={followLoading} style={[s.followBtn, { flex: 1, backgroundColor: followState === "none" ? COLORS.primary : COLORS.card }]}>
+                  {followLoading ? <ActivityIndicator color={COLORS.text} size="small" /> : (
                     <Text style={s.followText}>{followState === "following" ? t("followingStatus") : followState === "requested" ? t("requested") : t("follow")}</Text>
                   )}
                 </TouchableOpacity>
@@ -135,30 +136,30 @@ export default function UserProfileScreen({ route, navigation }) {
 const s = StyleSheet.create({
   list: { flex: 1, backgroundColor: COLORS.bg },
   loadingWrap: { flex: 1, backgroundColor: COLORS.bg, alignItems: "center", justifyContent: "center" },
-  topBar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 12, paddingBottom: 8 },
+  topBar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: SPACING.md, paddingBottom: SPACING.sm, backgroundColor: GLASS.bg, borderBottomColor: GLASS.border, borderBottomWidth: 1 },
   backBtn: { width: 36, height: 36, alignItems: "center", justifyContent: "center" },
-  backText: { fontSize: 22, color: "#fff" },
-  topTitle: { fontSize: 16, fontWeight: "600", color: "#fff" },
-  blockBtn: { fontSize: 16, color: COLORS.accent + "AA", fontWeight: "600" },
-  card: { paddingHorizontal: 16, paddingBottom: 16, borderBottomWidth: 0.5, borderBottomColor: COLORS.border, marginBottom: 2 },
-  topRow: { flexDirection: "row", alignItems: "center", marginBottom: 12, gap: 20 },
-  avatarRing: { width: 86, height: 86, borderRadius: 43, borderWidth: 2, borderColor: COLORS.accent, alignItems: "center", justifyContent: "center" },
-  avatarInner: { width: 78, height: 78, borderRadius: 39, backgroundColor: COLORS.card, alignItems: "center", justifyContent: "center" },
-  avatarText: { color: "#fff", fontSize: 32, fontWeight: "600" },
+  backText: { fontSize: 22, color: COLORS.text },
+  topTitle: { fontSize: SIZES.lg, ...FONTS.semiBold, color: COLORS.text },
+  blockBtn: { fontSize: SIZES.lg, color: COLORS.primary + "AA", ...FONTS.semiBold },
+  card: { paddingHorizontal: SPACING.lg, paddingBottom: SPACING.lg, borderBottomWidth: 0.5, borderBottomColor: COLORS.border, marginBottom: 2 },
+  topRow: { flexDirection: "row", alignItems: "center", marginBottom: SPACING.md, gap: SPACING.xl },
+  avatarRing: { width: 86, height: 86, borderRadius: RADIUS.full, borderWidth: 2, borderColor: COLORS.gold, alignItems: "center", justifyContent: "center" },
+  avatarInner: { width: 78, height: 78, borderRadius: RADIUS.full, backgroundColor: COLORS.card, alignItems: "center", justifyContent: "center" },
+  avatarText: { color: COLORS.text, fontSize: SIZES.hero, ...FONTS.semiBold },
   statsRow: { flex: 1, flexDirection: "row", justifyContent: "space-around" },
   statItem: { alignItems: "center" },
-  statNum: { fontSize: 17, fontWeight: "700", color: "#fff" },
-  statLbl: { fontSize: 13, color: COLORS.textSecondary },
-  name: { fontSize: 14, fontWeight: "600", color: COLORS.text, marginBottom: 4 },
-  bio: { fontSize: 13, color: COLORS.textSecondary, marginBottom: 12 },
-  btnRow: { flexDirection: "row", gap: 8 },
-  followBtn: { paddingVertical: 8, borderRadius: 8, alignItems: "center" },
-  followText: { color: "#fff", fontWeight: "600", fontSize: 14 },
-  msgBtn: { paddingVertical: 8, paddingHorizontal: 20, borderRadius: 8, backgroundColor: COLORS.card, alignItems: "center", borderWidth: 0.5, borderColor: COLORS.border },
-  msgBtnText: { color: "#fff", fontWeight: "600", fontSize: 14 },
-  empty: { textAlign: "center", color: COLORS.muted, padding: 40 },
+  statNum: { ...TYPOGRAPHY.h4, color: COLORS.text },
+  statLbl: { ...TYPOGRAPHY.caption, color: COLORS.textSecondary },
+  name: { fontSize: SIZES.md, ...FONTS.semiBold, color: COLORS.text, marginBottom: SPACING.xs },
+  bio: { ...TYPOGRAPHY.caption, color: COLORS.textSecondary, marginBottom: SPACING.md },
+  btnRow: { flexDirection: "row", gap: SPACING.sm },
+  followBtn: { paddingVertical: SPACING.sm, borderRadius: RADIUS.sm, alignItems: "center" },
+  followText: { color: COLORS.text, ...FONTS.semiBold, fontSize: SIZES.md },
+  msgBtn: { paddingVertical: SPACING.sm, paddingHorizontal: SPACING.xl, borderRadius: RADIUS.sm, backgroundColor: COLORS.card, alignItems: "center", borderWidth: 0.5, borderColor: COLORS.border },
+  msgBtnText: { color: COLORS.text, ...FONTS.semiBold, fontSize: SIZES.md },
+  empty: { textAlign: "center", color: COLORS.muted, padding: SPACING.xxxl },
   cell: { flex: 1, aspectRatio: 1, marginBottom: 2, overflow: "hidden" },
   cellImg: { width: "100%", height: "100%" },
   cellText: { width: "100%", height: "100%", backgroundColor: COLORS.card, alignItems: "center", justifyContent: "center", padding: 6 },
-  cellTextContent: { fontSize: 11, color: COLORS.textSecondary, textAlign: "center" },
+  cellTextContent: { ...TYPOGRAPHY.small, color: COLORS.textSecondary, textAlign: "center" },
 });

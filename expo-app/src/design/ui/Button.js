@@ -1,6 +1,7 @@
 import { useRef, useCallback } from "react";
 import { Text, TouchableOpacity, StyleSheet, ActivityIndicator, View, Animated } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import Icon from "./Icon";
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS, SHADOWS, GLASS } from "../DesignSystem";
 
 const VARIANTS = {
@@ -45,7 +46,7 @@ export default function Button({
 
   const onPressIn = useCallback(() => {
     Animated.parallel([
-      Animated.spring(scale, { toValue: 0.95, damping: 10, stiffness: 200, mass: 0.8, useNativeDriver: true }),
+      Animated.spring(scale, { toValue: 0.96, damping: 10, stiffness: 200, mass: 0.8, useNativeDriver: true }),
       Animated.timing(elevation, { toValue: 1, duration: 100, useNativeDriver: false }),
     ]).start();
   }, [scale, elevation]);
@@ -60,7 +61,7 @@ export default function Button({
   const bgColor = disabled ? (v.bg ? v.bg + "40" : "#333") : v.bg;
   const isGlass = v.glass;
 
-  const shadowStyle = elevated ? (variant === "primary" || variant === "premium" ? SHADOWS.floating : SHADOWS.glass) : variant === "primary" && !disabled ? SHADOWS.glow : {};
+  const shadowStyle = elevated ? (variant === "primary" || variant === "premium" ? SHADOWS.floating : SHADOWS.glass) : variant === "primary" && !disabled ? SHADOWS.glow : isGlass && !disabled ? SHADOWS.glass : {};
 
   const content = (
     <View style={[styles.content, iconPosition === "right" && { flexDirection: "row-reverse" }]}>
@@ -68,7 +69,7 @@ export default function Button({
         <ActivityIndicator size="small" color={v.text} />
       ) : (
         <>
-          {icon && <Text style={[styles.icon, { color: v.text }]}>{icon}</Text>}
+          {icon && <Icon name={icon} size="md" color={v.text} />}
           <Text style={[s.text, { color: disabled ? v.text + "50" : v.text }, icon && styles.textWithIcon, textStyle]}>
             {title}
           </Text>
@@ -87,7 +88,7 @@ export default function Button({
           onPressIn={onPressIn}
           onPressOut={onPressOut}
           disabled={disabled || loading}
-          activeOpacity={0.9}
+          activeOpacity={0.7}
           accessibilityRole="button"
           accessibilityState={{ disabled: disabled || loading }}
           accessibilityLabel={title}
@@ -114,7 +115,7 @@ export default function Button({
         onPressIn={onPressIn}
         onPressOut={onPressOut}
         disabled={disabled || loading}
-        activeOpacity={isGlass ? 0.7 : 0.8}
+        activeOpacity={0.7}
         accessibilityRole="button"
         accessibilityState={{ disabled: disabled || loading }}
         accessibilityLabel={title}
@@ -153,6 +154,7 @@ export function IconButton({ icon, onPress, size = 44, color = COLORS.primaryLig
         onPressOut={onPressOut}
         activeOpacity={0.7}
         accessibilityRole="button"
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         style={[
           styles.iconBtn,
           {
@@ -163,7 +165,7 @@ export function IconButton({ icon, onPress, size = 44, color = COLORS.primaryLig
           style,
         ]}
       >
-        <Text style={[styles.iconText, { color }]}>{icon}</Text>
+        <Icon name={icon} size="lg" color={color} />
       </TouchableOpacity>
     </Animated.View>
   );
@@ -182,9 +184,10 @@ export function GlassButton({ title, onPress, icon, size = "md", style }) {
         onPressIn={onPressIn}
         onPressOut={onPressOut}
         activeOpacity={0.7}
+        hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
         style={[styles.glassBtn, { paddingVertical: s.py, paddingHorizontal: s.px }, style]}
       >
-        {icon && <Text style={styles.glassIcon}>{icon}</Text>}
+        {icon && <Icon name={icon} size="md" color={COLORS.text} style={{ marginRight: SPACING.sm }} />}
         <Text style={[styles.glassText, s.text]}>{title}</Text>
       </TouchableOpacity>
     </Animated.View>
@@ -192,22 +195,20 @@ export function GlassButton({ title, onPress, icon, size = "md", style }) {
 }
 
 const styles = StyleSheet.create({
-  base: { alignItems: "center", justifyContent: "center", borderWidth: 1 },
+  base: { alignItems: "center", justifyContent: "center", borderWidth: 1, minHeight: 44 },
   fullWidth: { width: "100%" },
   content: { flexDirection: "row", alignItems: "center", justifyContent: "center" },
-  icon: { fontSize: 18 },
   textWithIcon: { marginLeft: SPACING.sm },
   iconBtn: { alignItems: "center", justifyContent: "center" },
-  iconText: { fontSize: 22 },
   glassBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: GLASS.default.backgroundColor,
-    borderColor: GLASS.default.borderColor,
+    borderColor: COLORS.glassBorder,
     borderWidth: 1,
     borderRadius: RADIUS.md,
+    minHeight: 44,
   },
-  glassIcon: { fontSize: 18, color: COLORS.text, marginRight: SPACING.sm },
   glassText: { color: COLORS.text },
 });

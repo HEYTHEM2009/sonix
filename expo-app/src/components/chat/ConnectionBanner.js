@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
-import { COLORS } from "../../components/Theme";
+import { COLORS, RADIUS, FONTS } from "../../design/DesignSystem";
 import { useRealtime } from "../../hooks/useRealtime";
 
 // NOTE: i18n is not wired yet (no src/i18n/index.js with a useTranslation hook).
@@ -58,18 +58,18 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(13,13,26,0.85)",
     paddingVertical: 4,
     paddingHorizontal: 10,
-    borderRadius: 999,
+    borderRadius: RADIUS.full,
     marginVertical: 4,
   },
   dot: {
     width: 8,
     height: 8,
-    borderRadius: 4,
+    borderRadius: RADIUS.full,
     marginRight: 6,
   },
   text: {
     color: COLORS.text,
     fontSize: 12,
-    fontWeight: "600",
+    ...FONTS.semiBold,
   },
 });

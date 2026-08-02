@@ -4,16 +4,33 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useIsFocused } from "@react-navigation/native";
 import { WebView } from "react-native-webview";
 import client, { resolveUrl } from "../api/client";
-import { COLORS, SIZES, FONTS } from "../components/Theme";
+import { COLORS, SIZES, FONTS, SPACING, RADIUS, TYPOGRAPHY, SHADOWS, GLASS, LAYOUT } from "../design/DesignSystem";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import { prefetchNextStories, clearPrefetchCache } from "../api/media";
+import Icon from "../design/ui/Icon";
 
 const { width, height } = Dimensions.get("window");
+
+const REACTION_EMOJI = { "[heart]": "❤️", "[fire]": "🔥" };
 
 function StoryMedia({ story, onEnd, isScreenFocused, webViewRef }) {
   const [videoError, setVideoError] = useState(null);
   const localRef = useRef(null);
+  const errorTimer = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      clearTimeout(errorTimer.current);
+      const wv = localRef.current;
+      if (wv) {
+        try {
+          wv.injectJavaScript?.("(function(){try{var v=document.getElementById('v');v.pause();v.muted=true;v.removeAttribute('src');v.load();}catch(e){}})();true;");
+        } catch (_) {}
+        try { wv.stopLoading?.(); } catch (_) {}
+      }
+    };
+  }, []);
 
   const setRef = useCallback((node) => {
     localRef.current = node;
@@ -30,11 +47,14 @@ function StoryMedia({ story, onEnd, isScreenFocused, webViewRef }) {
     const videoUrl = resolveUrl(story.video);
     if (!videoUrl) {
       return (
-        <View style={{ width, height: "100%", backgroundColor: "#000", alignItems: "center", justifyContent: "center" }}>
-          <Text style={{ color: "#fff", fontSize: 13 }}>Video unavailable</Text>
+        <View style={{ width, height: "100%", backgroundColor: COLORS.black, alignItems: "center", justifyContent: "center" }}>
+          <Text style={{ color: COLORS.text, fontSize: 13 }}>Video unavailable</Text>
         </View>
       );
     }
+    const ext = (videoUrl.split(".").pop() || "").split("?")[0].toLowerCase();
+    const mimeMap = { mp4: "video/mp4", m4v: "video/mp4", mov: "video/quicktime", webm: "video/webm", avi: "video/x-msvideo" };
+    const videoMime = mimeMap[ext] || "video/mp4";
     const html = `<!DOCTYPE html>
 <html>
 <head>
@@ -47,45 +67,57 @@ function StoryMedia({ story, onEnd, isScreenFocused, webViewRef }) {
 </head>
 <body>
   <video id="v" playsinline webkit-playsinline autoplay muted
-    src="${videoUrl}" type="video/mp4"
+    src="${videoUrl}" type="${videoMime}"
     style="width:100%;height:100%;object-fit:contain"></video>
   <script>
     var v = document.getElementById('v');
     var muted = true;
+    var playPromise = null;
     function setMuted(m) {
       muted = m;
       v.muted = m;
-      if (m) { try { v.pause(); } catch(e) {} }
-      else { v.play().catch(function(){}); }
+      if (m) {
+        try { v.pause(); } catch(e) {}
+        setTimeout(function() { if (muted) { try { v.pause(); } catch(e) {} } }, 150);
+      }
+      else {
+        try { playPromise = v.play(); if (playPromise) playPromise.catch(function(){}); } catch(e) {}
+      }
       window.ReactNativeWebView.postMessage('soundState:' + (m ? 'off' : 'on'));
+    }
+    function stopPlayback() {
+      muted = true;
+      try { v.pause(); } catch(e) {}
+      try { v.muted = true; } catch(e) {}
+      try { v.removeAttribute('src'); v.load(); } catch(e) {}
     }
     v.addEventListener('ended', function() { window.ReactNativeWebView.postMessage('ended'); });
     v.addEventListener('error', function(e) { window.ReactNativeWebView.postMessage('error:' + (e.target.error?.message || 'unknown')); });
     v.load();
-    // Muted autoplay is permitted without a user gesture; trigger it explicitly
-    // because some WebViews ignore the autoplay attribute until play() is called.
     v.play().catch(function() {});
     window.addEventListener('message', function(e) {
       var d = e.data;
       if (d === 'toggleSound') setMuted(!muted);
       else if (d === 'unmute') setMuted(false);
       else if (d === 'mute') setMuted(true);
+      else if (d === 'stop') stopPlayback();
     });
     document.addEventListener('message', function(e) {
       var d = e.data;
       if (d === 'toggleSound') setMuted(!muted);
       else if (d === 'unmute') setMuted(false);
       else if (d === 'mute') setMuted(true);
+      else if (d === 'stop') stopPlayback();
     });
   </script>
 </body>
 </html>`;
     return (
-      <View style={{ width, height: "100%", backgroundColor: "#000" }}>
+      <View style={{ width, height: "100%", backgroundColor: COLORS.black }}>
         <WebView
           ref={setRef}
           source={{ html }}
-          style={{ width, height: "100%", backgroundColor: "#000" }}
+          style={{ width, height: "100%", backgroundColor: COLORS.black }}
           allowsInlineMediaPlayback
           mediaPlaybackRequiresUserAction={false}
           javaScriptEnabled
@@ -96,14 +128,16 @@ function StoryMedia({ story, onEnd, isScreenFocused, webViewRef }) {
             if (e.nativeEvent.data === "ended") onEnd?.();
             else if (e.nativeEvent.data?.startsWith("error:")) {
               setVideoError(e.nativeEvent.data.replace("error:", ""));
+              clearTimeout(errorTimer.current);
+              errorTimer.current = setTimeout(() => onEnd?.(), 3000);
             }
           }}
         />
-        {!isScreenFocused && <View style={{ position: "absolute", inset: 0, backgroundColor: "#000" }} />}
+        {!isScreenFocused && <View style={{ position: "absolute", inset: 0, backgroundColor: COLORS.black }} />}
         {videoError && (
-          <View style={{ position: "absolute", bottom: 80, left: 20, right: 20, backgroundColor: "rgba(248,113,113,0.9)", borderRadius: 12, padding: 12, alignItems: "center" }}>
-            <Text style={{ color: "#fff", fontSize: 13, fontWeight: "600" }}>Video failed to load</Text>
-            <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 11, marginTop: 4 }}>{videoError}</Text>
+          <View style={{ position: "absolute", bottom: 80, left: 20, right: 20, backgroundColor: COLORS.dangerLight, borderRadius: RADIUS.md, padding: SPACING.md, alignItems: "center" }}>
+            <Text style={{ color: COLORS.text, ...FONTS.semiBold, fontSize: 13 }}>Video failed to load</Text>
+            <Text style={{ color: COLORS.white, fontSize: 11, marginTop: SPACING.xs }}>{videoError}</Text>
         </View>
       )}
       </View>
@@ -135,7 +169,7 @@ function DrawingOverlay({ drawingData }) {
               width: point.size || 4,
               height: point.size || 4,
               borderRadius: (point.size || 4) / 2,
-              backgroundColor: point.color || "#fff",
+              backgroundColor: point.color || COLORS.text,
               opacity: 0.9,
             }}
           />
@@ -174,7 +208,10 @@ function ViewerListModal({ visible, storyId, onClose }) {
     if (!visible || !storyId) return;
     setLoading(true);
     client.get(`/stories/${storyId}/viewers`)
-      .then((res) => setViewers(res.data || []))
+      .then((res) => {
+        const data = res.data;
+        setViewers(Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : []);
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [visible, storyId]);
@@ -186,12 +223,12 @@ function ViewerListModal({ visible, storyId, onClose }) {
           <View style={s.modalHandle} />
           <Text style={s.modalTitle}>{t("viewers")}</Text>
           {loading ? (
-            <ActivityIndicator color={COLORS.accent} style={{ marginTop: 20 }} />
+            <ActivityIndicator color={COLORS.gold} style={{ marginTop: SPACING.xl }} />
           ) : (
             <FlatList
               data={viewers}
               keyExtractor={(v) => String(v.id)}
-              contentContainerStyle={{ paddingBottom: 20 }}
+              contentContainerStyle={{ paddingBottom: SPACING.xl }}
               ListEmptyComponent={<Text style={s.emptyText}>{t("noViewers")}</Text>}
               renderItem={({ item }) => (
                 <View style={s.viewerRow}>
@@ -220,7 +257,9 @@ function ForwardModal({ visible, storyId, onClose }) {
     if (!visible) return;
     setLoading(true);
     client.get("/users").then((res) => {
-      setUsers((res.data || []).slice(0, 50));
+      const data = res.data;
+      const usersList = Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : [];
+      setUsers(usersList.slice(0, 50));
     }).catch(() => {}).finally(() => setLoading(false));
   }, [visible]);
 
@@ -249,13 +288,13 @@ function ForwardModal({ visible, storyId, onClose }) {
           <View style={s.modalHandle} />
           <Text style={s.modalTitle}>{t("shareTo")}</Text>
           {loading ? (
-            <ActivityIndicator color={COLORS.accent} style={{ marginTop: 20 }} />
+            <ActivityIndicator color={COLORS.gold} style={{ marginTop: SPACING.xl }} />
           ) : (
             <>
               <FlatList
                 data={users}
                 keyExtractor={(u) => String(u.id)}
-                contentContainerStyle={{ paddingBottom: 20 }}
+                contentContainerStyle={{ paddingBottom: SPACING.xl }}
                 renderItem={({ item }) => (
                   <TouchableOpacity style={s.forwardRow} onPress={() => toggle(item.id)}>
                     <View style={s.viewerAvatar}>
@@ -263,14 +302,14 @@ function ForwardModal({ visible, storyId, onClose }) {
                     </View>
                     <Text style={s.viewerName}>{item.username}</Text>
                     <View style={[s.checkbox, selected.has(item.id) && s.checkboxActive]}>
-                      {selected.has(item.id) && <Text style={s.checkmark}>✓</Text>}
+                      {selected.has(item.id) && <Icon name="checkmark" size={14} color={COLORS.text} />}
                     </View>
                   </TouchableOpacity>
                 )}
               />
               {selected.size > 0 && (
                 <TouchableOpacity style={s.forwardBtn} onPress={send} disabled={sending}>
-                  {sending ? <ActivityIndicator color="#fff" /> : <Text style={s.forwardBtnText}>{t("shareCount").replace("{count}", selected.size)}</Text>}
+                  {sending ? <ActivityIndicator color={COLORS.text} /> : <Text style={s.forwardBtnText}>{t("shareCount").replace("{count}", selected.size)}</Text>}
                 </TouchableOpacity>
               )}
             </>
@@ -302,7 +341,7 @@ function AnalyticsModal({ visible, storyId, onClose }) {
           <View style={s.modalHandle} />
           <Text style={s.modalTitle}>{t("storyInsights")}</Text>
           {loading ? (
-            <ActivityIndicator color={COLORS.accent} style={{ marginTop: 20 }} />
+            <ActivityIndicator color={COLORS.gold} style={{ marginTop: SPACING.xl }} />
           ) : analytics ? (
             <View style={s.analyticsWrap}>
               <View style={s.analyticsRow}>
@@ -317,10 +356,10 @@ function AnalyticsModal({ visible, storyId, onClose }) {
               </View>
               {analytics.reactions?.length > 0 && (
                 <View style={s.reactionsBreakdown}>
-                  <Text style={[s.analyticsLabel, { marginBottom: 8 }]}>{t("reactions")}</Text>
+                  <Text style={[s.analyticsLabel, { marginBottom: SPACING.sm }]}>{t("reactions")}</Text>
                   {analytics.reactions.map((r, i) => (
                     <View key={i} style={s.reactionLine}>
-                      <Text style={{ fontSize: 18 }}>{r.emoji}</Text>
+                      <Text style={{ fontSize: 18 }}>{REACTION_EMOJI[r.emoji] || r.emoji}</Text>
                       <Text style={s.reactionCount}>{r.count}</Text>
                     </View>
                   ))}
@@ -328,7 +367,7 @@ function AnalyticsModal({ visible, storyId, onClose }) {
               )}
               {analytics.recent_viewers?.length > 0 && (
                 <View>
-                    <Text style={[s.analyticsLabel, { marginBottom: 8, marginTop: 12 }]}>{t("recentViewers")}</Text>
+                    <Text style={[s.analyticsLabel, { marginBottom: SPACING.sm, marginTop: SPACING.md }]}>{t("recentViewers")}</Text>
                   {analytics.recent_viewers.map((v) => (
                     <View key={v.id} style={s.viewerRow}>
                       <View style={[s.viewerAvatar, { width: 28, height: 28, borderRadius: 14 }]}>
@@ -386,15 +425,39 @@ export default function StoryViewerScreen({ route, navigation }) {
 
   useEffect(() => { indexRef.current = index; }, [index]);
 
+  const stopAudio = useCallback(() => {
+    const wv = webViewRef.current;
+    if (!wv) return;
+    try {
+      wv.postMessage?.("stop");
+      wv.postMessage?.("mute");
+      wv.injectJavaScript?.("(function(){try{var v=document.getElementById('v');v.pause();v.muted=true;v.removeAttribute('src');v.load();}catch(e){}})();true;");
+    } catch (_) {}
+  }, []);
+
+  useEffect(() => {
+    return () => stopAudio();
+  }, [stopAudio]);
+
+  const goingBackRef = useRef(false);
+
   const goBack = useCallback(() => {
-    webViewRef.current?.postMessage("mute");
+    if (goingBackRef.current) return;
+    goingBackRef.current = true;
+    stopAudio();
     Animated.parallel([
       Animated.timing(swipeOpacity, { toValue: 0, duration: 200, useNativeDriver: true }),
       Animated.spring(scaleAnim, { toValue: 0.9, friction: 8, useNativeDriver: true }),
     ]).start(() => {
-      setTimeout(() => navigation.goBack(), 0);
+      setTimeout(() => {
+        if (navigation.canGoBack()) {
+          navigation.goBack();
+        } else {
+          goingBackRef.current = false;
+        }
+      }, 0);
     });
-  }, [navigation, swipeOpacity, scaleAnim]);
+  }, [navigation, swipeOpacity, scaleAnim, stopAudio]);
 
   const advance = useCallback(() => {
     if (index < (stories?.length || 1) - 1) {
@@ -429,6 +492,7 @@ export default function StoryViewerScreen({ route, navigation }) {
 
   useEffect(() => {
     clearInterval(timerRef.current);
+    if (currentStory?.type === "video") return;
     const interval = 100;
     const step = interval / dur;
     timerRef.current = setInterval(() => {
@@ -445,7 +509,7 @@ export default function StoryViewerScreen({ route, navigation }) {
       }
     }, interval);
     return () => clearInterval(timerRef.current);
-  }, [index, dur]);
+  }, [index, dur, currentStory?.type]);
 
   useEffect(() => {
     setMuted(true);
@@ -592,8 +656,8 @@ export default function StoryViewerScreen({ route, navigation }) {
       <View style={s.gradientBottom} />
 
       {currentStory.text_overlay ? (
-        <View style={[s.textOverlayWrap, currentStory.bg_color ? { backgroundColor: currentStory.bg_color } : { backgroundColor: "rgba(0,0,0,0.3)" }]}>
-          <Text style={[s.textOverlay, { color: currentStory.text_color || "#fff" }]}>{currentStory.text_overlay}</Text>
+        <View style={[s.textOverlayWrap, currentStory.bg_color ? { backgroundColor: currentStory.bg_color } : { backgroundColor: COLORS.overlayLight }]}>
+          <Text style={[s.textOverlay, { color: currentStory.text_color || COLORS.text }]}>{currentStory.text_overlay}</Text>
         </View>
       ) : null}
 
@@ -602,7 +666,7 @@ export default function StoryViewerScreen({ route, navigation }) {
           {stories.map((_, i) => (
             <View
               key={i}
-              style={[s.progressSegment, { backgroundColor: i < index ? COLORS.primary : i === index ? COLORS.primary + "CC" : "rgba(255,255,255,0.3)" }]}
+              style={[s.progressSegment, { backgroundColor: i < index ? COLORS.primary : i === index ? COLORS.primary + "CC" : COLORS.overlayLight }]}
             >
               {i === index && <View style={[s.progressFill, { width: `${progress * 100}%` }]} />}
             </View>
@@ -625,16 +689,16 @@ export default function StoryViewerScreen({ route, navigation }) {
                 webViewRef.current?.postMessage(newMuted ? "mute" : "unmute");
               }}
             >
-              <Text style={s.insightText}>{muted ? "🔇" : "🔊"}</Text>
+              <Icon name={muted ? "volume-mute" : "volume-high"} size={18} color={COLORS.text} />
             </TouchableOpacity>
           )}
           {isOwner && (
             <>
               <TouchableOpacity style={s.insightBtn} onPress={() => setShowAnalytics(true)}>
-                <Text style={s.insightText}>📊</Text>
+                <Icon name="stats-chart-outline" size={18} color={COLORS.text} />
               </TouchableOpacity>
-              <TouchableOpacity style={[s.insightBtn, { backgroundColor: "rgba(248,113,113,0.2)" }]} onPress={deleteStory} disabled={deleting}>
-                <Text style={[s.insightText, { color: COLORS.danger }]}>{deleting ? "..." : "🗑"}</Text>
+              <TouchableOpacity style={[s.insightBtn, { backgroundColor: COLORS.danger + "33" }]} onPress={deleteStory} disabled={deleting}>
+                {deleting ? <ActivityIndicator size="small" color={COLORS.danger} /> : <Icon name="trash" size={18} color={COLORS.danger} />}
               </TouchableOpacity>
             </>
           )}
@@ -642,25 +706,29 @@ export default function StoryViewerScreen({ route, navigation }) {
       </View>
 
       <TouchableOpacity style={[s.closeBtn, { top: insets.top + 10 }]} onPress={goBack}>
-        <Text style={s.closeText}>✕</Text>
+        <Icon name="close" size={22} color={COLORS.text} />
       </TouchableOpacity>
 
       <View style={[s.reactionBar, { bottom: Math.max(insets.bottom + 20, 40) }]}>
-        {["❤️", "😂", "😮", "😢", "🔥"].map((emoji) => (
+        {["[heart]", "[laugh]", "[wow]", "[sad]", "[fire]"].map((emoji) => (
           <TouchableOpacity
             key={emoji}
             style={[s.reactionBtn, myReactions[currentStory.id] === emoji && s.reactionBtnActive]}
             onPress={() => sendReaction(emoji)}
           >
-            <Text style={s.reactionEmoji}>{emoji}</Text>
+            {emoji === "[heart]" && <Icon name="heart" size={22} color={COLORS.text} />}
+            {emoji === "[laugh]" && <Text style={s.reactionEmoji}>😂</Text>}
+            {emoji === "[wow]" && <Text style={s.reactionEmoji}>😮</Text>}
+            {emoji === "[sad]" && <Text style={s.reactionEmoji}>😢</Text>}
+            {emoji === "[fire]" && <Icon name="flame" size={22} color={COLORS.text} />}
           </TouchableOpacity>
         ))}
         <TouchableOpacity style={s.replyBtn} onPress={() => setShowReplyInput(true)}>
-          <Text style={s.replyBtnText}>💬</Text>
+          <Icon name="chatbubble-ellipses" size={20} color={COLORS.text} />
         </TouchableOpacity>
         {!isOwner && (
           <TouchableOpacity style={s.forwardBtnSmall} onPress={() => setShowForward(true)}>
-            <Text style={s.forwardBtnText2}>↗</Text>
+            <Icon name="share-outline" size={20} color={COLORS.text} />
           </TouchableOpacity>
         )}
       </View>
@@ -676,7 +744,8 @@ export default function StoryViewerScreen({ route, navigation }) {
           style={[s.viewersBadge, { top: insets.top + 70 }]}
           onPress={() => setShowViewers(true)}
         >
-          <Text style={s.viewersText}>👁 {currentStory.view_count || 0}</Text>
+          <Icon name="eye" size={14} color={COLORS.text} />
+          <Text style={s.viewersText}>{currentStory.view_count || 0}</Text>
         </TouchableOpacity>
       )}
 
@@ -706,65 +775,65 @@ export default function StoryViewerScreen({ route, navigation }) {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#000" },
+  container: { flex: 1, backgroundColor: COLORS.bg },
   textStoryBg: { flex: 1 },
   image: { width, height: "100%", position: "absolute" },
   drawingOverlayWrap: { ...StyleSheet.absoluteFillObject, zIndex: 3 },
   stickerItem: { position: "absolute", zIndex: 6 },
-  textOverlayWrap: { position: "absolute", left: 20, right: 20, top: "40%", paddingHorizontal: 20, paddingVertical: 16, borderRadius: 12, alignItems: "center", zIndex: 5 },
+  textOverlayWrap: { position: "absolute", left: SPACING.xl, right: SPACING.xl, top: "40%", paddingHorizontal: SPACING.xl, paddingVertical: SPACING.lg, borderRadius: RADIUS.md, alignItems: "center", zIndex: 5 },
   textOverlay: { fontSize: 28, ...FONTS.bold, textAlign: "center", lineHeight: 36 },
-  gradientTop: { position: "absolute", top: 0, left: 0, right: 0, height: 120, backgroundColor: "rgba(0,0,0,0.4)", zIndex: 8 },
-  gradientBottom: { position: "absolute", bottom: 0, left: 0, right: 0, height: 160, backgroundColor: "rgba(0,0,0,0.5)", zIndex: 8 },
-  header: { position: "absolute", left: 0, right: 0, paddingHorizontal: 12, zIndex: 10 },
-  progressBar: { flexDirection: "row", gap: 4, marginBottom: 12 },
-  progressSegment: { flex: 1, height: 3, borderRadius: 2, overflow: "hidden", position: "relative" },
-  progressFill: { position: "absolute", left: 0, top: 0, bottom: 0, backgroundColor: "#fff" },
-  userRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  avatar: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center" },
-  avatarText: { ...FONTS.semiBold, fontSize: 13 },
-  username: { color: "#fff", ...FONTS.semiBold, fontSize: 14 },
-  time: { color: "rgba(255,255,255,0.6)", fontSize: 12, marginLeft: "auto" },
-  insightBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center", marginLeft: 6 },
+  gradientTop: { position: "absolute", top: 0, left: 0, right: 0, height: 120, backgroundColor: COLORS.overlayLight, zIndex: 8 },
+  gradientBottom: { position: "absolute", bottom: 0, left: 0, right: 0, height: 160, backgroundColor: COLORS.overlay, zIndex: 8 },
+  header: { position: "absolute", left: 0, right: 0, paddingHorizontal: SPACING.md, zIndex: 10 },
+  progressBar: { flexDirection: "row", gap: SPACING.xs, marginBottom: SPACING.md },
+  progressSegment: { flex: 1, height: 3, borderRadius: RADIUS.xs, overflow: "hidden", position: "relative" },
+  progressFill: { position: "absolute", left: 0, top: 0, bottom: 0, backgroundColor: COLORS.text },
+  userRow: { flexDirection: "row", alignItems: "center", gap: SPACING.sm },
+  avatar: { width: 32, height: 32, borderRadius: RADIUS.full, alignItems: "center", justifyContent: "center" },
+  avatarText: { ...TYPOGRAPHY.captionBold },
+  username: { color: COLORS.text, ...FONTS.semiBold, fontSize: 14 },
+  time: { color: COLORS.textSecondary, fontSize: 12, marginLeft: "auto" },
+  insightBtn: { width: 32, height: 32, borderRadius: RADIUS.full, backgroundColor: COLORS.glassLight, alignItems: "center", justifyContent: "center", marginLeft: SPACING.xs },
   insightText: { fontSize: 14 },
-  closeBtn: { position: "absolute", right: 16, zIndex: 10, width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(0,0,0,0.4)", alignItems: "center", justifyContent: "center" },
-  closeText: { color: "#fff", fontSize: 22 },
-  reactionBar: { position: "absolute", left: 0, right: 0, flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 8, paddingHorizontal: 12, zIndex: 10 },
-  reactionBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center" },
+  closeBtn: { position: "absolute", right: SPACING.lg, zIndex: 10, width: 36, height: 36, borderRadius: RADIUS.full, backgroundColor: COLORS.overlayLight, alignItems: "center", justifyContent: "center" },
+  closeText: { color: COLORS.text, fontSize: 22 },
+  reactionBar: { position: "absolute", left: 0, right: 0, flexDirection: "row", justifyContent: "center", alignItems: "center", gap: SPACING.sm, paddingHorizontal: SPACING.md, zIndex: 10 },
+  reactionBtn: { width: 44, height: 44, borderRadius: RADIUS.full, backgroundColor: COLORS.glassLight, alignItems: "center", justifyContent: "center" },
   reactionBtnActive: { backgroundColor: COLORS.primary + "80", borderWidth: 2, borderColor: COLORS.primary },
   reactionEmoji: { fontSize: 22 },
-  replyBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center" },
+  replyBtn: { width: 44, height: 44, borderRadius: RADIUS.full, backgroundColor: COLORS.glassLight, alignItems: "center", justifyContent: "center" },
   replyBtnText: { fontSize: 20 },
-  forwardBtnSmall: { width: 44, height: 44, borderRadius: 22, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center" },
-  forwardBtnText2: { fontSize: 20, color: "#fff", ...FONTS.bold },
+  forwardBtnSmall: { width: 44, height: 44, borderRadius: RADIUS.full, backgroundColor: COLORS.glassLight, alignItems: "center", justifyContent: "center" },
+  forwardBtnText2: { ...TYPOGRAPHY.h3, color: COLORS.text },
   sentBadge: { position: "absolute", alignSelf: "center", zIndex: 10 },
-  sentText: { color: COLORS.accent, fontSize: 13, ...FONTS.semiBold, backgroundColor: "rgba(0,0,0,0.5)", paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20 },
-  viewersBadge: { position: "absolute", right: 16, zIndex: 10, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12, backgroundColor: "rgba(0,0,0,0.5)" },
-  viewersText: { color: "#fff", fontSize: 12, ...FONTS.semiBold },
-  replyInputBar: { position: "absolute", left: 0, right: 0, flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 16, zIndex: 10 },
-  replyInput: { flex: 1, height: 42, borderRadius: 21, backgroundColor: "rgba(255,255,255,0.15)", paddingHorizontal: 16, color: "#fff", fontSize: 14 },
-  sendBtn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, backgroundColor: COLORS.primary },
-  sendText: { color: "#fff", ...FONTS.semiBold, fontSize: 14 },
-  modalOverlay: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.6)" },
-  viewerModal: { backgroundColor: COLORS.card, borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: "70%", paddingTop: 8, paddingBottom: 20 },
-  modalHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: COLORS.muted, alignSelf: "center", marginBottom: 12 },
-  modalTitle: { fontSize: SIZES.lg, ...FONTS.bold, color: COLORS.text, textAlign: "center", marginBottom: 12 },
-  emptyText: { textAlign: "center", color: COLORS.muted, padding: 30 },
-  viewerRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 8 },
-  viewerAvatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: COLORS.input, alignItems: "center", justifyContent: "center" },
-  viewerAvatarText: { color: COLORS.text, ...FONTS.semiBold, fontSize: 13 },
+  sentText: { ...TYPOGRAPHY.captionBold, color: COLORS.gold, backgroundColor: COLORS.overlayLight, paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm, borderRadius: RADIUS.xl },
+  viewersBadge: { position: "absolute", right: SPACING.lg, zIndex: 10, paddingHorizontal: SPACING.sm, paddingVertical: SPACING.xs, borderRadius: RADIUS.md, backgroundColor: COLORS.overlayLight },
+  viewersText: { ...TYPOGRAPHY.label, color: COLORS.text },
+  replyInputBar: { position: "absolute", left: 0, right: 0, flexDirection: "row", alignItems: "center", gap: SPACING.sm, paddingHorizontal: SPACING.lg, zIndex: 10, backgroundColor: COLORS.glass, borderTopWidth: 1, borderTopColor: COLORS.glassBorder, paddingVertical: SPACING.sm },
+  replyInput: { flex: 1, height: 42, borderRadius: RADIUS.full, backgroundColor: COLORS.glassLight, paddingHorizontal: SPACING.lg, color: COLORS.text, fontSize: 14, borderWidth: 1, borderColor: COLORS.glassBorder },
+  sendBtn: { paddingHorizontal: SPACING.lg, paddingVertical: SPACING.sm, borderRadius: RADIUS.full, backgroundColor: COLORS.primary },
+  sendText: { color: COLORS.text, ...FONTS.semiBold, fontSize: 14 },
+  modalOverlay: { flex: 1, justifyContent: "flex-end", backgroundColor: COLORS.overlay },
+  viewerModal: { backgroundColor: COLORS.card, borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl, maxHeight: "70%", paddingTop: SPACING.sm, paddingBottom: SPACING.xl },
+  modalHandle: { width: 40, height: 4, borderRadius: RADIUS.xs, backgroundColor: COLORS.muted, alignSelf: "center", marginBottom: SPACING.md },
+  modalTitle: { fontSize: SIZES.lg, ...FONTS.bold, color: COLORS.text, textAlign: "center", marginBottom: SPACING.md },
+  emptyText: { textAlign: "center", color: COLORS.muted, padding: SPACING.xxxl },
+  viewerRow: { flexDirection: "row", alignItems: "center", gap: SPACING.md, paddingHorizontal: SPACING.lg, paddingVertical: SPACING.sm },
+  viewerAvatar: { width: 36, height: 36, borderRadius: RADIUS.full, backgroundColor: COLORS.glass, alignItems: "center", justifyContent: "center" },
+  viewerAvatarText: { ...TYPOGRAPHY.captionBold, color: COLORS.text },
   viewerName: { flex: 1, color: COLORS.text, ...FONTS.medium, fontSize: 14 },
-  forwardRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 10 },
-  checkbox: { width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: COLORS.muted, alignItems: "center", justifyContent: "center" },
+  forwardRow: { flexDirection: "row", alignItems: "center", gap: SPACING.md, paddingHorizontal: SPACING.lg, paddingVertical: SPACING.sm },
+  checkbox: { width: 24, height: 24, borderRadius: RADIUS.full, borderWidth: 2, borderColor: COLORS.muted, alignItems: "center", justifyContent: "center" },
   checkboxActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  checkmark: { color: "#fff", fontSize: 14, ...FONTS.bold },
-  forwardBtn: { backgroundColor: COLORS.primary, borderRadius: SIZES.radius, paddingVertical: 14, alignItems: "center", marginHorizontal: 16, marginTop: 8 },
-  forwardBtnText: { color: "#fff", ...FONTS.bold, fontSize: 15 },
-  analyticsWrap: { paddingHorizontal: 16 },
-  analyticsRow: { flexDirection: "row", gap: 12, marginBottom: 16 },
-  analyticsCard: { flex: 1, backgroundColor: COLORS.input, borderRadius: SIZES.radius, padding: 16, alignItems: "center" },
-  analyticsNum: { fontSize: 28, ...FONTS.bold, color: COLORS.accent },
-  analyticsLabel: { fontSize: 12, color: COLORS.muted, marginTop: 4 },
-  reactionsBreakdown: { backgroundColor: COLORS.input, borderRadius: SIZES.radius, padding: 12, marginBottom: 8 },
-  reactionLine: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 4 },
+  checkmark: { color: COLORS.text, fontSize: 14, ...FONTS.bold },
+  forwardBtn: { backgroundColor: COLORS.primary, borderRadius: SIZES.radius, paddingVertical: SPACING.md, alignItems: "center", marginHorizontal: SPACING.lg, marginTop: SPACING.sm },
+  forwardBtnText: { ...TYPOGRAPHY.bodyBold, color: COLORS.text },
+  analyticsWrap: { paddingHorizontal: SPACING.lg },
+  analyticsRow: { flexDirection: "row", gap: SPACING.md, marginBottom: SPACING.lg },
+  analyticsCard: { flex: 1, backgroundColor: COLORS.glass, borderRadius: SIZES.radius, padding: SPACING.lg, alignItems: "center" },
+  analyticsNum: { fontSize: 28, ...FONTS.bold, color: COLORS.gold },
+  analyticsLabel: { ...TYPOGRAPHY.label, color: COLORS.muted, marginTop: SPACING.xs },
+  reactionsBreakdown: { backgroundColor: COLORS.glass, borderRadius: SIZES.radius, padding: SPACING.md, marginBottom: SPACING.sm },
+  reactionLine: { flexDirection: "row", alignItems: "center", gap: SPACING.sm, paddingVertical: SPACING.xs },
   reactionCount: { color: COLORS.text, ...FONTS.medium, fontSize: 14 },
 });

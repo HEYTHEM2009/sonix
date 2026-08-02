@@ -1,7 +1,7 @@
 import { useRef, useEffect, useMemo, useState } from "react";
 import { View, Animated, Dimensions, StyleSheet, TouchableOpacity, AccessibilityInfo } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { COLORS } from "../Theme";
+import { COLORS } from "../../design/DesignSystem";
 
 const { width: W, height: H } = Dimensions.get("window");
 

@@ -1,6 +1,6 @@
 import { useRef, useEffect } from "react";
-import { Animated, View, StyleSheet } from "react-native";
-import { COLORS, RADIUS } from "../DesignSystem";
+import { Animated, View, Text, ActivityIndicator, StyleSheet } from "react-native";
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from "../DesignSystem";
 
 export function Skeleton({ width = "100%", height = 12, borderRadius = RADIUS.sm, style }) {
   const opacity = useRef(new Animated.Value(0.3)).current;
@@ -74,6 +74,15 @@ export function MessageSkeleton() {
   );
 }
 
+export function LoadingSpinner({ message, size = "large", color = COLORS.primary }) {
+  return (
+    <View style={styles.spinnerWrap}>
+      <ActivityIndicator size={size} color={color} />
+      {message && <Text style={styles.spinnerText}>{message}</Text>}
+    </View>
+  );
+}
+
 export default function LoadingState({ type = "post", count = 3 }) {
   const items = Array.from({ length: count }, (_, i) => i);
   return (
@@ -97,4 +106,6 @@ const styles = StyleSheet.create({
   stat: { alignItems: "center" },
   msgRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 12 },
   msgContent: { flex: 1 },
+  spinnerWrap: { flex: 1, alignItems: "center", justifyContent: "center", padding: SPACING.xxl, minHeight: 200 },
+  spinnerText: { ...TYPOGRAPHY.body, color: COLORS.textSecondary, marginTop: SPACING.lg, textAlign: "center" },
 });

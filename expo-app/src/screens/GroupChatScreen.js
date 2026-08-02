@@ -5,7 +5,7 @@ import client, { resolveUrl } from "../api/client";
 import { getEcho } from "../api/websocket";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
-import { COLORS, SIZES } from "../components/Theme";
+import { COLORS, SIZES, FONTS, SPACING, RADIUS, TYPOGRAPHY, SHADOWS, GLASS, LAYOUT } from "../design/DesignSystem";
 import Screen3D from "../components/3D/Screen3D";
 
 const MessageBubble = ({ item, isMine }) => {
@@ -150,7 +150,7 @@ export default function GroupChatScreen({ navigation, route }) {
             multiline
           />
           <TouchableOpacity style={[s.sendBtn, (!text.trim() || sending) && s.sendBtnDisabled]} onPress={send} disabled={!text.trim() || sending}>
-            {sending ? <ActivityIndicator color="#fff" size="small" /> : <Text style={s.sendText}>{t("send")}</Text>}
+            {sending ? <ActivityIndicator color={COLORS.text} size="small" /> : <Text style={s.sendText}>{t("send")}</Text>}
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -165,7 +165,7 @@ const s = StyleSheet.create({
   bubbleRow: { marginVertical: 2 },
   bubbleMine: { alignItems: "flex-end" },
   bubbleOther: { alignItems: "flex-start" },
-  bubble: { maxWidth: "80%", borderRadius: 16, paddingHorizontal: 14, paddingVertical: 8 },
+  bubble: { maxWidth: "80%", borderRadius: RADIUS.xl, paddingHorizontal: 14, paddingVertical: SPACING.sm },
   bubbleBgMine: { backgroundColor: COLORS.primary + "30" },
   bubbleBgOther: { backgroundColor: COLORS.input },
   senderName: { fontSize: 11, fontWeight: "700", color: COLORS.primary, marginBottom: 2 },
@@ -173,10 +173,10 @@ const s = StyleSheet.create({
   bubbleTextMine: { color: COLORS.text },
   bubbleTime: { fontSize: 10, color: COLORS.muted, marginTop: 4, alignSelf: "flex-end" },
   bubbleTimeMine: { color: COLORS.textSecondary },
-  bubbleImage: { width: 200, height: 200, borderRadius: 12 },
-  inputBar: { flexDirection: "row", alignItems: "flex-end", paddingHorizontal: 12, paddingTop: 8, backgroundColor: COLORS.bg, borderTopWidth: 1, borderTopColor: COLORS.border, gap: 8 },
-  input: { flex: 1, backgroundColor: COLORS.input, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 10, color: COLORS.text, fontSize: SIZES.md, maxHeight: 100 },
-  sendBtn: { backgroundColor: COLORS.primary, borderRadius: 20, paddingHorizontal: 20, paddingVertical: 10, alignItems: "center", justifyContent: "center" },
+  bubbleImage: { width: 200, height: 200, borderRadius: RADIUS.lg },
+  inputBar: { flexDirection: "row", alignItems: "flex-end", paddingHorizontal: SPACING.md, paddingTop: SPACING.sm, backgroundColor: GLASS.elevated.backgroundColor, borderTopWidth: 1, borderTopColor: GLASS.elevated.borderColor, gap: SPACING.sm },
+  input: { flex: 1, backgroundColor: COLORS.input, borderRadius: RADIUS.xxl, paddingHorizontal: SPACING.lg, paddingVertical: 10, color: COLORS.text, fontSize: SIZES.md, maxHeight: 100 },
+  sendBtn: { backgroundColor: COLORS.primary, borderRadius: RADIUS.xxl, paddingHorizontal: SPACING.xl, paddingVertical: 10, alignItems: "center", justifyContent: "center" },
   sendBtnDisabled: { opacity: 0.4 },
-  sendText: { color: "#fff", fontWeight: "700", fontSize: SIZES.md },
+  sendText: { color: COLORS.text, fontWeight: "700", fontSize: SIZES.md },
 });

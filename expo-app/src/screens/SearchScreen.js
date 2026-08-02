@@ -18,7 +18,8 @@ import { useAuth } from "../context/AuthContext";
 import searchApi from "../api/search";
 import reelsApi from "../api/reels";
 import UserCard from "../components/UserCard";
-import { COLORS } from "../components/Theme";
+import Icon from "../design/ui/Icon";
+import { COLORS, SIZES, FONTS, SPACING, RADIUS, TYPOGRAPHY, SHADOWS, GLASS, LAYOUT } from "../design/DesignSystem";
 
 const { width: SCREEN_W } = Dimensions.get("window");
 const TABS = ["all", "users", "reels", "hashtags", "audio"];
@@ -121,7 +122,7 @@ export default function SearchScreen({ navigation }) {
     if (item.__type === "audio") {
       return (
         <TouchableOpacity style={styles.audioRow} activeOpacity={0.8} onPress={() => navigation.navigate("Reels", { musicId: item.id, musicTitle: item.title || item.music_title })}>
-          <Text style={styles.audioIcon}>🎵</Text>
+          <Icon name="musical-note" size={14} color={COLORS.textSecondary} style={{ marginRight: SPACING.sm }} />
           <Text style={styles.audioTitle} numberOfLines={1}>
             {item.title || item.music_title}{item.artist ? " — " + item.artist : ""}
           </Text>
@@ -145,18 +146,17 @@ export default function SearchScreen({ navigation }) {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <View style={styles.searchBar}>
-        <Text style={styles.searchIcon}>🔍</Text>
         <TextInput
           style={styles.input}
           placeholder={t("search") || "Search users, reels, hashtags..."}
-          placeholderTextColor="#888"
+          placeholderTextColor={COLORS.placeholder}
           value={query}
           onChangeText={onChange}
           returnKeyType="search"
         />
         {query.length > 0 && (
-          <TouchableOpacity onPress={() => { setQuery(""); onChange(""); }}>
-            <Text style={styles.clear}>✕</Text>
+          <TouchableOpacity onPress={() => { setQuery(""); onChange(""); }} hitSlop={{top:8, bottom:8, left:8, right:8}}>
+            <Icon name="close" size={16} color={COLORS.muted} style={{ marginLeft: SPACING.sm }} />
           </TouchableOpacity>
         )}
       </View>
@@ -168,6 +168,7 @@ export default function SearchScreen({ navigation }) {
               key={tb}
               style={[styles.tab, tab === tb && styles.tabActive]}
               onPress={() => setTab(tb)}
+              hitSlop={{top:8, bottom:8}}
             >
               <Text style={[styles.tabText, tab === tb && styles.tabTextActive]}>
                 {t(tb) || tb}
@@ -188,7 +189,7 @@ export default function SearchScreen({ navigation }) {
               <Text style={styles.hashtag}>#{item}</Text>
             </TouchableOpacity>
           )}
-          ListEmptyComponent={loading ? <ActivityIndicator color="#fff" style={{ marginTop: 40 }} /> : null}
+          ListEmptyComponent={loading ? <ActivityIndicator color={COLORS.white} style={{ marginTop: 40 }} /> : null}
         />
       ) : (
         <FlatList
@@ -198,7 +199,7 @@ export default function SearchScreen({ navigation }) {
           renderItem={renderItem}
           ListEmptyComponent={
             loading ? (
-              <ActivityIndicator color="#fff" style={{ marginTop: 40 }} />
+              <ActivityIndicator color={COLORS.white} style={{ marginTop: 40 }} />
             ) : (
               <Text style={styles.empty}>{t("noResults") || "No results"}</Text>
             )
@@ -211,43 +212,45 @@ export default function SearchScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0D0D1A" },
+  container: { flex: 1, backgroundColor: COLORS.bg },
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.08)",
-    margin: 12,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    height: 44,
+    backgroundColor: GLASS.bg,
+    margin: SPACING.md,
+    borderRadius: RADIUS.xl,
+    paddingHorizontal: SPACING.md,
+    height: 46,
+    borderWidth: 1,
+    borderColor: GLASS.border,
+    ...SHADOWS.sm,
   },
-  searchIcon: { fontSize: 16, marginRight: 8 },
-  input: { flex: 1, color: "#fff", fontSize: 15 },
-  clear: { color: "#aaa", fontSize: 16, marginLeft: 8 },
-  tabs: { flexDirection: "row", paddingHorizontal: 12, gap: 8, marginBottom: 6 },
-  tab: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 18, backgroundColor: "rgba(255,255,255,0.06)" },
-  tabActive: { backgroundColor: COLORS.primary || "#7c6cf7" },
-  tabText: { color: "#aaa", fontSize: 13, fontWeight: "600" },
-  tabTextActive: { color: "#fff" },
+  input: { flex: 1, color: COLORS.text, fontSize: SIZES.sm },
+  clear: { color: COLORS.muted, fontSize: 16, marginLeft: SPACING.sm },
+  tabs: { flexDirection: "row", paddingHorizontal: SPACING.md, gap: SPACING.sm, marginBottom: SPACING.xs },
+  tab: { paddingHorizontal: SPACING.md, paddingVertical: 7, borderRadius: RADIUS.full, backgroundColor: GLASS.bg, borderWidth: 1, borderColor: "transparent" },
+  tabActive: { backgroundColor: COLORS.primary },
+  tabText: { color: COLORS.muted, fontSize: SIZES.xs, ...FONTS.semiBold },
+  tabTextActive: { color: COLORS.text },
   list: { paddingBottom: 40 },
-  sectionTitle: { color: "#fff", fontSize: 16, fontWeight: "700", margin: 16, marginTop: 8 },
+  sectionTitle: { color: COLORS.text, fontSize: SIZES.lg, ...FONTS.bold, margin: SPACING.lg, marginTop: SPACING.sm },
   hashtagRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(255,255,255,0.06)",
+    borderBottomColor: GLASS.border,
   },
-  hashtag: { color: COLORS.primary || "#7c6cf7", fontSize: 15, fontWeight: "700" },
-  hashtagCount: { color: "#888", fontSize: 12 },
-  reelRow: { paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.06)" },
-  reelCaption: { color: "#fff", fontSize: 14 },
-  reelMusic: { color: "#999", fontSize: 12, marginTop: 2 },
-  audioRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.06)" },
-  audioIcon: { fontSize: 16, marginRight: 10 },
-  audioTitle: { color: "#fff", fontSize: 14, flex: 1 },
-  audioGenre: { color: "#888", fontSize: 12, marginLeft: 8 },
-  empty: { color: "#888", textAlign: "center", marginTop: 60, fontSize: 14 },
+  hashtag: { color: COLORS.primary, fontSize: SIZES.sm, ...FONTS.bold },
+  hashtagCount: { color: COLORS.muted, fontSize: SIZES.xs },
+  reelRow: { paddingHorizontal: SPACING.lg, paddingVertical: SPACING.md, borderBottomWidth: 1, borderBottomColor: GLASS.border },
+  reelCaption: { color: COLORS.textSecondary, fontSize: SIZES.sm },
+  reelMusic: { color: COLORS.muted, fontSize: SIZES.xs, marginTop: SPACING.xs },
+  audioRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: SPACING.lg, paddingVertical: SPACING.md, borderBottomWidth: 1, borderBottomColor: GLASS.border },
+  audioIcon: { fontSize: 14, marginRight: SPACING.sm },
+  audioTitle: { color: COLORS.text, fontSize: SIZES.sm, flex: 1 },
+  audioGenre: { color: COLORS.muted, fontSize: SIZES.xs, marginLeft: SPACING.sm },
+  empty: { color: COLORS.muted, textAlign: "center", marginTop: 60, fontSize: SIZES.sm },
 });

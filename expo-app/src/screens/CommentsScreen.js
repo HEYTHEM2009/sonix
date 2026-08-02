@@ -4,8 +4,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import client from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
-import { COLORS, SIZES } from "../components/Theme";
+import { COLORS, SIZES, FONTS, SPACING, RADIUS, TYPOGRAPHY, SHADOWS, GLASS, LAYOUT } from "../design/DesignSystem";
 import Screen3D from "../components/3D/Screen3D";
+import Icon from "../design/ui/Icon";
 
 function renderLinkable(text) {
   if (!text) return null;
@@ -66,17 +67,18 @@ function CommentItem({ comment, user, isRTL, isReel, onDelete, onReply }) {
             <Text style={s.time}>{new Date(comment.created_at).toLocaleDateString()}</Text>
             {isReel && (
               <>
-                <TouchableOpacity onPress={handleLike} style={s.actionBtn}>
-                  <Text style={[s.actionText, liked && { color: COLORS.danger }]}>{liked ? "❤️" : "🤍"} {likesCount > 0 ? likesCount : ""}</Text>
+                <TouchableOpacity onPress={handleLike} style={s.actionBtn} hitSlop={{top:8, bottom:8, left:8, right:8}}>
+                  <Icon name={liked ? "heart" : "heart-outline"} size={14} color={liked ? COLORS.danger : COLORS.muted} />
+                  {likesCount > 0 && <Text style={[s.actionText, liked && { color: COLORS.danger }]}> {likesCount}</Text>}
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => setReplying(!replying)} style={s.actionBtn}>
+                <TouchableOpacity onPress={() => setReplying(!replying)} style={s.actionBtn} hitSlop={{top:8, bottom:8, left:8, right:8}}>
                   <Text style={s.actionText}>Reply</Text>
                 </TouchableOpacity>
               </>
             )}
           </View>
         </View>
-        {comment.user?.id === user?.id && <Text style={s.delHint}>✕</Text>}
+        {comment.user?.id === user?.id && <Icon name="close" size={12} color={COLORS.muted} style={{ paddingLeft: SPACING.xs, paddingTop: SPACING.xs }} />}
       </TouchableOpacity>
 
       {/* Reply input */}
@@ -92,15 +94,15 @@ function CommentItem({ comment, user, isRTL, isReel, onDelete, onReply }) {
             returnKeyType="send"
             onSubmitEditing={handleReply}
           />
-          <TouchableOpacity onPress={handleReply} style={s.replySendBtn}>
-            <Text style={s.replySendText}>→</Text>
+          <TouchableOpacity onPress={handleReply} style={s.replySendBtn} hitSlop={{top:8, bottom:8, left:8, right:8}}>
+            <Icon name="arrow-forward" size={16} color={COLORS.text} />
           </TouchableOpacity>
         </View>
       )}
 
       {/* Show replies */}
       {replies.length > 0 && (
-        <TouchableOpacity onPress={() => setShowReplies(!showReplies)} style={s.repliesToggle}>
+        <TouchableOpacity onPress={() => setShowReplies(!showReplies)} style={s.repliesToggle} hitSlop={{top:8, bottom:8, left:8, right:8}}>
           <Text style={s.repliesToggleText}>
             {showReplies ? "Hide" : `View ${replies.length} ${replies.length === 1 ? "reply" : "replies"}`}
           </Text>
@@ -193,8 +195,8 @@ export default function CommentsScreen({ route, navigation }) {
     <Screen3D>
     <KeyboardAvoidingView style={s.container} behavior="padding" keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}>
       <View style={[s.topBar, { paddingTop: insets.top + 6 }]}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
-          <Text style={s.backText}>←</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn} hitSlop={{top:8, bottom:8, left:8, right:8}}>
+          <Icon name="arrow-back" size={20} color={COLORS.text} />
         </TouchableOpacity>
         <Text style={s.title}>{t("comments")}</Text>
         <View style={{ width: 36 }} />
@@ -208,7 +210,7 @@ export default function CommentsScreen({ route, navigation }) {
           contentContainerStyle={{ padding: 12, paddingBottom: Math.max(insets.bottom + 60, 70) }}
           ListEmptyComponent={
             <View style={s.emptyWrap}>
-              <Text style={s.emptyIcon}>💬</Text>
+              <Icon name="chatbubble-outline" size={36} color={COLORS.muted} />
               <Text style={s.empty}>{t("noComments")}</Text>
             </View>
           }
@@ -226,7 +228,7 @@ export default function CommentsScreen({ route, navigation }) {
       )}
       <View style={[s.inputRow, { paddingBottom: Math.max(insets.bottom + 6, 12) }]}>
         <TextInput style={s.input} value={text} onChangeText={setText} placeholder={t("addCommentPlaceholder")} placeholderTextColor={COLORS.muted} returnKeyType="send" onSubmitEditing={submit} />
-        <TouchableOpacity onPress={submit}>
+        <TouchableOpacity onPress={submit} hitSlop={{top:8, bottom:8, left:8, right:8}}>
           <Text style={[s.postBtn, text.trim() && s.postBtnActive]}>{t("post")}</Text>
         </TouchableOpacity>
       </View>
@@ -237,36 +239,36 @@ export default function CommentsScreen({ route, navigation }) {
 
 const s = StyleSheet.create({
   container: { flex: 1 },
-  topBar: { paddingBottom: 10, paddingHorizontal: 12, borderBottomWidth: 0.5, borderBottomColor: COLORS.border, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  backBtn: { width: 36, height: 36, alignItems: "center", justifyContent: "center" },
-  backText: { fontSize: 22, color: COLORS.text },
-  title: { fontSize: SIZES.md, fontWeight: "600", color: COLORS.text },
+  topBar: { paddingBottom: SPACING.sm, paddingHorizontal: SPACING.md, borderBottomWidth: 0.5, borderBottomColor: COLORS.border, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  backBtn: { width: 36, height: 36, alignItems: "center", justifyContent: "center", borderRadius: RADIUS.md, backgroundColor: GLASS.bg },
+  backText: { ...TYPOGRAPHY.h3, color: COLORS.text },
+  title: { fontSize: SIZES.md, ...FONTS.semiBold, color: COLORS.text },
   emptyWrap: { alignItems: "center", paddingTop: 40 },
-  emptyIcon: { fontSize: 36, marginBottom: 8 },
+  emptyIcon: { fontSize: 36, marginBottom: SPACING.sm, color: COLORS.muted, ...FONTS.bold },
   empty: { textAlign: "center", color: COLORS.muted, fontSize: SIZES.md },
-  row: { flexDirection: "row", marginBottom: 14, gap: 10, alignItems: "flex-start" },
-  replyRow: { marginLeft: 44, marginBottom: 8 },
-  avatar: { width: 34, height: 34, borderRadius: 17, backgroundColor: COLORS.input, alignItems: "center", justifyContent: "center" },
-  avatarSmall: { width: 26, height: 26, borderRadius: 13 },
-  avatarText: { color: COLORS.text, fontWeight: "600", fontSize: 13 },
+  row: { flexDirection: "row", marginBottom: SPACING.md, gap: SPACING.sm, alignItems: "flex-start" },
+  replyRow: { marginLeft: 44, marginBottom: SPACING.sm },
+  avatar: { width: 34, height: 34, borderRadius: RADIUS.full, backgroundColor: COLORS.primary, alignItems: "center", justifyContent: "center" },
+  avatarSmall: { width: 26, height: 26, borderRadius: RADIUS.full },
+  avatarText: { ...TYPOGRAPHY.smallBold, color: COLORS.text },
   content: { flex: 1 },
-  msg: { fontSize: 13, color: COLORS.text, lineHeight: 18 },
-  user: { fontWeight: "700" },
-  time: { fontSize: 11, color: COLORS.muted, marginTop: 4 },
-  delHint: { color: COLORS.muted, fontSize: 12, paddingLeft: 4, paddingTop: 2 },
-  commentActions: { flexDirection: "row", alignItems: "center", gap: 12, marginTop: 4 },
-  actionBtn: { paddingVertical: 2 },
-  actionText: { fontSize: 12, color: COLORS.muted },
-  replyInputRow: { flexDirection: "row", alignItems: "center", marginLeft: 44, marginBottom: 10, gap: 6 },
-  replyInput: { flex: 1, height: 32, borderRadius: 16, backgroundColor: COLORS.input, paddingHorizontal: 12, fontSize: 12, color: COLORS.text },
-  replySendBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: COLORS.primary, alignItems: "center", justifyContent: "center" },
-  replySendText: { color: "#fff", fontSize: 14, fontWeight: "700" },
-  repliesToggle: { marginLeft: 44, marginBottom: 8 },
-  repliesToggleText: { fontSize: 12, color: COLORS.primary, fontWeight: "600" },
-  inputRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 12, paddingTop: 8, borderTopWidth: 0.5, borderTopColor: COLORS.border, gap: 8 },
-  input: { flex: 1, height: 38, borderRadius: 19, backgroundColor: COLORS.input, paddingHorizontal: 16, fontSize: 13, color: COLORS.text },
-  postBtn: { fontSize: 14, fontWeight: "600", color: COLORS.accent, opacity: 0.5 },
+  msg: { ...TYPOGRAPHY.caption, color: COLORS.text },
+  user: { ...FONTS.bold },
+  time: { ...TYPOGRAPHY.small, color: COLORS.muted, marginTop: SPACING.xs },
+  delHint: { ...TYPOGRAPHY.small, color: COLORS.muted, paddingLeft: SPACING.xs, paddingTop: SPACING.xs },
+  commentActions: { flexDirection: "row", alignItems: "center", gap: SPACING.sm, marginTop: SPACING.xs },
+  actionBtn: { paddingVertical: SPACING.xs },
+  actionText: { ...TYPOGRAPHY.small, color: COLORS.muted },
+  replyInputRow: { flexDirection: "row", alignItems: "center", marginLeft: 44, marginBottom: SPACING.sm, gap: SPACING.xs },
+  replyInput: { flex: 1, height: 32, borderRadius: RADIUS.full, backgroundColor: COLORS.surfaceLight, paddingHorizontal: SPACING.md, ...TYPOGRAPHY.caption, color: COLORS.text },
+  replySendBtn: { width: 32, height: 32, borderRadius: RADIUS.full, backgroundColor: COLORS.primary, alignItems: "center", justifyContent: "center" },
+  replySendText: { ...TYPOGRAPHY.label, color: COLORS.text },
+  repliesToggle: { marginLeft: 44, marginBottom: SPACING.sm },
+  repliesToggleText: { ...TYPOGRAPHY.smallBold, color: COLORS.primary },
+  inputRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: SPACING.md, paddingTop: SPACING.sm, borderTopWidth: 0.5, borderTopColor: COLORS.border, gap: SPACING.sm, backgroundColor: COLORS.bg },
+  input: { flex: 1, height: 38, borderRadius: RADIUS.full, backgroundColor: COLORS.surfaceLight, paddingHorizontal: SPACING.lg, ...TYPOGRAPHY.body, color: COLORS.text },
+  postBtn: { ...TYPOGRAPHY.captionBold, color: COLORS.gold, opacity: 0.5 },
   postBtnActive: { opacity: 1 },
-  linkHash: { color: COLORS.accent, fontWeight: "600" },
-  linkMention: { color: COLORS.primary, fontWeight: "600" },
+  linkHash: { color: COLORS.gold, ...FONTS.semiBold },
+  linkMention: { color: COLORS.primary, ...FONTS.semiBold },
 });

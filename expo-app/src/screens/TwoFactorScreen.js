@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingVi
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
-import { COLORS, SIZES, FONTS } from "../components/Theme";
+import { COLORS, SIZES, FONTS, SPACING, RADIUS, TYPOGRAPHY, SHADOWS, GLASS, LAYOUT } from "../design/DesignSystem";
 import VideoBackground from "../components/VideoBackground";
 
 export default function TwoFactorScreen({ navigation, route }) {
@@ -58,7 +58,7 @@ export default function TwoFactorScreen({ navigation, route }) {
           />
 
           <TouchableOpacity style={[s.btn, loading && s.btnDisabled]} onPress={handleVerify} disabled={loading} activeOpacity={0.9}>
-            {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.btnText}>{t("verify") || "Verify"}</Text>}
+            {loading ? <ActivityIndicator color={COLORS.white} /> : <Text style={s.btnText}>{t("verify") || "Verify"}</Text>}
           </TouchableOpacity>
 
           <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()}>
@@ -71,16 +71,16 @@ export default function TwoFactorScreen({ navigation, route }) {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0d0d1a" },
+  container: { flex: 1, backgroundColor: COLORS.bg },
   overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(13,13,26,0.35)", zIndex: 3, pointerEvents: "none" },
-  inner: { flex: 1, paddingHorizontal: 24, zIndex: 4, justifyContent: "center" },
-  card: { backgroundColor: "rgba(26,26,46,0.55)", borderRadius: 24, padding: 24, borderWidth: 1, borderColor: "rgba(124,108,247,0.1)", shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.25, shadowRadius: 30, elevation: 20 },
-  title: { fontSize: 22, ...FONTS.bold, color: "#fff", textAlign: "center" },
-  subtitle: { fontSize: SIZES.sm, color: COLORS.textSecondary, marginTop: 8, marginBottom: 20, textAlign: "center" },
-  input: { backgroundColor: COLORS.input, borderRadius: 16, paddingVertical: 16, fontSize: 28, letterSpacing: 8, color: COLORS.text, borderWidth: 1.5, borderColor: COLORS.border, marginBottom: 16, ...FONTS.medium },
-  btn: { height: 54, borderRadius: 16, backgroundColor: COLORS.primary, alignItems: "center", justifyContent: "center", shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.4, shadowRadius: 16, elevation: 10 },
+  inner: { flex: 1, paddingHorizontal: SPACING.xl, zIndex: 4, justifyContent: "center" },
+  card: { backgroundColor: GLASS.bg, borderRadius: RADIUS.xl, padding: SPACING.xl, borderWidth: 1, borderColor: GLASS.border, ...SHADOWS.glow, elevation: 20 },
+  title: { fontSize: 22, ...FONTS.bold, color: COLORS.text, textAlign: "center" },
+  subtitle: { fontSize: SIZES.sm, color: COLORS.textSecondary, marginTop: SPACING.sm, marginBottom: SPACING.lg, textAlign: "center" },
+  input: { backgroundColor: COLORS.surfaceLight, borderRadius: RADIUS.lg, paddingVertical: SPACING.md, fontSize: 28, letterSpacing: 8, color: COLORS.text, borderWidth: 1.5, borderColor: COLORS.border, marginBottom: SPACING.md, ...FONTS.medium, textAlign: "center" },
+  btn: { height: 54, borderRadius: RADIUS.lg, backgroundColor: COLORS.primary, alignItems: "center", justifyContent: "center", ...SHADOWS.primary, elevation: 10 },
   btnDisabled: { opacity: 0.5 },
-  btnText: { color: "#fff", fontSize: SIZES.lg, ...FONTS.bold },
-  backBtn: { marginTop: 14, alignItems: "center" },
-  backText: { color: COLORS.accent, fontSize: SIZES.sm, ...FONTS.medium },
+  btnText: { color: COLORS.text, fontSize: SIZES.lg, ...FONTS.bold },
+  backBtn: { marginTop: SPACING.md, alignItems: "center" },
+  backText: { color: COLORS.gold, fontSize: SIZES.sm, ...FONTS.medium },
 });

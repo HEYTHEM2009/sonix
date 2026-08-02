@@ -1,4 +1,4 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useCallback, useMemo } from "react";
 import { View, TouchableOpacity, StyleSheet, Animated } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { COLORS, SPACING, RADIUS, SHADOWS, GLASS } from "../DesignSystem";
@@ -18,6 +18,7 @@ export default function Card({
 }) {
   const mount = useRef(new Animated.Value(0)).current;
   const breath = useRef(new Animated.Value(0)).current;
+  const pressScale = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     if (animate) {
@@ -35,6 +36,14 @@ export default function Card({
     }
   }, [animate, glow, mount, breath]);
 
+  const onPressIn = useCallback(() => {
+    Animated.spring(pressScale, { toValue: 0.98, damping: 15, stiffness: 200, useNativeDriver: true }).start();
+  }, [pressScale]);
+
+  const onPressOut = useCallback(() => {
+    Animated.spring(pressScale, { toValue: 1, damping: 15, stiffness: 200, useNativeDriver: true }).start();
+  }, [pressScale]);
+
   const bgColors = {
     default: COLORS.card,
     elevated: COLORS.cardElevated,
@@ -42,13 +51,23 @@ export default function Card({
     transparent: "transparent",
   };
 
+  const combinedScale = useMemo(() =>
+    animate
+      ? Animated.multiply(
+          mount.interpolate({ inputRange: [0, 1], outputRange: [0.93, 1] }),
+          pressScale
+        )
+      : pressScale,
+    [animate, mount, pressScale]
+  );
+
   const animatedStyle = animate ? {
     opacity: mount,
     transform: [
       { translateY: mount.interpolate({ inputRange: [0, 1], outputRange: [24, 0] }) },
-      { scale: mount.interpolate({ inputRange: [0, 1], outputRange: [0.93, 1] }) },
+      { scale: combinedScale },
     ],
-  } : {};
+  } : { transform: [{ scale: pressScale }] };
 
   const shadowStyle = elevated ? SHADOWS.floating : glow ? {
     ...SHADOWS.glow,
@@ -56,11 +75,17 @@ export default function Card({
   } : SHADOWS.card;
 
   const Wrapper = onPress ? TouchableOpacity : View;
+  const wrapperProps = onPress ? {
+    onPress,
+    onPressIn,
+    onPressOut,
+    activeOpacity: 0.7,
+  } : {};
 
   if (glass) {
     return (
       <Animated.View style={[animatedStyle, style]}>
-        <Wrapper onPress={onPress} activeOpacity={0.7}>
+        <Wrapper {...wrapperProps}>
           <View style={[styles.glassCard, { padding, marginBottom }]}>
             <View style={styles.glassInner}>
               {children}
@@ -75,7 +100,7 @@ export default function Card({
     return (
       <Animated.View style={[styles.card, shadowStyle, animatedStyle, { marginBottom }, style]}>
         <LinearGradient colors={COLORS.gradientCard} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ borderRadius: RADIUS.lg, padding }}>
-          <Wrapper onPress={onPress} activeOpacity={0.7}>
+          <Wrapper {...wrapperProps}>
             {children}
           </Wrapper>
         </LinearGradient>
@@ -85,7 +110,7 @@ export default function Card({
 
   return (
     <Animated.View style={[styles.card, { backgroundColor: bgColors[variant], padding, marginBottom }, shadowStyle, animatedStyle, style]}>
-      <Wrapper onPress={onPress} activeOpacity={0.7}>
+      <Wrapper {...wrapperProps}>
         {children}
       </Wrapper>
     </Animated.View>
@@ -143,7 +168,7 @@ const styles = StyleSheet.create({
   glassCard: {
     borderRadius: RADIUS.xl,
     borderWidth: 1,
-    borderColor: GLASS.default.borderColor,
+    borderColor: COLORS.glassBorder,
     backgroundColor: GLASS.default.backgroundColor,
     overflow: "hidden",
   },
@@ -169,7 +194,7 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.md,
     marginBottom: SPACING.sm,
     borderWidth: 1,
-    borderColor: GLASS.default.borderColor,
+    borderColor: COLORS.glassBorder,
   },
   floatingCard: {
     borderRadius: RADIUS.xl,

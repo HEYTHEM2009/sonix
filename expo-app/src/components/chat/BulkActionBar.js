@@ -1,7 +1,8 @@
 import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
-import { COLORS, SIZES } from "../../components/Theme";
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from "../../design/DesignSystem";
 import { useLanguage } from "../../context/LanguageContext";
+import Icon from "../../design/ui/Icon";
 
 export default function BulkActionBar({ count, onDelete, onForward, onCancel }) {
   const { t } = useLanguage();
@@ -16,11 +17,11 @@ export default function BulkActionBar({ count, onDelete, onForward, onCancel }) 
       </View>
       <View style={s.actions}>
         <TouchableOpacity style={[s.action, s.forward]} onPress={onForward}>
-          <Text style={s.actionIcon}>↪</Text>
+          <Icon name="return-down-forward" size="sm" color={COLORS.text} />
           <Text style={s.actionLabel}>{t("bulkForward")}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[s.action, s.delete]} onPress={onDelete}>
-          <Text style={s.actionIcon}>🗑️</Text>
+          <Icon name="trash-outline" size="sm" color={COLORS.danger} />
           <Text style={s.actionLabel}>{t("bulkDelete")}</Text>
         </TouchableOpacity>
       </View>
@@ -33,28 +34,27 @@ const s = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#15152a",
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderTopWidth: 0.5,
-    borderTopColor: "#2a2a3a",
+    backgroundColor: COLORS.card,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.glassBorder,
   },
-  cancelBtn: { paddingVertical: 6, paddingRight: 8 },
-  cancelText: { color: COLORS.primary, fontSize: SIZES.sm, fontWeight: "600" },
-  countWrap: { flexDirection: "row", alignItems: "center", gap: 4 },
-  count: { color: COLORS.text, fontSize: SIZES.lg, fontWeight: "800" },
-  countLabel: { color: COLORS.muted, fontSize: SIZES.xs },
-  actions: { flexDirection: "row", gap: 8 },
+  cancelBtn: { paddingVertical: 6, paddingRight: SPACING.sm },
+  cancelText: { ...TYPOGRAPHY.captionBold, color: COLORS.primary },
+  countWrap: { flexDirection: "row", alignItems: "center", gap: SPACING.xs },
+  count: { ...TYPOGRAPHY.h2, color: COLORS.text },
+  countLabel: { ...TYPOGRAPHY.small, color: COLORS.muted },
+  actions: { flexDirection: "row", gap: SPACING.sm },
   action: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 12,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    borderRadius: RADIUS.md,
   },
-  forward: { backgroundColor: COLORS.primary + "30" },
-  delete: { backgroundColor: COLORS.danger + "30" },
-  actionIcon: { fontSize: 16, color: COLORS.text },
-  actionLabel: { color: COLORS.text, fontSize: SIZES.sm, fontWeight: "600" },
+  forward: { backgroundColor: COLORS.primaryGlowLight },
+  delete: { backgroundColor: COLORS.danger + "20" },
+  actionLabel: { ...TYPOGRAPHY.captionBold, color: COLORS.text },
 });

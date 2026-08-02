@@ -18,7 +18,7 @@ import { useLanguage } from "../context/LanguageContext";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import adminApi from "../api/admin";
-import { COLORS, SIZES } from "../components/Theme";
+import { COLORS, SIZES, FONTS, SPACING, RADIUS, TYPOGRAPHY, SHADOWS, GLASS, LAYOUT } from "../design/DesignSystem";
 import UserCard from "../components/UserCard";
 
 const TABS = ["dashboard", "users", "reels", "reports", "badwords"];
@@ -51,7 +51,6 @@ export default function AdminScreen() {
     if (user?.role === "admin") load();
   }, [load, user]);
 
-  // Lazy load tab content when switched
   const loadTab = useCallback(
     async (tb) => {
       try {
@@ -86,7 +85,6 @@ export default function AdminScreen() {
   if (user?.role !== "admin") {
     return (
       <View style={[styles.center, { paddingTop: insets.top }]}>
-        <Text style={styles.lock}>🔒</Text>
         <Text style={styles.lockText}>{t("adminOnly") || "Admin access only"}</Text>
       </View>
     );
@@ -97,15 +95,14 @@ export default function AdminScreen() {
   const StatGrid = () => (
     <View style={styles.statGrid}>
       {[
-        ["users", stats.users, "👥"],
-        ["reels", stats.reels, "🎬"],
-        ["posts", stats.posts, "📝"],
-        ["stories", stats.stories, "📸"],
-        ["reports", stats.reports, "⚠️"],
-        ["comments", stats.comments, "💬"],
-      ].map(([k, v, icon]) => (
+        ["users", stats.users],
+        ["reels", stats.reels],
+        ["posts", stats.posts],
+        ["stories", stats.stories],
+        ["reports", stats.reports],
+        ["comments", stats.comments],
+      ].map(([k, v]) => (
         <View key={k} style={styles.statCard}>
-          <Text style={styles.statIcon}>{icon}</Text>
           <Text style={styles.statValue}>{v ?? 0}</Text>
           <Text style={styles.statLabel}>{t(k) || k}</Text>
         </View>
@@ -164,7 +161,7 @@ export default function AdminScreen() {
           <View style={styles.rowInfo}>
             <Text style={styles.rowTitle}>@{item.user?.username}</Text>
             <Text style={styles.rowSub} numberOfLines={1}>{item.caption || "(no caption)"}</Text>
-            <Text style={styles.rowMeta}>♥ {item.likes_count || 0} · 💬 {item.comments_count || 0}</Text>
+            <Text style={styles.rowMeta}>* {item.likes_count || 0} · C {item.comments_count || 0}</Text>
           </View>
           <TouchableOpacity style={styles.btnRed} onPress={() => removeContent("reel", item.id)}>
             <Text style={styles.btnText}>{t("remove") || "Remove"}</Text>
@@ -266,9 +263,9 @@ export default function AdminScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>🛡️ {t("adminPanel") || "Admin Panel"}</Text>
+        <Text style={styles.headerTitle}>{t("adminPanel") || "Admin Panel"}</Text>
         <TouchableOpacity style={styles.broadcastBtn} onPress={() => setModal({ type: "notify" })}>
-          <Text style={styles.btnText}>📢</Text>
+          <Text style={styles.btnText}>ANNOUNCE</Text>
         </TouchableOpacity>
       </View>
 
@@ -281,7 +278,7 @@ export default function AdminScreen() {
       </View>
 
       {loading ? (
-        <ActivityIndicator color="#fff" style={{ marginTop: 40 }} />
+        <ActivityIndicator color={COLORS.text} style={{ marginTop: SPACING.huge }} />
       ) : (
         <View style={styles.body}>
           {tab === "dashboard" && <StatGrid />}
@@ -337,7 +334,7 @@ function BadWordForm({ onClose, onDone }) {
   return (
     <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
       <Text style={styles.modalTitle}>Add blocked word</Text>
-      <TextInput style={styles.input} value={word} onChangeText={setWord} placeholder="word" placeholderTextColor="#888" />
+      <TextInput style={styles.input} value={word} onChangeText={setWord} placeholder="word" placeholderTextColor={COLORS.placeholder} />
       <View style={styles.modalBtns}>
         <TouchableOpacity style={styles.btnGray} onPress={onClose}><Text style={styles.btnText}>Cancel</Text></TouchableOpacity>
         <TouchableOpacity style={styles.btnGreen} onPress={() => word.trim() && onDone(word.trim())}><Text style={styles.btnText}>Add</Text></TouchableOpacity>
@@ -351,7 +348,7 @@ function NotifyForm({ onClose, onDone }) {
   return (
     <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
       <Text style={styles.modalTitle}>Broadcast notification</Text>
-      <TextInput style={[styles.input, { height: 90 }]} multiline value={msg} onChangeText={setMsg} placeholder="Message to all users" placeholderTextColor="#888" />
+      <TextInput style={[styles.input, { height: 90 }]} multiline value={msg} onChangeText={setMsg} placeholder="Message to all users" placeholderTextColor={COLORS.placeholder} />
       <View style={styles.modalBtns}>
         <TouchableOpacity style={styles.btnGray} onPress={onClose}><Text style={styles.btnText}>Cancel</Text></TouchableOpacity>
         <TouchableOpacity style={styles.btnGreen} onPress={() => msg.trim() && onDone(msg.trim())}><Text style={styles.btnText}>Send</Text></TouchableOpacity>
@@ -363,40 +360,38 @@ function NotifyForm({ onClose, onDone }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
   center: { flex: 1, backgroundColor: COLORS.bg, alignItems: "center", justifyContent: "center" },
-  lock: { fontSize: 48, marginBottom: 12 },
-  lockText: { color: COLORS.textSecondary, fontSize: 16 },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingVertical: 12 },
-  headerTitle: { color: COLORS.text, fontSize: SIZES.xl, fontWeight: "800" },
-  broadcastBtn: { backgroundColor: "rgba(124,108,247,0.18)", paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 },
-  tabs: { flexDirection: "row", paddingHorizontal: 10, gap: 6, marginBottom: 8, flexWrap: "wrap" },
-  tab: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 18, backgroundColor: "rgba(255,255,255,0.06)" },
+  lockText: { color: COLORS.textSecondary, fontSize: SIZES.lg, ...FONTS.semiBold },
+  header: { ...GLASS.elevated, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: SPACING.lg, paddingVertical: SPACING.md },
+  headerTitle: { color: COLORS.text, fontSize: SIZES.xl, ...FONTS.black },
+  broadcastBtn: { backgroundColor: COLORS.primaryGlowLight, paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm, borderRadius: RADIUS.sm },
+  tabs: { flexDirection: "row", paddingHorizontal: SPACING.sm, gap: SPACING.xs, marginBottom: SPACING.sm, flexWrap: "wrap" },
+  tab: { paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm, borderRadius: RADIUS.full, backgroundColor: COLORS.glassLight },
   tabActive: { backgroundColor: COLORS.primary },
-  tabText: { color: "#aaa", fontSize: 13, fontWeight: "600" },
-  tabTextActive: { color: "#fff" },
-  body: { flex: 1, paddingHorizontal: 12 },
-  statGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, paddingTop: 8 },
-  statCard: { width: (SIZES.radiusLg, "48%"), backgroundColor: COLORS.card, borderRadius: SIZES.radius, padding: 16, alignItems: "center" },
-  statIcon: { fontSize: 22, marginBottom: 6 },
-  statValue: { color: COLORS.text, fontSize: 24, fontWeight: "800" },
-  statLabel: { color: COLORS.textSecondary, fontSize: 12, marginTop: 2 },
-  row: { flexDirection: "row", alignItems: "center", backgroundColor: COLORS.card, borderRadius: SIZES.radius, padding: 10, marginBottom: 8 },
+  tabText: { color: COLORS.textSecondary, fontSize: SIZES.sm, ...FONTS.semiBold },
+  tabTextActive: { color: COLORS.text },
+  body: { flex: 1, paddingHorizontal: SPACING.md },
+  statGrid: { flexDirection: "row", flexWrap: "wrap", gap: SPACING.sm, paddingTop: SPACING.sm },
+  statCard: { width: "48%", backgroundColor: COLORS.card, borderRadius: RADIUS.md, padding: SPACING.lg, alignItems: "center", ...GLASS.elevated },
+  statValue: { color: COLORS.text, fontSize: SIZES.title, ...FONTS.black },
+  statLabel: { color: COLORS.textSecondary, fontSize: SIZES.xs, marginTop: SPACING.xxs },
+  row: { flexDirection: "row", alignItems: "center", backgroundColor: COLORS.card, borderRadius: RADIUS.md, padding: SPACING.sm, marginBottom: SPACING.sm, ...GLASS.elevated },
   rowInfo: { flex: 1 },
-  rowTitle: { color: COLORS.text, fontSize: 14, fontWeight: "700" },
-  rowSub: { color: COLORS.textSecondary, fontSize: 12, marginTop: 2 },
-  rowMeta: { color: COLORS.muted, fontSize: 11, marginTop: 2 },
-  rowActions: { flexDirection: "row", alignItems: "center", gap: 8 },
-  btnRed: { backgroundColor: COLORS.danger, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 8 },
-  btnGreen: { backgroundColor: COLORS.success, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 8 },
-  btnGray: { backgroundColor: "rgba(255,255,255,0.12)", paddingHorizontal: 14, paddingVertical: 9, borderRadius: 8 },
-  btnText: { color: "#fff", fontSize: 13, fontWeight: "700" },
-  reportCard: { backgroundColor: COLORS.card, borderRadius: SIZES.radius, padding: 12, marginBottom: 8 },
-  badge: { color: COLORS.warning, fontSize: 12, fontWeight: "700", textTransform: "capitalize", marginRight: 8 },
+  rowTitle: { color: COLORS.text, fontSize: SIZES.md, ...FONTS.bold },
+  rowSub: { color: COLORS.textSecondary, fontSize: SIZES.xs, marginTop: SPACING.xxs },
+  rowMeta: { color: COLORS.muted, fontSize: SIZES.xs, marginTop: SPACING.xxs },
+  rowActions: { flexDirection: "row", alignItems: "center", gap: SPACING.sm },
+  btnRed: { backgroundColor: COLORS.danger, paddingHorizontal: SPACING.md, paddingVertical: SPACING.xs, borderRadius: RADIUS.sm },
+  btnGreen: { backgroundColor: COLORS.success, paddingHorizontal: SPACING.md, paddingVertical: SPACING.xs, borderRadius: RADIUS.sm },
+  btnGray: { backgroundColor: COLORS.glassLight, paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm, borderRadius: RADIUS.sm },
+  btnText: { color: COLORS.text, fontSize: SIZES.sm, ...FONTS.bold },
+  reportCard: { backgroundColor: COLORS.card, borderRadius: RADIUS.md, padding: SPACING.md, marginBottom: SPACING.sm, ...GLASS.elevated },
+  badge: { color: COLORS.warning, fontSize: SIZES.sm, ...FONTS.bold, textTransform: "capitalize", marginRight: SPACING.sm },
   badgeOk: { color: COLORS.success },
-  addBtn: { backgroundColor: COLORS.primary, alignSelf: "flex-start", paddingHorizontal: 16, paddingVertical: 9, borderRadius: 10, marginBottom: 10 },
-  empty: { color: "#888", textAlign: "center", marginTop: 40 },
-  modalOverlay: { flex: 1, backgroundColor: COLORS.overlay, justifyContent: "center", padding: 24 },
-  modal: { backgroundColor: COLORS.card, borderRadius: SIZES.radiusLg, padding: 20 },
-  modalTitle: { color: COLORS.text, fontSize: SIZES.lg, fontWeight: "700", marginBottom: 14 },
-  input: { backgroundColor: COLORS.input, color: "#fff", borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, fontSize: 15, marginBottom: 14 },
-  modalBtns: { flexDirection: "row", justifyContent: "flex-end", gap: 10 },
+  addBtn: { backgroundColor: COLORS.primary, alignSelf: "flex-start", paddingHorizontal: SPACING.lg, paddingVertical: SPACING.sm, borderRadius: RADIUS.sm, marginBottom: SPACING.sm },
+  empty: { color: COLORS.muted, textAlign: "center", marginTop: SPACING.huge },
+  modalOverlay: { flex: 1, backgroundColor: COLORS.overlay, justifyContent: "center", padding: SPACING.xxl },
+  modal: { backgroundColor: COLORS.card, borderRadius: RADIUS.lg, padding: SPACING.xl },
+  modalTitle: { color: COLORS.text, fontSize: SIZES.lg, ...FONTS.bold, marginBottom: SPACING.md },
+  input: { backgroundColor: COLORS.input, color: COLORS.text, borderRadius: RADIUS.sm, paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm, fontSize: SIZES.md, marginBottom: SPACING.md },
+  modalBtns: { flexDirection: "row", justifyContent: "flex-end", gap: SPACING.sm },
 });

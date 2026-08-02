@@ -6,7 +6,8 @@ import * as ImagePicker from "expo-image-picker";
 import client from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
-import { COLORS, SIZES, FONTS } from "../components/Theme";
+import { COLORS, SIZES, FONTS, SPACING, RADIUS, TYPOGRAPHY, SHADOWS, GLASS, LAYOUT } from "../design/DesignSystem";
+import Icon from "../design/ui/Icon";
 
 export default function EditProfileScreen({ navigation }) {
   const { t } = useLanguage();
@@ -61,7 +62,7 @@ export default function EditProfileScreen({ navigation }) {
         </TouchableOpacity>
       </View>
       {loading ? (
-        <ActivityIndicator color={COLORS.accent} style={{ marginTop: 40 }} />
+        <ActivityIndicator color={COLORS.gold} style={{ marginTop: SPACING.xxxl }} />
       ) : (
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
@@ -90,21 +91,21 @@ export default function EditProfileScreen({ navigation }) {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1 },
-  topBar: { paddingBottom: 10, paddingHorizontal: 14, borderBottomWidth: 0.5, borderBottomColor: COLORS.border, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  topBtn: { fontSize: SIZES.lg, color: COLORS.accent },
+  container: { flex: 1, backgroundColor: COLORS.bg },
+  topBar: { ...GLASS.elevated, paddingBottom: SPACING.sm, paddingHorizontal: SPACING.lg, borderBottomWidth: 0.5, borderBottomColor: COLORS.border, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  topBtn: { fontSize: SIZES.lg, color: COLORS.gold },
   title: { fontSize: SIZES.md, ...FONTS.semiBold, color: COLORS.text },
-  saveBtn: { backgroundColor: COLORS.primary, borderRadius: SIZES.radius, paddingHorizontal: 14, paddingVertical: 6 },
+  saveBtn: { backgroundColor: COLORS.primary, borderRadius: RADIUS.md, paddingHorizontal: SPACING.lg, paddingVertical: SPACING.xs },
   saveBtnDisabled: { opacity: 0.4 },
   saveText: { color: COLORS.text, ...FONTS.semiBold, fontSize: 14 },
-  scroll: { padding: 16, alignItems: "center" },
-  avatarWrap: { alignItems: "center", marginBottom: 24 },
-  avatar: { width: 80, height: 80, borderRadius: 40, backgroundColor: COLORS.input, alignItems: "center", justifyContent: "center", marginBottom: 8, overflow: "hidden" },
+  scroll: { padding: SPACING.lg, alignItems: "center" },
+  avatarWrap: { alignItems: "center", marginBottom: SPACING.xxl },
+  avatar: { width: 80, height: 80, borderRadius: RADIUS.full, backgroundColor: COLORS.surface, alignItems: "center", justifyContent: "center", marginBottom: SPACING.sm, overflow: "hidden" },
   avatarImg: { width: "100%", height: "100%" },
   avatarLetter: { color: COLORS.text, fontSize: 32, ...FONTS.semiBold },
-  changePhoto: { color: COLORS.accent, fontSize: SIZES.md, ...FONTS.semiBold },
-  label: { fontSize: 13, color: COLORS.textSecondary, alignSelf: "flex-start", marginBottom: 6, ...FONTS.semiBold },
-  input: { backgroundColor: COLORS.input, borderRadius: SIZES.radius, paddingHorizontal: 14, height: 44, fontSize: 15, color: COLORS.text, alignSelf: "stretch", marginBottom: 16 },
-  bioInput: { height: 80, paddingTop: 12 },
-  count: { fontSize: 11, color: COLORS.muted, alignSelf: "flex-end", marginTop: -10, marginBottom: 16 },
+  changePhoto: { color: COLORS.gold, fontSize: SIZES.md, ...FONTS.semiBold },
+  label: { fontSize: 13, color: COLORS.textSecondary, alignSelf: "flex-start", marginBottom: SPACING.xs, ...FONTS.semiBold },
+  input: { backgroundColor: COLORS.surface, borderRadius: RADIUS.md, paddingHorizontal: SPACING.lg, height: 44, fontSize: 15, color: COLORS.text, alignSelf: "stretch", marginBottom: SPACING.lg },
+  bioInput: { height: 80, paddingTop: SPACING.md },
+  count: { fontSize: 11, color: COLORS.muted, alignSelf: "flex-end", marginTop: -SPACING.sm, marginBottom: SPACING.lg },
 });

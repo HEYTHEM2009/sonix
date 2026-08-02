@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useRef } from "react";
 import { View, Text, Animated, StyleSheet, TouchableOpacity } from "react-native";
-import { COLORS } from "../components/Theme";
+import { COLORS, RADIUS, TYPOGRAPHY } from "../design/DesignSystem";
 
 const ToastContext = createContext(null);
 
@@ -67,16 +67,16 @@ const styles = StyleSheet.create({
   },
   toast: {
     maxWidth: "100%",
-    borderRadius: 10,
+    borderRadius: RADIUS.lg,
     paddingVertical: 12,
     paddingHorizontal: 16,
     marginBottom: 8,
-    shadowColor: "#000",
+    shadowColor: COLORS.primary,
     shadowOpacity: 0.3,
     shadowRadius: 6,
     elevation: 6,
   },
-  text: { color: "#fff", fontSize: 14, fontWeight: "600", textAlign: "center" },
+  text: { color: COLORS.text, fontSize: 14, ...TYPOGRAPHY.bodyBold, textAlign: "center" },
 });
 
 export function useToast() {

@@ -5,6 +5,7 @@ import client from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import { COLORS, SPACING, RADIUS, TYPOGRAPHY, SHADOWS, GLASS } from "../design/DesignSystem";
+import Icon from "../design/ui/Icon";
 import Screen3D from "../components/3D/Screen3D";
 
 export default function SettingsScreen({ navigation }) {
@@ -145,7 +146,7 @@ export default function SettingsScreen({ navigation }) {
   return (
     <Screen3D style={[s.wrap, { paddingTop: insets.top }]}>
       <View style={s.topBar}>
-        <TouchableOpacity onPress={() => navigation.goBack()}><Text style={s.backBtn}>←</Text></TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.goBack()}><Icon name="arrow-back" size={22} color={COLORS.text} /></TouchableOpacity>
         <Text style={s.title}>{t("settings")}</Text>
         <View style={{ width: 36 }} />
       </View>
@@ -157,13 +158,13 @@ export default function SettingsScreen({ navigation }) {
           <Text style={s.sectionTitle}>{t("language").toUpperCase()}</Text>
 
           <TouchableOpacity style={[s.row, isRTL && s.rowRtl]} onPress={() => setShowLanguage(!showLanguage)}>
-            <Text style={s.rowIcon}>🌐</Text>
+            <Icon name="globe" size={20} />
             <View style={s.rowContent}>
               <Text style={s.rowLabel}>{t("language")}</Text>
               <Text style={s.rowHint}>{t("languageDesc")}</Text>
             </View>
             <Text style={s.langCurrent}>{lang === "ar" ? t("arabic") : t("english")}</Text>
-            <Text style={s.rowArrow}>{showLanguage ? "⌄" : "›"}</Text>
+            {showLanguage ? <Icon name="chevron-down" size={18} color={COLORS.muted} /> : <Icon name="chevron-forward" size={18} color={COLORS.muted} />}
           </TouchableOpacity>
 
           {showLanguage && (
@@ -173,14 +174,14 @@ export default function SettingsScreen({ navigation }) {
                 onPress={() => handleLanguage("ar")}
               >
                 <Text style={[s.langText, lang === "ar" && s.langTextActive]}>{t("arabic")}</Text>
-                {lang === "ar" && <Text style={s.checkMark}>✓</Text>}
+                {lang === "ar" && <Icon name="checkmark" size={18} color={COLORS.accent} />}
               </TouchableOpacity>
               <TouchableOpacity
                 style={[s.langOption, lang === "en" && s.langActive]}
                 onPress={() => handleLanguage("en")}
               >
                 <Text style={[s.langText, lang === "en" && s.langTextActive]}>{t("english")}</Text>
-                {lang === "en" && <Text style={s.checkMark}>✓</Text>}
+                {lang === "en" && <Icon name="checkmark" size={18} color={COLORS.accent} />}
               </TouchableOpacity>
             </View>
           )}
@@ -191,21 +192,21 @@ export default function SettingsScreen({ navigation }) {
           <Text style={s.sectionTitle}>{t("account").toUpperCase()}</Text>
 
           <TouchableOpacity style={[s.row, isRTL && s.rowRtl]} onPress={() => navigation.navigate("EditProfile")}>
-            <Text style={s.rowIcon}>👤</Text>
+            <Icon name="person" size={20} />
             <View style={s.rowContent}>
               <Text style={s.rowLabel}>{t("editProfile")}</Text>
               <Text style={s.rowHint}>{t("usernameBioAvatar")}</Text>
             </View>
-            <Text style={s.rowArrow}>›</Text>
+            <Icon name="chevron-forward" size={18} color={COLORS.muted} />
           </TouchableOpacity>
 
           <TouchableOpacity style={[s.row, isRTL && s.rowRtl]} onPress={() => setShowChangePassword(!showChangePassword)}>
-            <Text style={s.rowIcon}>🔒</Text>
+            <Icon name="lock-closed" size={20} />
             <View style={s.rowContent}>
               <Text style={s.rowLabel}>{t("changePassword")}</Text>
               <Text style={s.rowHint}>{t("updatePasswordDesc")}</Text>
             </View>
-            <Text style={s.rowArrow}>{showChangePassword ? "⌄" : "›"}</Text>
+            {showChangePassword ? <Icon name="chevron-down" size={18} color={COLORS.muted} /> : <Icon name="chevron-forward" size={18} color={COLORS.muted} />}
           </TouchableOpacity>
 
           {showChangePassword && (
@@ -219,7 +220,7 @@ export default function SettingsScreen({ navigation }) {
           )}
 
           <View style={[s.row, isRTL && s.rowRtl]}>
-            <Text style={s.rowIcon}>🔐</Text>
+            <Icon name="lock-closed" size={20} />
             <View style={s.rowContent}>
               <Text style={s.rowLabel}>{t("privateAccount")}</Text>
               <Text style={s.rowHint}>{isPrivate ? t("privateAccountHint") : t("publicAccountHint")}</Text>
@@ -234,7 +235,7 @@ export default function SettingsScreen({ navigation }) {
           </View>
 
           <View style={[s.row, isRTL && s.rowRtl]}>
-            <Text style={s.rowIcon}>⭐</Text>
+            <Icon name="star" size={20} />
             <View style={s.rowContent}>
               <Text style={s.rowLabel}>{t("proAccount") || "Pro Creator"}</Text>
               <Text style={s.rowHint}>{isPro ? (t("proActive") || "Pro badge active") : (t("proHint") || "Unlock the Pro badge")}</Text>
@@ -242,7 +243,7 @@ export default function SettingsScreen({ navigation }) {
             <Switch
               value={isPro}
               onValueChange={togglePro}
-               trackColor={{ false: GLASS.default.borderColor, true: "#FFD60A" }}
+               trackColor={{ false: GLASS.default.borderColor, true: COLORS.accentLight }}
               thumbColor={COLORS.text}
               disabled={proLoading}
             />
@@ -254,7 +255,7 @@ export default function SettingsScreen({ navigation }) {
           <Text style={s.sectionTitle}>{t("notificationsSection").toUpperCase()}</Text>
 
           <View style={[s.row, isRTL && s.rowRtl]}>
-            <Text style={s.rowIcon}>🔔</Text>
+            <Icon name="notifications" size={20} />
             <View style={s.rowContent}>
               <Text style={s.rowLabel}>{t("pushNotifications")}</Text>
               <Text style={s.rowHint}>{t("pushNotificationsHint")}</Text>
@@ -269,7 +270,7 @@ export default function SettingsScreen({ navigation }) {
           </View>
 
           <View style={[s.row, isRTL && s.rowRtl]}>
-            <Text style={s.rowIcon}>✉️</Text>
+            <Icon name="mail" size={20} />
             <View style={s.rowContent}>
               <Text style={s.rowLabel}>{t("emailNotifications")}</Text>
               <Text style={s.rowHint}>{t("emailNotificationsHint")}</Text>
@@ -284,7 +285,7 @@ export default function SettingsScreen({ navigation }) {
           </View>
 
           <View style={[s.row, isRTL && s.rowRtl]}>
-            <Text style={s.rowIcon}>❤️</Text>
+            <Icon name="heart" size={20} />
             <View style={s.rowContent}>
               <Text style={s.rowLabel}>{t("likeNotifications")}</Text>
               <Text style={s.rowHint}>{t("likeNotificationsHint")}</Text>
@@ -299,7 +300,7 @@ export default function SettingsScreen({ navigation }) {
           </View>
 
           <View style={[s.row, isRTL && s.rowRtl]}>
-            <Text style={s.rowIcon}>💬</Text>
+            <Icon name="chatbubble" size={20} />
             <View style={s.rowContent}>
               <Text style={s.rowLabel}>{t("commentNotifications")}</Text>
               <Text style={s.rowHint}>{t("commentNotificationsHint")}</Text>
@@ -314,7 +315,7 @@ export default function SettingsScreen({ navigation }) {
           </View>
 
           <View style={[s.row, isRTL && s.rowRtl]}>
-            <Text style={s.rowIcon}>👥</Text>
+            <Icon name="people" size={20} />
             <View style={s.rowContent}>
               <Text style={s.rowLabel}>{t("followNotifications")}</Text>
               <Text style={s.rowHint}>{t("followNotificationsHint")}</Text>
@@ -329,7 +330,7 @@ export default function SettingsScreen({ navigation }) {
           </View>
 
           <View style={[s.row, isRTL && s.rowRtl]}>
-            <Text style={s.rowIcon}>📩</Text>
+            <Icon name="mail" size={20} />
             <View style={s.rowContent}>
               <Text style={s.rowLabel}>{t("messageNotifications")}</Text>
               <Text style={s.rowHint}>{t("messageNotificationsHint")}</Text>
@@ -349,25 +350,25 @@ export default function SettingsScreen({ navigation }) {
           <Text style={s.sectionTitle}>{t("content").toUpperCase()}</Text>
 
           <TouchableOpacity style={[s.row, isRTL && s.rowRtl]} onPress={() => navigation.navigate("SavedPosts")}>
-            <Text style={s.rowIcon}>🔖</Text>
+            <Icon name="bookmark" size={20} />
             <View style={s.rowContent}>
               <Text style={s.rowLabel}>{t("savedPostsBtn")}</Text>
               <Text style={s.rowHint}>{t("savedPostsHint")}</Text>
             </View>
-            <Text style={s.rowArrow}>›</Text>
+            <Icon name="chevron-forward" size={18} color={COLORS.muted} />
           </TouchableOpacity>
 
           <TouchableOpacity style={[s.row, isRTL && s.rowRtl]} onPress={() => navigation.navigate("BlockedUsers")}>
-            <Text style={s.rowIcon}>📌</Text>
+            <Icon name="pin" size={20} />
             <View style={s.rowContent}>
               <Text style={s.rowLabel}>{t("blockedUsers")}</Text>
               <Text style={s.rowHint}>{t("blockedUsersHint")}</Text>
             </View>
-            <Text style={s.rowArrow}>›</Text>
+            <Icon name="chevron-forward" size={18} color={COLORS.muted} />
           </TouchableOpacity>
 
           <View style={[s.row, isRTL && s.rowRtl]}>
-            <Text style={s.rowIcon}>🕐</Text>
+            <Icon name="time" size={20} />
             <View style={s.rowContent}>
               <Text style={s.rowLabel}>{t("activityStatus")}</Text>
               <Text style={s.rowHint}>{t("activityStatusHint")}</Text>
@@ -387,47 +388,47 @@ export default function SettingsScreen({ navigation }) {
           <Text style={s.sectionTitle}>{t("support").toUpperCase()}</Text>
 
           <TouchableOpacity style={[s.row, isRTL && s.rowRtl]} onPress={() => navigation.navigate("HelpCenter")}>
-            <Text style={s.rowIcon}>❓</Text>
+            <Icon name="help-circle" size={20} />
             <View style={s.rowContent}>
               <Text style={s.rowLabel}>{t("helpCenter")}</Text>
               <Text style={s.rowHint}>{t("helpCenterHint")}</Text>
             </View>
-            <Text style={s.rowArrow}>›</Text>
+            <Icon name="chevron-forward" size={18} color={COLORS.muted} />
           </TouchableOpacity>
 
           <TouchableOpacity style={[s.row, isRTL && s.rowRtl]} onPress={() => navigation.navigate("ReportProblem")}>
-            <Text style={s.rowIcon}>⚠️</Text>
+            <Icon name="alert-circle" size={20} />
             <View style={s.rowContent}>
               <Text style={s.rowLabel}>{t("reportProblem")}</Text>
               <Text style={s.rowHint}>{t("reportProblemHint")}</Text>
             </View>
-            <Text style={s.rowArrow}>›</Text>
+            <Icon name="chevron-forward" size={18} color={COLORS.muted} />
           </TouchableOpacity>
 
           <TouchableOpacity style={[s.row, isRTL && s.rowRtl]} onPress={() => navigation.navigate("Terms")}>
-            <Text style={s.rowIcon}>📋</Text>
+            <Icon name="document-text" size={20} />
             <View style={s.rowContent}>
               <Text style={s.rowLabel}>{t("termsOfService")}</Text>
             </View>
-            <Text style={s.rowArrow}>›</Text>
+            <Icon name="chevron-forward" size={18} color={COLORS.muted} />
           </TouchableOpacity>
 
           <TouchableOpacity style={[s.row, isRTL && s.rowRtl]} onPress={() => navigation.navigate("Privacy")}>
-            <Text style={s.rowIcon}>🛡️</Text>
+            <Icon name="shield-checkmark" size={20} />
             <View style={s.rowContent}>
               <Text style={s.rowLabel}>{t("privacyPolicy")}</Text>
             </View>
-            <Text style={s.rowArrow}>›</Text>
+            <Icon name="chevron-forward" size={18} color={COLORS.muted} />
           </TouchableOpacity>
 
           {user?.role === "admin" && (
             <TouchableOpacity style={[s.row, isRTL && s.rowRtl]} onPress={() => navigation.navigate("Admin")}>
-              <Text style={s.rowIcon}>🛡️</Text>
+              <Icon name="shield-checkmark" size={20} />
               <View style={s.rowContent}>
                 <Text style={s.rowLabel}>{t("adminPanel")}</Text>
                 <Text style={s.rowHint}>{t("adminOnly")}</Text>
               </View>
-              <Text style={s.rowArrow}>›</Text>
+              <Icon name="chevron-forward" size={18} color={COLORS.muted} />
             </TouchableOpacity>
           )}
         </View>
@@ -454,21 +455,21 @@ export default function SettingsScreen({ navigation }) {
           <Text style={[s.sectionTitle, { color: COLORS.danger }]}>{t("dangerZone").toUpperCase()}</Text>
 
           <TouchableOpacity style={[s.row, isRTL && s.rowRtl]} onPress={handleLogout}>
-            <Text style={s.rowIcon}>🚪</Text>
+            <Icon name="log-out" size={20} />
             <View style={s.rowContent}>
               <Text style={[s.rowLabel, { color: COLORS.warning }]}>{t("logout")}</Text>
               <Text style={s.rowHint}>{t("logoutHint")}</Text>
             </View>
-            <Text style={s.rowArrow}>›</Text>
+            <Icon name="chevron-forward" size={18} color={COLORS.muted} />
           </TouchableOpacity>
 
           <TouchableOpacity style={[s.row, isRTL && s.rowRtl]} onPress={() => setShowDeleteAccount(!showDeleteAccount)}>
-            <Text style={s.rowIcon}>🗑️</Text>
+            <Icon name="trash" size={20} />
             <View style={s.rowContent}>
               <Text style={[s.rowLabel, { color: COLORS.danger }]}>{t("deleteAccount")}</Text>
               <Text style={s.rowHint}>{t("deleteAccountHint")}</Text>
             </View>
-            <Text style={s.rowArrow}>{showDeleteAccount ? "⌄" : "›"}</Text>
+            {showDeleteAccount ? <Icon name="chevron-down" size={18} color={COLORS.muted} /> : <Icon name="chevron-forward" size={18} color={COLORS.muted} />}
           </TouchableOpacity>
 
           {showDeleteAccount && (
@@ -495,7 +496,7 @@ const s = StyleSheet.create({
   backBtn: { fontSize: 22, color: COLORS.text, paddingHorizontal: 4 },
   title: { ...TYPOGRAPHY.h2, color: COLORS.text },
   section: { paddingHorizontal: SPACING.md, marginTop: 24 },
-  sectionTitle: { ...TYPOGRAPHY.caption, fontWeight: "600", color: COLORS.textTertiary, marginBottom: SPACING.sm, letterSpacing: 1 },
+  sectionTitle: { ...TYPOGRAPHY.captionBold, color: COLORS.textTertiary, marginBottom: SPACING.sm, letterSpacing: 1 },
   row: { flexDirection: "row", alignItems: "center", paddingVertical: 14, gap: SPACING.md, marginBottom: 2, borderRadius: RADIUS.md, paddingHorizontal: SPACING.sm },
   rowRtl: { flexDirection: "row-reverse" },
   rowIcon: { fontSize: 20, width: 30, textAlign: "center" },
@@ -506,12 +507,12 @@ const s = StyleSheet.create({
   expandSection: { ...GLASS.default, borderRadius: RADIUS.md, padding: SPACING.md, marginBottom: 8 },
   input: { ...GLASS.default, borderRadius: RADIUS.md, paddingHorizontal: 14, paddingVertical: 12, color: COLORS.text, ...TYPOGRAPHY.body, marginBottom: SPACING.sm },
   btn: { backgroundColor: COLORS.accent, borderRadius: RADIUS.md, paddingVertical: 12, alignItems: "center", marginTop: SPACING.xs },
-  btnText: { color: "#fff", ...TYPOGRAPHY.bodyBold },
+  btnText: { color: COLORS.white, ...TYPOGRAPHY.bodyBold },
   aboutRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: GLASS.default.borderColor },
   aboutLabel: { ...TYPOGRAPHY.caption, color: COLORS.muted },
   aboutValue: { ...TYPOGRAPHY.caption, color: COLORS.text },
-  deleteWarning: { color: COLORS.danger, ...TYPOGRAPHY.small, marginBottom: 10, lineHeight: 16 },
-  langCurrent: { ...TYPOGRAPHY.caption, color: COLORS.accent, fontWeight: "600" },
+  deleteWarning: { color: COLORS.danger, ...TYPOGRAPHY.small, marginBottom: 10 },
+  langCurrent: { ...TYPOGRAPHY.captionBold, color: COLORS.accent },
   langOption: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 14, paddingHorizontal: SPACING.md, borderRadius: RADIUS.md, marginBottom: 4 },
   langActive: { backgroundColor: COLORS.accent + "20" },
   langText: { ...TYPOGRAPHY.body, color: COLORS.text },

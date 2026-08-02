@@ -2,8 +2,9 @@ import { useState, useEffect, useRef } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Alert, Animated, StatusBar } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLanguage } from "../context/LanguageContext";
-import { COLORS, SIZES, FONTS } from "../components/Theme";
+import { COLORS, SIZES, FONTS, SPACING, RADIUS, TYPOGRAPHY, SHADOWS, GLASS, LAYOUT } from "../design/DesignSystem";
 import VideoBackground from "../components/VideoBackground";
+import Icon from "../design/ui/Icon";
 import client from "../api/client";
 
 function Logo3D() {
@@ -103,25 +104,25 @@ export default function ResetPasswordScreen({ navigation, route }) {
           <Text style={s.subtitle}>{t("resetPasswordSubtitle")}</Text>
 
           <Animated.View style={[s.inputWrap, focusedField === "email" && s.inputWrapActive, { transform: [{ scale: inputAnims.email.interpolate({ inputRange: [0, 1], outputRange: [1, 1.02] }) }], shadowOpacity: inputAnims.email.interpolate({ inputRange: [0, 1], outputRange: [0.1, 0.4] }) }]}>
-            <View style={[s.inputIconWrap, focusedField === "email" && s.inputIconActive]}><Text style={s.inputIcon}>✉️</Text></View>
+            <View style={[s.inputIconWrap, focusedField === "email" && s.inputIconActive]}><Icon name="mail" size="sm" color={COLORS.primaryLight} /></View>
             <TextInput style={s.input} placeholder={t("email")} placeholderTextColor={COLORS.muted} value={email} onChangeText={setEmail} onFocus={() => focusInput("email")} onBlur={() => blurInput("email")} autoCapitalize="none" keyboardType="email-address" textAlign={isRTL ? "right" : "left"} />
           </Animated.View>
 
           <Animated.View style={[s.inputWrap, focusedField === "token" && s.inputWrapActive, { transform: [{ scale: inputAnims.token.interpolate({ inputRange: [0, 1], outputRange: [1, 1.02] }) }], shadowOpacity: inputAnims.token.interpolate({ inputRange: [0, 1], outputRange: [0.1, 0.4] }) }]}>
-            <View style={[s.inputIconWrap, focusedField === "token" && s.inputIconActive]}><Text style={s.inputIcon}>🔑</Text></View>
+            <View style={[s.inputIconWrap, focusedField === "token" && s.inputIconActive]}><Icon name="key" size="sm" color={COLORS.primaryLight} /></View>
             <TextInput style={s.input} placeholder={t("resetCode")} placeholderTextColor={COLORS.muted} value={token} onChangeText={setToken} onFocus={() => focusInput("token")} onBlur={() => blurInput("token")} autoCapitalize="none" textAlign={isRTL ? "right" : "left"} />
           </Animated.View>
 
           <Animated.View style={[s.inputWrap, focusedField === "password" && s.inputWrapActive, { transform: [{ scale: inputAnims.password.interpolate({ inputRange: [0, 1], outputRange: [1, 1.02] }) }], shadowOpacity: inputAnims.password.interpolate({ inputRange: [0, 1], outputRange: [0.1, 0.4] }) }]}>
-            <View style={[s.inputIconWrap, focusedField === "password" && s.inputIconActive]}><Text style={s.inputIcon}>🔒</Text></View>
+            <View style={[s.inputIconWrap, focusedField === "password" && s.inputIconActive]}><Icon name="lock-closed" size="sm" color={COLORS.primaryLight} /></View>
             <TextInput style={s.input} placeholder={t("newPassword")} placeholderTextColor={COLORS.muted} value={password} onChangeText={setPassword} onFocus={() => focusInput("password")} onBlur={() => blurInput("password")} secureTextEntry={!showPassword} textAlign={isRTL ? "right" : "left"} />
-            <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={s.eyeBtn}><Text style={s.eyeIcon}>{showPassword ? "👁️" : "👁️‍🗨️"}</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={s.eyeBtn}><Icon name={showPassword ? "eye" : "eye-off"} size="sm" color={COLORS.muted} /></TouchableOpacity>
           </Animated.View>
 
           <Animated.View style={[s.inputWrap, focusedField === "confirm" && s.inputWrapActive, { transform: [{ scale: inputAnims.confirm.interpolate({ inputRange: [0, 1], outputRange: [1, 1.02] }) }], shadowOpacity: inputAnims.confirm.interpolate({ inputRange: [0, 1], outputRange: [0.1, 0.4] }) }]}>
-            <View style={[s.inputIconWrap, focusedField === "confirm" && s.inputIconActive]}><Text style={s.inputIcon}>🔒</Text></View>
+            <View style={[s.inputIconWrap, focusedField === "confirm" && s.inputIconActive]}><Icon name="lock-closed" size="sm" color={COLORS.primaryLight} /></View>
             <TextInput style={s.input} placeholder={t("confirmPassword")} placeholderTextColor={COLORS.muted} value={passwordConfirmation} onChangeText={setPasswordConfirmation} onFocus={() => focusInput("confirm")} onBlur={() => blurInput("confirm")} secureTextEntry={!showConfirm} textAlign={isRTL ? "right" : "left"} />
-            <TouchableOpacity onPress={() => setShowConfirm(!showConfirm)} style={s.eyeBtn}><Text style={s.eyeIcon}>{showConfirm ? "👁️" : "👁️‍🗨️"}</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => setShowConfirm(!showConfirm)} style={s.eyeBtn}><Icon name={showConfirm ? "eye" : "eye-off"} size="sm" color={COLORS.muted} /></TouchableOpacity>
           </Animated.View>
 
           <Animated.View style={{ transform: [{ scale: btnScale }] }}>
@@ -153,45 +154,45 @@ export default function ResetPasswordScreen({ navigation, route }) {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0d0d1a" },
-  overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(13,13,26,0.35)", zIndex: 3, pointerEvents: "none" },
-  inner: { flex: 1, paddingHorizontal: 24, zIndex: 4 },
-  topSection: { alignItems: "center", marginBottom: 32 },
+  container: { flex: 1, backgroundColor: COLORS.bg },
+  overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: COLORS.overlayLight, zIndex: 3, pointerEvents: "none" },
+  inner: { flex: 1, paddingHorizontal: SPACING.xxl, zIndex: 4 },
+  topSection: { alignItems: "center", marginBottom: SPACING.xxxl },
 
-  logoContainer: { alignItems: "center", marginBottom: 14, width: 90, height: 90 },
-  logoShadow: { position: "absolute", bottom: -8, width: 70, height: 12, borderRadius: 6, backgroundColor: COLORS.accent, opacity: 0.25 },
-  logoCard: { width: 80, height: 80, borderRadius: 24, backgroundColor: COLORS.primary, alignItems: "center", justifyContent: "center", shadowColor: COLORS.accent, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 20, elevation: 15 },
-  logoInner: { width: 72, height: 72, borderRadius: 20, backgroundColor: "rgba(255,255,255,0.1)", alignItems: "center", justifyContent: "center", borderWidth: 1.5, borderColor: "rgba(212,165,116,0.2)" },
+  logoContainer: { alignItems: "center", marginBottom: SPACING.md, width: 90, height: 90 },
+  logoShadow: { position: "absolute", bottom: -8, width: 70, height: 12, borderRadius: RADIUS.xs, backgroundColor: COLORS.gold, opacity: 0.25 },
+  logoCard: { width: 80, height: 80, borderRadius: RADIUS.xxl, backgroundColor: COLORS.primary, alignItems: "center", justifyContent: "center", shadowColor: COLORS.gold, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 20, elevation: 15 },
+  logoInner: { width: 72, height: 72, borderRadius: RADIUS.xl, backgroundColor: COLORS.glassLight, alignItems: "center", justifyContent: "center", borderWidth: 1.5, borderColor: "rgba(212,165,116,0.2)" },
   logoText: { color: COLORS.accentLight, fontSize: 36, ...FONTS.black },
 
-  appName: { fontSize: 34, ...FONTS.black, color: "#fff", letterSpacing: -1 },
-  tagline: { fontSize: SIZES.sm, color: COLORS.textSecondary, marginTop: 4 },
+  appName: { fontSize: 34, ...FONTS.black, color: COLORS.text, letterSpacing: -1 },
+  tagline: { fontSize: SIZES.sm, color: COLORS.textSecondary, marginTop: SPACING.xs },
 
-  card: { backgroundColor: "rgba(26,26,46,0.55)", borderRadius: 24, padding: 24, borderWidth: 1, borderColor: "rgba(124,108,247,0.1)", shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.25, shadowRadius: 30, elevation: 20, overflow: "hidden" },
+  card: { ...GLASS.elevated, borderRadius: RADIUS.xxl, padding: SPACING.xxl, shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.25, shadowRadius: 30, elevation: 20, overflow: "hidden" },
   cardGlow: { position: "absolute", top: -50, right: -50, width: 150, height: 150, borderRadius: 75, backgroundColor: COLORS.primary, opacity: 0.06 },
 
-  subtitle: { color: COLORS.textSecondary, fontSize: SIZES.sm, ...FONTS.medium, textAlign: "center", marginBottom: 20 },
+  subtitle: { color: COLORS.textSecondary, fontSize: SIZES.sm, ...FONTS.medium, textAlign: "center", marginBottom: SPACING.xl },
 
-  inputWrap: { flexDirection: "row", alignItems: "center", backgroundColor: COLORS.input, borderRadius: 16, paddingHorizontal: 14, height: 54, gap: 10, borderWidth: 1.5, borderColor: COLORS.border, marginBottom: 14, shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 5 },
-  inputWrapActive: { borderColor: COLORS.primary, backgroundColor: "rgba(26,26,46,0.9)" },
-  inputIconWrap: { width: 34, height: 34, borderRadius: 10, backgroundColor: "rgba(124,108,247,0.1)", alignItems: "center", justifyContent: "center" },
-  inputIconActive: { backgroundColor: "rgba(124,108,247,0.2)" },
+  inputWrap: { ...GLASS.default, flexDirection: "row", alignItems: "center", borderRadius: RADIUS.lg, paddingHorizontal: SPACING.md, height: 54, gap: SPACING.sm, marginBottom: SPACING.md, shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12, elevation: 5 },
+  inputWrapActive: { borderColor: COLORS.primary, backgroundColor: COLORS.cardElevated },
+  inputIconWrap: { width: 34, height: 34, borderRadius: RADIUS.sm, backgroundColor: COLORS.primaryGlowLight, alignItems: "center", justifyContent: "center" },
+  inputIconActive: { backgroundColor: COLORS.primaryGlow },
   inputIcon: { fontSize: 15 },
   input: { flex: 1, color: COLORS.text, fontSize: SIZES.md, ...FONTS.medium },
-  eyeBtn: { padding: 6 },
+  eyeBtn: { padding: RADIUS.xs },
   eyeIcon: { fontSize: 16 },
 
-  btn: { height: 54, borderRadius: 16, backgroundColor: COLORS.primary, alignItems: "center", justifyContent: "center", shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.4, shadowRadius: 16, elevation: 10, overflow: "hidden" },
-  btnGlow: { position: "absolute", top: 0, left: 0, right: 0, height: "50%", backgroundColor: "rgba(255,255,255,0.08)", borderTopLeftRadius: 16, borderTopRightRadius: 16 },
+  btn: { height: 54, borderRadius: RADIUS.lg, backgroundColor: COLORS.primary, alignItems: "center", justifyContent: "center", shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.4, shadowRadius: 16, elevation: 10, overflow: "hidden" },
+  btnGlow: { position: "absolute", top: 0, left: 0, right: 0, height: "50%", backgroundColor: "rgba(255,255,255,0.08)", borderTopLeftRadius: RADIUS.lg, borderTopRightRadius: RADIUS.lg },
   btnDisabled: { opacity: 0.5 },
-  btnText: { color: "#fff", fontSize: SIZES.lg, ...FONTS.bold, letterSpacing: 0.5 },
+  btnText: { color: COLORS.text, fontSize: SIZES.lg, ...FONTS.bold, letterSpacing: 0.5 },
 
-  divider: { flexDirection: "row", alignItems: "center", marginVertical: 24, gap: 12 },
+  divider: { flexDirection: "row", alignItems: "center", marginVertical: SPACING.xxl, gap: SPACING.md },
   dividerLine: { flex: 1, height: 1, backgroundColor: COLORS.border },
-  dividerDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: COLORS.muted },
+  dividerDot: { width: 6, height: 6, borderRadius: RADIUS.xs, backgroundColor: COLORS.muted },
 
-  backCard: { backgroundColor: "rgba(26,26,46,0.4)", borderRadius: 16, padding: 16, alignItems: "center", borderWidth: 1, borderColor: COLORS.border },
-  backText: { color: COLORS.accent, fontSize: SIZES.md, ...FONTS.bold },
+  backCard: { ...GLASS.default, borderRadius: RADIUS.lg, padding: SPACING.lg, alignItems: "center" },
+  backText: { color: COLORS.gold, fontSize: SIZES.md, ...FONTS.bold },
 
-  version: { color: COLORS.muted, fontSize: SIZES.xs, textAlign: "center", paddingBottom: 20, marginTop: "auto" },
+  version: { color: COLORS.muted, fontSize: SIZES.xs, textAlign: "center", paddingBottom: SPACING.xl, marginTop: "auto" },
 });
