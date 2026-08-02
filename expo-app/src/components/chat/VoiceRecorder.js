@@ -125,9 +125,13 @@ const VoiceRecorder = ({ onSend, onCancel, onRecordingStateChange }) => {
     const duration = elapsedRef.current;
     let uri = null;
     try {
+      const uriBeforeStop = rec.uri || null;
       const result = await rec.stop();
-      const urlFromResult = result && typeof result === "object" && typeof result.url === "string" ? result.url : null;
-      uri = urlFromResult || rec.uri || null;
+      const urlFromResult =
+        result && typeof result === "object" && typeof result.url === "string"
+          ? result.url
+          : null;
+      uri = urlFromResult || uriBeforeStop || null;
     } catch (e) {
       console.warn("VoiceRecorder stop error", e);
     }

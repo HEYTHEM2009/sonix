@@ -892,6 +892,7 @@ export default function ChatScreen({ route, navigation }) {
       setMessages((prev) => prev.map((m) => m.id === tempId ? { ...(res.data || {}), pending: false } : m));
       await load();
     } catch (e) {
+      console.error("VOICE_SEND_FAILED", e?.message, e?.response?.status, e?.response?.data);
       setMessages((prev) => prev.map((m) => m.id === tempId ? { ...m, pending: false } : m));
       Alert.alert(t("error"), e?.response?.data?.message || t("failedToSend"));
     }
