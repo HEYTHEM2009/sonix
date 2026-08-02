@@ -153,7 +153,7 @@ Route::post('/support/feedback', [SupportController::class, 'feedback'])->middle
 
 // Media routes with signed URLs
 Route::get('/media/{path}', [MediaController::class, 'serve'])
-    ->middleware(['auth:sanctum', 'media.security'])
+    ->middleware(['media.security'])
     ->where('path', '.*');
 Route::post('/media/sign', [MediaController::class, 'sign'])->middleware('auth:sanctum');
 Route::post('/media/sign-batch', [MediaController::class, 'signBatch'])->middleware('auth:sanctum');

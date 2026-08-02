@@ -6,12 +6,15 @@ export default function Header() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate("/");
   };
 
-  const isActive = (path) => location.pathname === path;
+  const isActive = (path) => {
+    if (path === "/profile") return location.pathname.startsWith("/profile");
+    return location.pathname === path;
+  };
 
   return (
     <header className="snx-header">
@@ -26,6 +29,7 @@ export default function Header() {
               to="/feed"
               className={`snx-header__nav-link ${isActive("/feed") ? "snx-header__nav-link--active" : ""}`}
               title="Feed"
+              aria-current={isActive("/feed") ? "page" : undefined}
             >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
@@ -37,6 +41,7 @@ export default function Header() {
               to="/explore"
               className={`snx-header__nav-link ${isActive("/explore") ? "snx-header__nav-link--active" : ""}`}
               title="Explore"
+              aria-current={isActive("/explore") ? "page" : undefined}
             >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="11" cy="11" r="8" />
@@ -48,10 +53,11 @@ export default function Header() {
               to={`/profile/${user.id}`}
               className={`snx-header__nav-link ${isActive("/profile") ? "snx-header__nav-link--active" : ""}`}
               title="Profile"
+              aria-current={isActive("/profile") ? "page" : undefined}
             >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                <circle cx="12" cy="7" r="4" />
+                <circle cx="12" cy="12" r="4" />
               </svg>
             </Link>
 
@@ -59,6 +65,7 @@ export default function Header() {
               onClick={handleLogout}
               className="snx-header__logout"
               title="Log out"
+              aria-label="Log out"
             >
               Log out
             </button>

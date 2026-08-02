@@ -11,6 +11,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Process;
+use Illuminate\Support\Facades\Schema;
 
 class TranscodeVideo implements ShouldQueue
 {
@@ -133,10 +134,11 @@ class TranscodeVideo implements ShouldQueue
         if ($this->modelType === 'story') {
             $story = Story::find($this->modelId);
             if ($story) {
-                $story->update([
-                    'video' => $videoPath,
-                    'thumbnail' => $thumbPath,
-                ]);
+                $data = ['video' => $videoPath];
+                if (Schema::hasColumn('stories', 'thumbnail')) {
+                    $data['thumbnail'] = $thumbPath;
+                }
+                $story->update($data);
             }
         } elseif ($this->modelType === 'post') {
             $post = Post::find($this->modelId);

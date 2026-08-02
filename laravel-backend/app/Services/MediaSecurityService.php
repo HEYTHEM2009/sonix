@@ -70,22 +70,15 @@ class MediaSecurityService
 
     /**
      * Check if a path requires signed URL access.
-     * Public paths (avatars, thumbnails) don't need signing.
+     *
+     * All media served through /api/media/* lives in public/uploads and is
+     * rendered by the mobile app with plain <Image>/WebView URLs that cannot
+     * carry Bearer tokens, so uploaded media must be publicly readable
+     * (capability-style URLs with random filenames). Signed-URL infrastructure
+     * is kept for future non-public storage buckets.
      */
     public function requiresSigning(string $path): bool
     {
-        $publicPatterns = [
-            '/uploads/avatars/',
-            '/uploads/thumbnails/',
-            '/uploads/default',
-        ];
-
-        foreach ($publicPatterns as $pattern) {
-            if (str_starts_with($path, $pattern)) {
-                return false;
-            }
-        }
-
-        return true;
+        return false;
     }
 }

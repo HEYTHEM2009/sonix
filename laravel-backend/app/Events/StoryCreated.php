@@ -54,6 +54,9 @@ class StoryCreated implements ShouldBroadcast
             'text_overlay' => $this->story->text_overlay,
             'text_color' => $this->story->text_color,
             'bg_color' => $this->story->bg_color,
+            'duration' => $this->story->duration,
+            'stickers' => $this->story->stickers,
+            'drawing_data' => $this->story->drawing_data,
             'created_at' => $this->story->created_at->toISOString(),
             'user' => [
                 'id' => $this->story->user->id,

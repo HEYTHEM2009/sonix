@@ -22,7 +22,9 @@
   --snx-text-muted: #737373;
   --snx-header-h: 60px;
   --snx-bottom-nav-h: 56px;
+  --snx-safe-bottom: constant(safe-area-inset-bottom, 0px);
   --snx-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --snx-safe-top: constant(safe-area-inset-top, 0px);
   --snx-safe-top: env(safe-area-inset-top, 0px);
 }
 
@@ -696,6 +698,20 @@
   animation: spin 0.8s linear infinite;
 }
 
+.snx-feed__empty {
+  text-align: center;
+  color: var(--snx-text-muted);
+  padding: 60px 20px;
+  font-size: 14px;
+}
+
+.snx-explore__placeholder {
+  width: 100%;
+  aspect-ratio: 9/16;
+  background: var(--snx-surface);
+  border-radius: 4px;
+}
+
 .snx-reel__not-found {
   text-align: center;
   padding: 60px 20px;
@@ -752,6 +768,87 @@
   }
 }
 
+/* ---- REEL SHORTCUTS ---- */
+
+.snx-reel__back {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 10;
+  background: rgba(0,0,0,0.6);
+  border: none;
+  color: #fff;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.snx-reel__back:hover {
+  background: rgba(0,0,0,0.8);
+}
+
+.snx-reel__user-clickable {
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.snx-reel__user-clickable:hover {
+  opacity: 0.75;
+}
+
+.snx-reel__actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+.snx-reel__action-btn {
+  background: none;
+  border: none;
+  color: var(--snx-text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px;
+  border-radius: 8px;
+  font-size: 13px;
+  transition: color 0.15s, background 0.15s;
+}
+
+.snx-reel__action-btn:hover {
+  color: var(--snx-text);
+  background: rgba(255,255,255,0.05);
+}
+
+.snx-reel__action-btn--liked {
+  color: #ed4956;
+}
+
+.snx-reel__action-btn--saved {
+  color: var(--snx-blue);
+}
+
+@media (max-width: 767px) {
+  .snx-reel__back {
+    top: 12px;
+    left: 12px;
+    width: 32px;
+    height: 32px;
+  }
+
+  .snx-reel__actions {
+    gap: 12px;
+  }
+}
+
 /* ============================================
    LOADING SPINNER
    ============================================ */
@@ -762,15 +859,23 @@
 /* ============================================
    UTILITY
    ============================================ */
-.snx-visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0,0,0,0);
-  border: 0;
+/* FOCUS VISIBLE */
+.snx-header__nav-link:focus-visible,
+.snx-login__btn:focus-visible,
+.snx-reel__action-btn:focus-visible,
+.snx-reel__back:focus-visible,
+.snx-header__logout:focus-visible {
+  outline: 2px solid var(--snx-blue);
+  outline-offset: 2px;
+}
+
+/* REDUCED MOTION */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* ============================================
@@ -779,6 +884,7 @@
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: #111; }
 ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+* { scrollbar-width: thin; scrollbar-color: #333 #111; }
 
 /* ============================================
    SAFE AREAS (iPhone X+)

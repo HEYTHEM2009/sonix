@@ -143,7 +143,7 @@ class PostController extends Controller
 
     public function store(Request $request)
     {
-        $rules = ['content' => 'nullable|string'];
+        $rules = ['content' => 'nullable|string|max:5000'];
         if ($request->hasFile('video')) {
             $rules['video'] = 'required|mimes:mp4,mov,avi,webm|max:102400';
         } else {

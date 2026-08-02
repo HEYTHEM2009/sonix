@@ -12,7 +12,7 @@ server {
     root /app/sonix-web;
     index index.html;
 
-    location /api/ {
+    location ^~ /api/ {
         include fastcgi_params;
         fastcgi_pass 127.0.0.1:9000;
         fastcgi_param SCRIPT_FILENAME /app/laravel-backend/public/index.php;

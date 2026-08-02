@@ -23,6 +23,7 @@ client.interceptors.response.use(
     if (err.response?.status === 401 && !err.config?.url?.includes("/auth/")) {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
+      window.dispatchEvent(new CustomEvent("auth:expired"));
       window.location.href = "/";
     }
     return Promise.reject(err);

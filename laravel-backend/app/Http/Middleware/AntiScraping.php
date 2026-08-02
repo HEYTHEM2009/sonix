@@ -26,7 +26,7 @@ class AntiScraping
     protected array $rateLimits = [
         'stories' => 60,     // 60 requests/min for stories
         'posts' => 120,      // 120 requests/min for posts
-        'media' => 30,       // 30 requests/min for media
+        'media' => 300,     // 300 requests/min for media (video Range requests)
         'auth' => 10,        // 10 requests/min for auth
         'default' => 200,    // 200 requests/min for everything else
     ];

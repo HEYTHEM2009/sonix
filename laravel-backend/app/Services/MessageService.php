@@ -208,7 +208,9 @@ class MessageService
         $message->is_deleted = true;
         $message->content = self::DELETED_PLACEHOLDER;
         $message->image = null;
+        $message->video = null;
         $message->voice = null;
+        $message->document = null;
         $message->saveQuietly();
 
         $this->audit($messageId, $userId, 'delete', ['scope' => 'everyone']);
@@ -236,7 +238,10 @@ class MessageService
         $forwarded->content = $source->content;
         $forwarded->type = $source->type;
         $forwarded->image = $source->image;
+        $forwarded->video = $source->video;
         $forwarded->voice = $source->voice;
+        $forwarded->document = $source->document;
+        $forwarded->duration = $source->duration;
         $forwarded->reply_to = null;
         $forwarded->is_read = false;
         $forwarded->delivered = false;

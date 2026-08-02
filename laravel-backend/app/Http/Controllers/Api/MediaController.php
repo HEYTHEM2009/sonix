@@ -13,9 +13,10 @@ class MediaController extends Controller
         $path = str_replace(['../', '..\\', '%2e%2e', '%2f', '%5c'], '', urldecode($path));
         $path = preg_replace('#/+#', '/', trim($path, '/'));
 
-        $fullPath = public_path($path);
+        // Media lives in public/uploads/ (same base the MediaSecurity middleware serves).
+        $fullPath = public_path('uploads/'.$path);
 
-        $realBase = realpath(public_path());
+        $realBase = realpath(public_path('uploads'));
         $realFile = realpath($fullPath);
 
         if (! $realFile || ! str_starts_with($realFile, $realBase)) {
@@ -108,7 +109,7 @@ class MediaController extends Controller
         foreach ($paths as $path) {
             $urls[$path] = $service->requiresSigning($path)
                 ? $service->signUrl($path)
-                : config('app.url').'/uploads/'.$path;
+                : url('api/media/'.ltrim($path, '/'));
         }
 
         return response()->json([

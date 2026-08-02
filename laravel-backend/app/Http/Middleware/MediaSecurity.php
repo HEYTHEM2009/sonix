@@ -20,6 +20,12 @@ class MediaSecurity
 
         // Public assets (avatars, default thumbnails) are always allowed.
         if (! $service->requiresSigning($path)) {
+            // Delegate Range requests to MediaController's streaming logic,
+            // which produces proper 206 partial-content responses for video.
+            if ($request->headers->has('Range')) {
+                return $next($request);
+            }
+
             return $this->serveFile($request, $path);
         }
 

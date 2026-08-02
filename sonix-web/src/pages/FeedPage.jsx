@@ -6,16 +6,18 @@ import Header from "../components/Header";
 export default function FeedPage() {
   const [reels, setReels] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
+    document.title = "Feed — Sonix";
     client
       .get("/reels?trending=1")
       .then((res) => {
         const data = res.data?.data || res.data?.reels || [];
         setReels(Array.isArray(data) ? data : data.data || []);
       })
-      .catch(() => {})
+      .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, []);
 
@@ -25,10 +27,14 @@ export default function FeedPage() {
       <div className="snx-feed">
         {loading ? (
           <div className="snx-feed__grid">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
+            {Array.from({ length: 6 }, (_, i) => (
               <div key={i} className="snx-feed__placeholder" />
             ))}
           </div>
+        ) : error ? (
+          <p className="snx-feed__empty">Failed to load feed. Try again later.</p>
+        ) : reels.length === 0 ? (
+          <p className="snx-feed__empty">No reels yet. Follow users to see their reels.</p>
         ) : (
           <div className="snx-feed__grid">
             {reels.map((reel) => (
@@ -40,7 +46,7 @@ export default function FeedPage() {
                 {reel.thumbnail_url ? (
                   <img src={reel.thumbnail_url} alt={reel.caption || "Reel"} loading="lazy" />
                 ) : (
-                  <video src={reel.video_url} muted loading="lazy" />
+                  <video src={reel.video_url} muted />
                 )}
                 <div className="snx-feed__reel-info">
                   <span>&#9825; {reel.likes_count || 0}</span>

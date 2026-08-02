@@ -12,7 +12,10 @@ export function AuthProvider({ children }) {
     if (token) {
       client
         .get("/users/me")
-        .then((res) => setUser(res.data?.data || res.data?.user || res.data))
+        .then((res) => {
+          const u = res.data?.data || res.data?.user || res.data;
+          if (u) setUser(u);
+        })
         .catch(() => localStorage.removeItem("token"))
         .finally(() => setLoading(false));
     } else {
@@ -24,8 +27,8 @@ export function AuthProvider({ children }) {
     const res = await client.post("/auth/login", { email, password });
     const token = res.data.token || res.data.data?.token;
     const userData = res.data.user || res.data.data?.user;
-    localStorage.setItem("token", token);
-    setUser(userData);
+    if (token) localStorage.setItem("token", token);
+    if (userData) setUser(userData);
     return userData;
   };
 
@@ -38,14 +41,19 @@ export function AuthProvider({ children }) {
     return res.data;
   };
 
-  const logout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    setUser(null);
+  const logout = async () => {
+    try {
+      await client.post("/auth/logout");
+    } catch {
+    } finally {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      setUser(null);
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, setUser }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );

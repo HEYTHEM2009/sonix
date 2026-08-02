@@ -11,22 +11,29 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState(null);
   const [reels, setReels] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const userId = id || me?.id;
 
   useEffect(() => {
-    const userId = id || me?.id;
+    document.title = "Profile — Sonix";
     if (!userId) return;
     Promise.all([
-      client.get(`/users/${userId}`).catch(() => ({ data: {} })),
+      client.get(`/users/${userId}`).catch(() => null),
       client.get(`/reels?user_id=${userId}`).catch(() => ({ data: { data: [] } })),
     ])
       .then(([userRes, reelRes]) => {
+        if (!userRes || !userRes.data) {
+          setError("NOT_FOUND");
+          return;
+        }
         setProfile(userRes.data?.data || userRes.data?.user || userRes.data);
         const r = reelRes.data?.data || reelRes.data?.reels || reelRes.data;
         setReels(Array.isArray(r) ? r : r?.data || []);
       })
-      .catch(() => {})
+      .catch(() => setError(true))
       .finally(() => setLoading(false));
-  }, [id, me]);
+  }, [userId]);
 
   if (loading) {
     return (
@@ -39,6 +46,15 @@ export default function ProfilePage() {
     );
   }
 
+  if (error === "NOT_FOUND" || (!profile && error)) {
+    return (
+      <div className="snx-app">
+        <Header />
+        <div className="snx-reel__not-found">User not found</div>
+      </div>
+    );
+  }
+
   return (
     <div className="snx-app">
       <Header />
@@ -47,7 +63,7 @@ export default function ProfilePage() {
           <img
             className="snx-profile__avatar"
             src={profile?.avatar_url || `https://ui-avatars.com/api/?name=${profile?.username || "U"}&background=262626&color=f5f5f5&size=150`}
-            alt={profile?.username}
+            alt={profile?.username || "User avatar"}
           />
           <div className="snx-profile__details">
             <h2 className="snx-profile__username">{profile?.username || "Unknown"}</h2>
@@ -75,7 +91,7 @@ export default function ProfilePage() {
                 {reel.thumbnail_url ? (
                   <img src={reel.thumbnail_url} alt={reel.caption || "Reel"} loading="lazy" />
                 ) : (
-                  <video src={reel.video_url} muted loading="lazy" />
+                  <video src={reel.video_url} muted />
                 )}
               </div>
             ))}
