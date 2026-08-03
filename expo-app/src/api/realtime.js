@@ -1,4 +1,4 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { secureGetItem } from "../utils/secureStorage";
 import { IMAGE_BASE } from "./client";
 
 const REVERB_KEY = process.env.EXPO_PUBLIC_REVERB_KEY || "sonix-reverb";
@@ -120,7 +120,7 @@ class RealtimeManager {
 
     this.initPromise = (async () => {
       try {
-        this.token = await AsyncStorage.getItem("token");
+        this.token = await secureGetItem("token");
         if (!this.token) {
           this._setStatus(STATUS.DISCONNECTED);
           return null;

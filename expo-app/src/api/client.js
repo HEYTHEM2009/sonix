@@ -1,5 +1,5 @@
 import axios from "axios";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { secureGetItem, secureSetItem, secureMultiRemove } from "../utils/secureStorage";
 
 const API = process.env.EXPO_PUBLIC_API_URL || "http://10.0.2.2:8000/api";
 
@@ -17,7 +17,7 @@ let refreshSubscribers = [];
 
 client.interceptors.request.use(async (config) => {
   if (!currentToken) {
-    currentToken = await AsyncStorage.getItem("token");
+    currentToken = await secureGetItem("token");
   }
   if (currentToken) {
     config.headers.Authorization = `Bearer ${currentToken}`;
@@ -45,7 +45,7 @@ client.interceptors.response.use(
 
     if (status === 401 && url?.includes("/auth/refresh")) {
       currentToken = null;
-      await AsyncStorage.multiRemove(["token", "user"]);
+      await secureMultiRemove(["token", "user"]);
       if (onAuthExpired) onAuthExpired();
       return Promise.reject(err);
     }
@@ -62,7 +62,7 @@ client.interceptors.response.use(
             const res = await client.post("/auth/refresh");
             const newToken = res.data.token;
             currentToken = newToken;
-            await AsyncStorage.setItem("token", newToken);
+            await secureSetItem("token", newToken);
             onRefreshed(newToken);
             isRefreshing = false;
             err.config.headers.Authorization = `Bearer ${newToken}`;
@@ -71,7 +71,7 @@ client.interceptors.response.use(
             isRefreshing = false;
             refreshSubscribers = [];
             currentToken = null;
-            await AsyncStorage.multiRemove(["token", "user"]);
+            await secureMultiRemove(["token", "user"]);
             if (onAuthExpired) onAuthExpired();
             return Promise.reject(refreshErr);
           }

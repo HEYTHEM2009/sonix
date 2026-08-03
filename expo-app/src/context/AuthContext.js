@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { secureGetItem, secureSetItem, secureMultiGet, secureMultiSet, secureMultiRemove } from "../utils/secureStorage";
 import client, { setAuthExpiredHandler, setAuthToken } from "../api/client";
 import realtime from "../api/realtime";
 
@@ -22,7 +23,7 @@ export function AuthProvider({ children }) {
 
   const loadAuth = async () => {
     try {
-      const [t, u, ob] = await AsyncStorage.multiGet(["token", "user", "onboarded"]);
+      const [t, u, ob] = await secureMultiGet(["token", "user", "onboarded"]);
       if (ob[1] === "1") setOnboarded(true);
       if (t[1]) {
         try {
@@ -31,12 +32,12 @@ export function AuthProvider({ children }) {
           if (res.status === 200) {
             setToken(t[1]);
             setUser(res.data);
-            await AsyncStorage.setItem("user", JSON.stringify(res.data));
+            await secureSetItem("user", JSON.stringify(res.data));
           }
         } catch (err) {
           if (err?.response?.status === 401) {
             setAuthToken(null);
-            await AsyncStorage.multiRemove(["token", "user"]);
+            await secureMultiRemove(["token", "user"]);
           } else {
             if (u[1]) {
               try { setUser(JSON.parse(u[1])); setToken(t[1]); } catch (_) {}
@@ -55,7 +56,7 @@ export function AuthProvider({ children }) {
       return res.data;
     }
     const { token: t, user: u } = res.data;
-    await AsyncStorage.multiSet([["token", t], ["user", JSON.stringify(u)]]);
+    await secureMultiSet([["token", t], ["user", JSON.stringify(u)]]);
     setAuthToken(t);
     setToken(t);
     setUser(u);
@@ -65,7 +66,7 @@ export function AuthProvider({ children }) {
   const twoFactorLogin = useCallback(async (email, code) => {
     const res = await client.post("/auth/2fa-login", { email, code });
     const { token: t, user: u } = res.data;
-    await AsyncStorage.multiSet([["token", t], ["user", JSON.stringify(u)]]);
+    await secureMultiSet([["token", t], ["user", JSON.stringify(u)]]);
     setAuthToken(t);
     setToken(t);
     setUser(u);
@@ -75,7 +76,7 @@ export function AuthProvider({ children }) {
   const register = useCallback(async (username, email, password) => {
     const res = await client.post("/auth/register", { username, email, password });
     const { token: t, user: u } = res.data;
-    await AsyncStorage.multiSet([["token", t], ["user", JSON.stringify(u)]]);
+    await secureMultiSet([["token", t], ["user", JSON.stringify(u)]]);
     setAuthToken(t);
     setToken(t);
     setUser(u);
@@ -83,7 +84,7 @@ export function AuthProvider({ children }) {
 
   const logout = useCallback(async () => {
     realtime.disconnect();
-    await AsyncStorage.multiRemove(["token", "user"]);
+    await secureMultiRemove(["token", "user"]);
     setAuthToken(null);
     setToken(null);
     setUser(null);
@@ -92,7 +93,7 @@ export function AuthProvider({ children }) {
   const updateUser = useCallback(async (userData) => {
     setUser((prev) => {
       const updated = { ...prev, ...userData };
-      AsyncStorage.setItem("user", JSON.stringify(updated)).catch(() => {});
+      secureSetItem("user", JSON.stringify(updated)).catch(() => {});
       return updated;
     });
   }, []);
