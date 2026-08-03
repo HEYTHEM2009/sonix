@@ -1,6 +1,37 @@
 #!/bin/sh
 
-PORT=${PORT:-80}
+PORT=${PORT:-8080}
+
+# Runsite passes a single DATABASE_URL / REDIS_URL (postgresql://... / redis://...).
+# Parse them into the discrete vars Laravel expects, only when not explicitly provided.
+if [ -n "${DATABASE_URL}" ] && [ -z "${DB_HOST}" ]; then
+    _db_rest="${DATABASE_URL#*://}"
+    _db_userpass="${_db_rest%%@*}"
+    DB_USERNAME="${_db_userpass%%:*}"
+    DB_PASSWORD="${_db_userpass#*:}"
+    _db_host="${_db_rest#*@}"
+    DB_HOST="${_db_host%%:*}"
+    _db_hostport="${_db_host#*:}"
+    DB_PORT="${_db_hostport%%/*}"
+    DB_DATABASE="${_db_hostport#*/}"
+    DB_DATABASE="${DB_DATABASE%%\?*}"
+    echo "Parsed DATABASE_URL -> host=${DB_HOST} port=${DB_PORT} db=${DB_DATABASE}"
+fi
+
+if [ -n "${REDIS_URL}" ] && [ -z "${REDIS_HOST}" ]; then
+    _redis_rest="${REDIS_URL#*://}"
+    case "$_redis_rest" in
+        *@*)
+            _redis_userpass="${_redis_rest%%@*}"
+            REDIS_PASSWORD="${_redis_userpass#*:}"
+            _redis_rest="${_redis_rest#*@}"
+            ;;
+    esac
+    REDIS_HOST="${_redis_rest%%:*}"
+    _redis_rest="${_redis_rest#*:}"
+    REDIS_PORT="${_redis_rest%%/*}"
+    echo "Parsed REDIS_URL -> host=${REDIS_HOST} port=${REDIS_PORT}"
+fi
 
 cat > /etc/nginx/sites-available/default <<NGINX
 server {
